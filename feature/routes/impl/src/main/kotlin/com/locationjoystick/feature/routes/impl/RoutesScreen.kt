@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.ui.component.EmptyState
 
 @Composable
-internal fun RoutesRoute(
+fun RoutesRoute(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
     viewModel: RoutesViewModel,
@@ -98,6 +98,6 @@ private fun RouteCard(
             .padding(bottom = 12.dp)
     ) {
         Text(route.name)
-        Text("${route.waypoints.size} waypoints • ${route.totalDistanceMeters.toInt()}m")
+        Text("${route.waypoints.size} waypoints")
     }
 }

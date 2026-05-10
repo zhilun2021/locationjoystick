@@ -15,13 +15,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-internal fun SettingsRoute(
+fun SettingsRoute(
     viewModel: SettingsViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     SettingsScreen(
         uiState = uiState,
-        onResetToDefaults = viewModel::resetToDefaults
+        onResetToDefaults = { }
     )
 }
 
@@ -37,7 +37,7 @@ internal fun SettingsScreen(
             uiState.isLoading -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-            uiState.settings != null -> {
+            else -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

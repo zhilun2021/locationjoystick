@@ -26,11 +26,11 @@ class RoamingViewModel @Inject constructor(
     }
 
     fun updateDuration(minutes: Int) {
-        _uiState.update { it.copy(config = it.config.copy(durationMinutes = minutes)) }
+        _uiState.update { it.copy(config = it.config.copy(durationSeconds = (minutes * 60L))) }
     }
 
     fun toggleOsrmRouting(enabled: Boolean) {
-        _uiState.update { it.copy(config = it.config.copy(useOsrmRouting = enabled)) }
+        _uiState.update { it.copy(config = it.config.copy(useRoadSnapping = enabled)) }
     }
 
     fun startRoaming() {

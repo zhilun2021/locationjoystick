@@ -2,11 +2,10 @@ package com.locationjoystick.feature.favorites.impl
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.locationjoystick.core.data.repository.FavoriteRepository
-import com.locationjoystick.core.data.repository.LocationRepository
+import com.locationjoystick.core.data.FavoriteRepository
+import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.model.FavoriteLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -20,14 +19,11 @@ class FavoritesViewModel @Inject constructor(
     private val locationRepository: LocationRepository,
 ) : ViewModel() {
 
-    private val _deletedFavorite = MutableStateFlow<FavoriteLocation?>(null)
-
-    val uiState: StateFlow<FavoritesUiState> = favoriteRepository.getAllFavorites()
+    val uiState: StateFlow<FavoritesUiState> = favoriteRepository.getFavorites()
         .map { favorites ->
             FavoritesUiState(
                 favorites = favorites,
-                isLoading = false,
-                deletedFavorite = _deletedFavorite.value
+                isLoading = false
             )
         }
         .stateIn(
@@ -38,7 +34,7 @@ class FavoritesViewModel @Inject constructor(
 
     fun teleportTo(favorite: FavoriteLocation) {
         viewModelScope.launch {
-            locationRepository.updatePosition(favorite.lat, favorite.lon)
+            locationRepository.updatePosition(favorite.position)
         }
     }
 
@@ -50,7 +46,8 @@ class FavoritesViewModel @Inject constructor(
 
     fun renameFavorite(favoriteId: String, newName: String) {
         viewModelScope.launch {
-            favoriteRepository.renameFavorite(favoriteId, newName)
+            val favorite = uiState.value.favorites.find { it.id == favoriteId } ?: return@launch
+            favoriteRepository.updateFavorite(favorite.copy(name = newName))
         }
     }
 }

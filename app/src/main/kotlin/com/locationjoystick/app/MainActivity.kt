@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.Composable
 import androidx.core.app.ActivityCompat
 import com.locationjoystick.core.designsystem.LjTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -29,28 +28,5 @@ class MainActivity : ComponentActivity() {
                 LjApp()
             }
         }
-    }
-}
-
-@Composable
-private fun LjApp() {
-    val navController = androidx.navigation.compose.rememberNavController()
-    val drawerState = androidx.compose.material3.rememberDrawerState(
-        initialValue = androidx.compose.material3.DrawerValue.Closed
-    )
-
-    androidx.compose.material3.ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            LjDrawerContent(
-                navController = navController,
-                drawerState = drawerState
-            )
-        }
-    ) {
-        LjNavHost(
-            navController = navController,
-            drawerState = drawerState
-        )
     }
 }

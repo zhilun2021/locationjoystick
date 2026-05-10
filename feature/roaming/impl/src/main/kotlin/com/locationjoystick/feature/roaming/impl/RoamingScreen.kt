@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-internal fun RoamingRoute(
+fun RoamingRoute(
     viewModel: RoamingViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -54,21 +54,21 @@ internal fun RoamingScreen(
                 valueRange = 100f..50000f
             )
 
-            Text("Duration: ${uiState.config.durationMinutes} min")
+            Text("Duration: ${(uiState.config.durationSeconds / 60).toInt()} min")
             Slider(
-                value = uiState.config.durationMinutes.toFloat(),
-                onValueChange = { onUpdateDuration(it.toInt()) },
-                valueRange = 1f..240f
+                value = uiState.config.durationSeconds.toFloat(),
+                onValueChange = { onUpdateDuration((it / 60).toInt()) },
+                valueRange = 60f..14400f
             )
 
-            Switch(
-                checked = uiState.config.useOsrmRouting,
-                onCheckedChange = onToggleOsrm,
-                label = { Text("Follow roads (OSRM)") }
+            androidx.compose.material3.Switch(
+                checked = uiState.config.useRoadSnapping,
+                onCheckedChange = onToggleOsrm
             )
+            Text("Follow roads")
 
             if (uiState.isRoaming) {
-                Text("Roaming: ${uiState.elapsedMinutes.toInt()} / ${uiState.config.durationMinutes} min")
+                Text("Roaming: ${(uiState.elapsedSeconds / 60).toInt()} / ${(uiState.config.durationSeconds / 60).toInt()} min")
                 Button(onClick = onStopRoaming) {
                     Text("Stop")
                 }

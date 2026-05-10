@@ -2,7 +2,7 @@ package com.locationjoystick.feature.routes.impl
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.locationjoystick.core.data.repository.RouteRepository
+import com.locationjoystick.core.data.RouteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,7 @@ class RoutesViewModel @Inject constructor(
     private val routeRepository: RouteRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<RoutesUiState> = routeRepository.getAllRoutes()
+    val uiState: StateFlow<RoutesUiState> = routeRepository.getRoutes()
         .map { routes -> RoutesUiState(routes = routes, isLoading = false) }
         .stateIn(
             scope = viewModelScope,

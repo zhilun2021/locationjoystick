@@ -7,12 +7,10 @@ data class RoamingUiState(
     val config: RoamingConfig = RoamingConfig(
         centerPosition = LatLng(0.0, 0.0),
         radiusMeters = 2000.0,
-        durationMinutes = 30,
-        speedProfileId = "walk",
-        useOsrmRouting = false
+        durationSeconds = 1800L,
+        useRoadSnapping = false
     ),
     val isRoaming: Boolean = false,
-    val elapsedMinutes: Float = 0f,
-    val currentPosition: LatLng? = null,
-    val osrmAvailable: Boolean = true
+    val elapsedSeconds: Long = 0L,
+    val currentPosition: LatLng? = null
 )

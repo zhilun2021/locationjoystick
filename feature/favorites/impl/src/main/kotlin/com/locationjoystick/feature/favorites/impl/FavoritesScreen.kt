@@ -22,7 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.ui.component.EmptyState
 
 @Composable
-internal fun FavoritesRoute(
+fun FavoritesRoute(
     viewModel: FavoritesViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -78,8 +78,7 @@ internal fun FavoritesScreen(
             onClick = { },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            enabled = false
+                .padding(16.dp)
         ) {
             Icon(Icons.Rounded.LocationOn, contentDescription = "Save location")
         }
@@ -97,6 +96,6 @@ private fun FavoriteCard(
             .padding(bottom = 12.dp)
     ) {
         Text(favorite.name)
-        Text("${String.format("%.4f", favorite.lat)}, ${String.format("%.4f", favorite.lon)}")
+        Text("${String.format("%.4f", favorite.position.latitude)}, ${String.format("%.4f", favorite.position.longitude)}")
     }
 }

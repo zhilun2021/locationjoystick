@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.DrawerState
@@ -31,61 +31,53 @@ fun LjDrawerContent(
     drawerState: DrawerState
 ) {
     val scope = rememberCoroutineScope()
-    val destinations = listOf(
-        TopLevelDestination(
-            route = MAP_ROUTE,
-            icon = Icons.Rounded.Map,
-            label = "Map"
-        ),
-        TopLevelDestination(
-            route = ROUTES_ROUTE,
-            icon = Icons.Rounded.Route,
-            label = "Routes"
-        ),
-        TopLevelDestination(
-            route = FAVORITES_ROUTE,
-            icon = Icons.Rounded.Favorite,
-            label = "Favorites"
-        ),
-        TopLevelDestination(
-            route = ROAMING_ROUTE,
-            icon = Icons.Rounded.Explore,
-            label = "Roaming"
-        ),
-        TopLevelDestination(
-            route = SETTINGS_ROUTE,
-            icon = Icons.Rounded.Settings,
-            label = "Settings"
-        ),
-    )
 
     ModalDrawerSheet {
         Spacer(modifier = Modifier.height(16.dp))
-        destinations.forEach { destination ->
-            NavigationDrawerItem(
-                icon = {
-                    Icon(
-                        destination.icon,
-                        contentDescription = destination.label
-                    )
-                },
-                label = { Text(destination.label) },
-                selected = false,
-                onClick = {
-                    navController.navigate(destination.route) {
-                        popUpTo(MAP_ROUTE) { inclusive = false }
-                    }
-                    scope.launch {
-                        drawerState.close()
-                    }
-                }
-            )
-        }
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.LocationOn, "Map") },
+            label = { Text("Map") },
+            selected = false,
+            onClick = {
+                navController.navigate(MAP_ROUTE)
+                scope.launch { drawerState.close() }
+            }
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.Route, "Routes") },
+            label = { Text("Routes") },
+            selected = false,
+            onClick = {
+                navController.navigate(ROUTES_ROUTE)
+                scope.launch { drawerState.close() }
+            }
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.Favorite, "Favorites") },
+            label = { Text("Favorites") },
+            selected = false,
+            onClick = {
+                navController.navigate(FAVORITES_ROUTE)
+                scope.launch { drawerState.close() }
+            }
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.Explore, "Roaming") },
+            label = { Text("Roaming") },
+            selected = false,
+            onClick = {
+                navController.navigate(ROAMING_ROUTE)
+                scope.launch { drawerState.close() }
+            }
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.Settings, "Settings") },
+            label = { Text("Settings") },
+            selected = false,
+            onClick = {
+                navController.navigate(SETTINGS_ROUTE)
+                scope.launch { drawerState.close() }
+            }
+        )
     }
 }
-
-data class TopLevelDestination(
-    val route: String,
-    val icon: androidx.compose.material.icons.Types.ImageVector,
-    val label: String
-)
