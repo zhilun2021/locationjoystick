@@ -28,6 +28,15 @@ class SettingsRepository @Inject constructor(
             )
         }
 
+    fun getWalkSpeed(): Flow<Double> =
+        dataSource.getSpeedProfiles().map { it.walkSpeedMs }
+
+    fun getRunSpeed(): Flow<Double> =
+        dataSource.getSpeedProfiles().map { it.runSpeedMs }
+
+    fun getBikeSpeed(): Flow<Double> =
+        dataSource.getSpeedProfiles().map { it.bikeSpeedMs }
+
     fun getActiveSpeedProfile(): Flow<SpeedProfile> =
         dataSource.getSpeedProfiles().map { prefs ->
             with(dataSource) { prefs.toActiveSpeedProfile() }

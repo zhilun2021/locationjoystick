@@ -19,15 +19,17 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
-        settingsRepository.getSpeedProfiles(),
+        settingsRepository.getWalkSpeed(),
+        settingsRepository.getRunSpeed(),
+        settingsRepository.getBikeSpeed(),
         settingsRepository.getSpeedUnit(),
         settingsRepository.getWidgetFeatures(),
-    ) { _, speedUnit, features ->
+    ) { walkSpeed, runSpeed, bikeSpeed, speedUnit, features ->
         SettingsUiState(
             isLoading = false,
-            walkSpeed = 1.4,
-            runSpeed = 3.0,
-            bikeSpeed = 5.5,
+            walkSpeed = walkSpeed,
+            runSpeed = runSpeed,
+            bikeSpeed = bikeSpeed,
             speedUnit = speedUnit,
             enabledWidgetFeatures = features.toSet(),
         )
