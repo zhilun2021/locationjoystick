@@ -1,10 +1,14 @@
 plugins {
     alias(libs.plugins.locationjoystick.android.application)
     alias(libs.plugins.locationjoystick.hilt)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.locationjoystick.app"
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
@@ -34,6 +38,7 @@ dependencies {
     implementation(project(":feature:settings:api"))
     implementation(project(":feature:settings:impl"))
 
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.navigation.compose)

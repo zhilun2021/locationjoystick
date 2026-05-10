@@ -3,6 +3,7 @@ package com.locationjoystick.feature.map.impl
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.DrawerState
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,14 +50,15 @@ private const val POSITION_LAYER_ID = "position-layer"
 private const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
 private const val DEFAULT_ZOOM = 15.0
 
-fun NavGraphBuilder.mapScreen() {
+fun NavGraphBuilder.mapScreen(drawerState: DrawerState) {
     composable(route = MAP_ROUTE) {
-        MapRoute()
+        MapRoute(drawerState = drawerState)
     }
 }
 
 @Composable
-internal fun MapRoute(
+fun MapRoute(
+    drawerState: DrawerState,
     viewModel: MapViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

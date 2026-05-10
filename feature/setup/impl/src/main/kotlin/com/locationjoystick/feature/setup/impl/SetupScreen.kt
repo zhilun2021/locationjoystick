@@ -74,7 +74,7 @@ fun NavGraphBuilder.setupScreen(onSetupComplete: () -> Unit) {
 }
 
 @Composable
-internal fun SetupRoute(
+fun SetupRoute(
     onSetupComplete: () -> Unit,
     viewModel: SetupViewModel = hiltViewModel(),
 ) {
