@@ -9,6 +9,8 @@ android {
 dependencies {
     implementation(project(":feature:routes:api"))
     implementation(project(":core:data"))
+    implementation(project(":core:routing"))
+    implementation(project(":core:ui"))
 
     implementation(libs.hilt.navigation.compose)
     implementation(libs.androidx.navigation.compose)

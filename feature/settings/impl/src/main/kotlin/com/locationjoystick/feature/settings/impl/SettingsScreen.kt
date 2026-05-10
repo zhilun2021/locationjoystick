@@ -1,5 +1,7 @@
 package com.locationjoystick.feature.settings.impl
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +22,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.model.SpeedUnit
@@ -36,6 +41,33 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) pendingImportUri = uri
+    }
+
+    if (pendingImportUri != null) {
+        val uri = pendingImportUri!!
+        AlertDialog(
+            onDismissRequest = { pendingImportUri = null },
+            title = { Text("Import settings") },
+            text = { Text("This will replace all existing data. Continue?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.importSettings(context, uri)
+                    pendingImportUri = null
+                }) { Text("Import") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImportUri = null }) { Text("Cancel") }
+            },
+        )
+    }
+
     SettingsScreen(
         uiState = uiState,
         onSetWalkSpeed = viewModel::setWalkSpeed,
@@ -44,6 +76,8 @@ fun SettingsRoute(
         onSetSpeedUnit = viewModel::setSpeedUnit,
         onSetWidgetFeatures = viewModel::setWidgetFeatures,
         convertMsToDisplay = viewModel::convertMsToDisplay,
+        onExport = { viewModel.exportSettings(context) },
+        onImport = { importLauncher.launch(arrayOf("application/json")) },
     )
 }
 
@@ -56,6 +90,8 @@ internal fun SettingsScreen(
     onSetSpeedUnit: (SpeedUnit) -> Unit,
     onSetWidgetFeatures: (Set<WidgetFeature>) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
 ) {
     Box(
         modifier = Modifier.fillMaxSize()
@@ -126,9 +162,7 @@ internal fun SettingsScreen(
                         unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
                     )
 
-                    val hasHighSpeed = convertMsToDisplay(uiState.walkSpeed, uiState.speedUnit) > 8.0 ||
-                        convertMsToDisplay(uiState.runSpeed, uiState.speedUnit) > 8.0 ||
-                        convertMsToDisplay(uiState.bikeSpeed, uiState.speedUnit) > 8.0
+                    val hasHighSpeed = uiState.walkSpeed > 8.0 || uiState.runSpeed > 8.0 || uiState.bikeSpeed > 8.0
 
                     if (hasHighSpeed) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -182,13 +216,13 @@ internal fun SettingsScreen(
                     Text("Data Management", style = MaterialTheme.typography.headlineSmall)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Button(onClick = { }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = onExport, modifier = Modifier.fillMaxWidth()) {
                         Text("Export Settings")
                     }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Button(onClick = { }, modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
                         Text("Import Settings")
                     }
                 }

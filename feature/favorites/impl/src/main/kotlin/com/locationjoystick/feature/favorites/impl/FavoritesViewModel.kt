@@ -50,4 +50,28 @@ class FavoritesViewModel @Inject constructor(
             favoriteRepository.updateFavorite(favorite.copy(name = newName))
         }
     }
+
+    fun addFavorite(name: String, lat: Double, lon: Double) {
+        viewModelScope.launch {
+            val uuid = java.util.UUID.randomUUID().toString()
+            favoriteRepository.addFavorite(
+                id = uuid,
+                name = name,
+                position = com.locationjoystick.core.model.LatLng(lat, lon),
+                createdAt = System.currentTimeMillis(),
+            )
+        }
+    }
+
+    fun updateFavorite(id: String, newName: String, newLat: Double, newLon: Double) {
+        viewModelScope.launch {
+            val favorite = uiState.value.favorites.find { it.id == id } ?: return@launch
+            favoriteRepository.updateFavorite(
+                favorite.copy(
+                    name = newName,
+                    position = com.locationjoystick.core.model.LatLng(newLat, newLon),
+                )
+            )
+        }
+    }
 }

@@ -1,0 +1,141 @@
+package com.locationjoystick.feature.routes.impl
+
+import android.util.Log
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.Route
+import com.locationjoystick.core.model.Waypoint
+import com.locationjoystick.core.routing.OsrmClient
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.util.UUID
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import javax.inject.Inject
+
+private const val TAG = "RouteCreatorViewModel"
+
+data class CreatorState(
+    val waypoints: List<LatLng> = emptyList(),
+    val segments: List<List<LatLng>> = emptyList(),
+    val totalDistanceMeters: Double = 0.0,
+    val isLoadingSegment: Boolean = false,
+)
+
+@HiltViewModel
+class RouteCreatorViewModel @Inject constructor(
+    private val routeRepository: RouteRepository,
+    private val osrmClient: OsrmClient,
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(CreatorState())
+    val state: StateFlow<CreatorState> = _state.asStateFlow()
+
+    fun addWaypoint(latLng: LatLng) {
+        val currentWaypoints = _state.value.waypoints
+        val newWaypoints = currentWaypoints + latLng
+
+        if (newWaypoints.size < 2) {
+            _state.value = _state.value.copy(
+                waypoints = newWaypoints,
+                segments = emptyList(),
+                totalDistanceMeters = 0.0
+            )
+            return
+        }
+
+        _state.value = _state.value.copy(isLoadingSegment = true)
+
+        viewModelScope.launch {
+            try {
+                val lastWaypoint = currentWaypoints.last()
+                val segmentResult = osrmClient.getRoute("foot", listOf(lastWaypoint, latLng))
+
+                val segment = segmentResult.getOrElse {
+                    Log.e(TAG, "OSRM failed, using straight line", it)
+                    listOf(lastWaypoint, latLng)
+                }
+
+                val currentSegments = _state.value.segments + listOf(segment)
+                val distance = currentSegments.sumOf { seg ->
+                    seg.zipWithNext().sumOf { (a, b) -> haversineMeters(a, b) }
+                }
+
+                _state.value = _state.value.copy(
+                    waypoints = newWaypoints,
+                    segments = currentSegments,
+                    totalDistanceMeters = distance,
+                    isLoadingSegment = false
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding waypoint", e)
+                _state.value = _state.value.copy(isLoadingSegment = false)
+            }
+        }
+    }
+
+    fun undoLastWaypoint() {
+        val current = _state.value
+        if (current.waypoints.isEmpty()) return
+
+        val newWaypoints = current.waypoints.dropLast(1)
+        val newSegments = if (current.segments.isNotEmpty()) {
+            current.segments.dropLast(1)
+        } else {
+            emptyList()
+        }
+
+        val distance = newSegments.sumOf { seg ->
+            seg.zipWithNext().sumOf { (a, b) -> haversineMeters(a, b) }
+        }
+
+        _state.value = current.copy(
+            waypoints = newWaypoints,
+            segments = newSegments,
+            totalDistanceMeters = distance
+        )
+    }
+
+    fun saveRoute(name: String) {
+        val current = _state.value
+        if (current.waypoints.size < 2) return
+
+        val uuid = UUID.randomUUID().toString()
+        val waypoints = current.waypoints.mapIndexed { idx, latLng ->
+            Waypoint(
+                id = UUID.randomUUID().toString(),
+                position = latLng,
+                orderIndex = idx
+            )
+        }
+
+        val route = Route(
+            id = uuid,
+            name = name,
+            waypoints = waypoints,
+            isLooping = false,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+
+        viewModelScope.launch {
+            routeRepository.insertRoute(route)
+        }
+    }
+
+    private fun haversineMeters(a: LatLng, b: LatLng): Double {
+        val R = 6371000.0
+        val dLat = Math.toRadians(b.latitude - a.latitude)
+        val dLon = Math.toRadians(b.longitude - a.longitude)
+        val sinDLat = sin(dLat / 2)
+        val sinDLon = sin(dLon / 2)
+        val h = sinDLat * sinDLat + cos(Math.toRadians(a.latitude)) * cos(Math.toRadians(b.latitude)) * sinDLon * sinDLon
+        return 2 * R * kotlin.math.asin(kotlin.math.sqrt(h))
+    }
+}
