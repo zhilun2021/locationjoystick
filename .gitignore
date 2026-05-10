@@ -1,0 +1,23 @@
+# Android/Gradle/Kotlin
+*.iml
+.gradle/
+local.properties
+.idea/
+*.keystore
+*.jks
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+.kotlin/
+
+# CI/CD artifacts
+*.apk
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Agents
+.sisyphus

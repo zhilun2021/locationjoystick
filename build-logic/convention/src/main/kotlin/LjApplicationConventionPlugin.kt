@@ -1,0 +1,48 @@
+import com.android.build.api.dsl.ApplicationExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
+import org.gradle.kotlin.dsl.configure
+
+class LjApplicationConventionPlugin : Plugin<Project> {
+    override fun apply(target: Project) {
+        with(target) {
+            with(pluginManager) {
+                apply("com.android.application")
+                apply("org.jetbrains.kotlin.android")
+            }
+
+            extensions.configure<ApplicationExtension> {
+                compileSdk = 34
+
+                defaultConfig {
+                    minSdk = 31
+                    targetSdk = 34
+                    buildConfigField("String", "VERSION_NAME", "\"1.0.0\"")
+                }
+
+                buildFeatures {
+                    buildConfig = true
+                }
+
+                compileOptions {
+                    sourceCompatibility = org.gradle.api.JavaVersion.VERSION_17
+                    targetCompatibility = org.gradle.api.JavaVersion.VERSION_17
+                }
+
+                kotlinOptions {
+                    jvmTarget = "17"
+                }
+
+                packaging {
+                    resources {
+                        excludes += "/META-INF/{AL2.0,LGPL2.1}"
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun ApplicationExtension.kotlinOptions(block: org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions.() -> Unit) {
+    (this as org.gradle.api.plugins.ExtensionAware).extensions.configure("kotlinOptions", block)
+}
