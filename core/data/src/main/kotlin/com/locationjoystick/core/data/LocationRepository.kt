@@ -28,6 +28,12 @@ class LocationRepository @Inject constructor() {
     private val _mockLocationState = MutableStateFlow(MockLocationState.IDLE)
     val mockLocationState: StateFlow<MockLocationState> = _mockLocationState.asStateFlow()
 
+    private val _activeRouteId = MutableStateFlow<String?>(null)
+    val activeRouteId: StateFlow<String?> = _activeRouteId.asStateFlow()
+
+    private val _isReplayBackward = MutableStateFlow(false)
+    val isReplayBackward: StateFlow<Boolean> = _isReplayBackward.asStateFlow()
+
     fun observePosition(): Flow<LatLng?> = _currentPosition.asStateFlow()
 
     fun observeState(): Flow<MockLocationState> = _mockLocationState.asStateFlow()
@@ -62,5 +68,13 @@ class LocationRepository @Inject constructor() {
     fun reportError() {
         Log.e(TAG, "MockLocationService reported an error")
         _mockLocationState.value = MockLocationState.ERROR
+    }
+
+    fun setActiveRouteId(id: String?) {
+        _activeRouteId.value = id
+    }
+
+    fun setIsReplayBackward(backward: Boolean) {
+        _isReplayBackward.value = backward
     }
 }

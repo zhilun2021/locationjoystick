@@ -40,6 +40,8 @@ dependencies {
     implementation(project(":feature:roaming:impl"))
     implementation(project(":feature:settings:api"))
     implementation(project(":feature:settings:impl"))
+    implementation(project(":feature:widget:api"))
+    implementation(project(":feature:widget:impl"))
 
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)

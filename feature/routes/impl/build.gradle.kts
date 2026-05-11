@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":feature:routes:api"))
     implementation(project(":core:data"))
     implementation(project(":core:routing"))
+    implementation(project(":core:location"))
     implementation(project(":core:ui"))
 
     implementation(libs.hilt.navigation.compose)

@@ -1,16 +1,22 @@
 package com.locationjoystick.feature.routes.impl
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.location.MockLocationService
+import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.Route
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,6 +29,8 @@ private const val TAG = "RoutesViewModel"
 @HiltViewModel
 class RoutesViewModel @Inject constructor(
     private val routeRepository: RouteRepository,
+    private val locationRepository: LocationRepository,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     val uiState: StateFlow<RoutesUiState> = routeRepository.getRoutes()
@@ -32,6 +40,23 @@ class RoutesViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = RoutesUiState(isLoading = true)
         )
+
+    val playbackState: StateFlow<RoutePlaybackState> = combine(
+        locationRepository.activeRouteId,
+        locationRepository.mockLocationState,
+        locationRepository.isReplayBackward,
+    ) { activeRouteId, mockState, isBackward ->
+        RoutePlaybackState(
+            activeRouteId = activeRouteId,
+            isPlaying = mockState == MockLocationState.RUNNING && activeRouteId != null,
+            isPaused = mockState == MockLocationState.PAUSED && activeRouteId != null,
+            isBackward = isBackward,
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = RoutePlaybackState()
+    )
 
     fun deleteRoute(routeId: String) {
         viewModelScope.launch {
@@ -46,6 +71,38 @@ class RoutesViewModel @Inject constructor(
                 route.copy(name = newName, updatedAt = System.currentTimeMillis())
             )
         }
+    }
+
+    fun startReplay(route: Route, isBackward: Boolean = false, speedMs: Double = 1.4) {
+        val intent = Intent(context, MockLocationService::class.java).apply {
+            action = MockLocationService.ACTION_ROUTE_REPLAY_START
+            putExtra(MockLocationService.EXTRA_ROUTE_ID, route.id)
+            putExtra(MockLocationService.EXTRA_IS_BACKWARD, isBackward)
+            putExtra(MockLocationService.EXTRA_SPEED_MS, speedMs)
+        }
+        context.startService(intent)
+    }
+
+    fun pauseReplay() {
+        val intent = Intent(context, MockLocationService::class.java).apply {
+            action = MockLocationService.ACTION_ROUTE_REPLAY_PAUSE
+        }
+        context.startService(intent)
+    }
+
+    fun resumeReplay(speedMs: Double = 1.4) {
+        val intent = Intent(context, MockLocationService::class.java).apply {
+            action = MockLocationService.ACTION_ROUTE_REPLAY_RESUME
+            putExtra(MockLocationService.EXTRA_SPEED_MS, speedMs)
+        }
+        context.startService(intent)
+    }
+
+    fun stopReplay() {
+        val intent = Intent(context, MockLocationService::class.java).apply {
+            action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
+        }
+        context.startService(intent)
     }
 
     fun exportRouteAsGpx(context: Context, route: Route) {

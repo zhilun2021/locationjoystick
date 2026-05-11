@@ -16,8 +16,11 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import android.content.pm.ServiceInfo
 import androidx.core.app.ServiceCompat
+import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,6 +47,14 @@ class MockLocationService : Service() {
         private const val LOCATION_ACCURACY = 3.0f
 
         const val ACTION_STOP = "com.locationjoystick.core.location.ACTION_STOP"
+        const val ACTION_ROUTE_REPLAY_START = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_START"
+        const val ACTION_ROUTE_REPLAY_PAUSE = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_PAUSE"
+        const val ACTION_ROUTE_REPLAY_RESUME = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_RESUME"
+        const val ACTION_ROUTE_REPLAY_STOP = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_STOP"
+
+        const val EXTRA_ROUTE_ID = "extra_route_id"
+        const val EXTRA_IS_BACKWARD = "extra_is_backward"
+        const val EXTRA_SPEED_MS = "extra_speed_ms"
     }
 
     inner class LocalBinder : Binder() {
@@ -51,8 +63,10 @@ class MockLocationService : Service() {
 
     private val binder = LocalBinder()
 
-    @Inject
-    lateinit var locationManager: LocationManager
+    @Inject lateinit var locationManager: LocationManager
+    @Inject lateinit var locationRepository: LocationRepository
+    @Inject lateinit var routeRepository: RouteRepository
+    @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var updateJob: Job? = null
@@ -73,10 +87,24 @@ class MockLocationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopSpoofing()
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopSpoofing()
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_ROUTE_REPLAY_START -> {
+                val routeId = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return START_STICKY
+                val isBackward = intent.getBooleanExtra(EXTRA_IS_BACKWARD, false)
+                val speedMs = intent.getDoubleExtra(EXTRA_SPEED_MS, 1.4)
+                handleReplayStart(routeId, isBackward, speedMs)
+            }
+            ACTION_ROUTE_REPLAY_PAUSE -> handleReplayPause()
+            ACTION_ROUTE_REPLAY_RESUME -> {
+                val speedMs = intent.getDoubleExtra(EXTRA_SPEED_MS, 1.4)
+                handleReplayResume(speedMs)
+            }
+            ACTION_ROUTE_REPLAY_STOP -> serviceScope.launch { handleReplayStop() }
         }
 
         ServiceCompat.startForeground(
@@ -106,6 +134,7 @@ class MockLocationService : Service() {
         setupTestProvider()
         startUpdateLoop()
         _state.value = MockLocationState.RUNNING
+        serviceScope.launch { locationRepository.startSpoofing() }
         Log.i(TAG, "Spoofing started at ($lat, $lon)")
     }
 
@@ -126,10 +155,93 @@ class MockLocationService : Service() {
         updateJob = null
         removeTestProvider()
         _state.value = MockLocationState.IDLE
+        serviceScope.launch {
+            locationRepository.stopSpoofing()
+            locationRepository.setActiveRouteId(null)
+        }
         Log.i(TAG, "Spoofing stopped")
     }
 
     fun getCurrentPosition(): LatLng = LatLng(currentLat, currentLon)
+
+    private fun handleReplayStart(routeId: String, isBackward: Boolean, speedMs: Double) {
+        serviceScope.launch {
+            val route = routeRepository.getRouteWithWaypoints(routeId).first() ?: return@launch
+            if (route.waypoints.size < 2) return@launch
+
+            val ordered = if (isBackward) route.waypoints.reversed() else route.waypoints
+            val latLngs = ordered.map { it.position }
+            val startPos = latLngs.first()
+
+            currentLat = startPos.latitude
+            currentLon = startPos.longitude
+            currentSpeedMs = 0.0f
+            currentBearing = 0.0f
+
+            setupTestProvider()
+            startUpdateLoop()
+            _state.value = MockLocationState.RUNNING
+            locationRepository.startSpoofing()
+            locationRepository.setActiveRouteId(routeId)
+            locationRepository.setIsReplayBackward(isBackward)
+
+            routeReplayEngine.start(
+                waypoints = latLngs,
+                speedMs = speedMs,
+                onPositionUpdate = { pos ->
+                    currentLat = pos.latitude
+                    currentLon = pos.longitude
+                    locationRepository.setPositionInternal(pos)
+                },
+                onComplete = {
+                    _state.value = MockLocationState.IDLE
+                    serviceScope.launch {
+                        locationRepository.stopSpoofing()
+                        locationRepository.setActiveRouteId(null)
+                    }
+                    updateJob?.cancel()
+                    updateJob = null
+                },
+            )
+        }
+    }
+
+    private fun handleReplayPause() {
+        routeReplayEngine.pause()
+        updateJob?.cancel()
+        updateJob = null
+        _state.value = MockLocationState.PAUSED
+        serviceScope.launch { locationRepository.pauseSpoofing() }
+        Log.i(TAG, "Replay paused")
+    }
+
+    private fun handleReplayResume(speedMs: Double) {
+        startUpdateLoop()
+        _state.value = MockLocationState.RUNNING
+        serviceScope.launch { locationRepository.startSpoofing() }
+        routeReplayEngine.resume(
+            onPositionUpdate = { pos ->
+                currentLat = pos.latitude
+                currentLon = pos.longitude
+                locationRepository.setPositionInternal(pos)
+            },
+            onComplete = {
+                _state.value = MockLocationState.IDLE
+                serviceScope.launch {
+                    locationRepository.stopSpoofing()
+                    locationRepository.setActiveRouteId(null)
+                }
+                updateJob?.cancel()
+                updateJob = null
+            },
+        )
+        Log.i(TAG, "Replay resumed at ${speedMs}m/s")
+    }
+
+    private suspend fun handleReplayStop() {
+        routeReplayEngine.stop()
+        stopSpoofing()
+    }
 
     private fun setupTestProvider() {
         if (providerAdded) return

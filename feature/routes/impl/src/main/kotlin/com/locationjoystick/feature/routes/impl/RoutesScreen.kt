@@ -16,6 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -45,25 +49,36 @@ fun RoutesRoute(
     viewModel: RoutesViewModel,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     RoutesScreen(
         uiState = uiState,
+        playbackState = playbackState,
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToCreate = onNavigateToCreate,
         onDeleteRoute = viewModel::deleteRoute,
         onRenameRoute = viewModel::renameRoute,
-        onExportRoute = { route -> viewModel.exportRouteAsGpx(context, route) }
+        onExportRoute = { route -> viewModel.exportRouteAsGpx(context, route) },
+        onStartReplay = { route, isBackward -> viewModel.startReplay(route, isBackward) },
+        onPauseReplay = viewModel::pauseReplay,
+        onResumeReplay = viewModel::resumeReplay,
+        onStopReplay = viewModel::stopReplay,
     )
 }
 
 @Composable
 internal fun RoutesScreen(
     uiState: RoutesUiState,
+    playbackState: RoutePlaybackState,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: () -> Unit,
     onDeleteRoute: (String) -> Unit,
     onRenameRoute: (String, String) -> Unit,
     onExportRoute: (com.locationjoystick.core.model.Route) -> Unit,
+    onStartReplay: (com.locationjoystick.core.model.Route, Boolean) -> Unit,
+    onPauseReplay: () -> Unit,
+    onResumeReplay: () -> Unit,
+    onStopReplay: () -> Unit,
 ) {
     var editingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
     var deletingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
@@ -93,10 +108,15 @@ internal fun RoutesScreen(
                     ) { route ->
                         RouteCard(
                             route = route,
+                            playbackState = playbackState,
                             onTap = { onNavigateToDetail(route.id) },
                             onEdit = { editingRoute = it },
                             onDelete = { deletingRoute = it },
-                            onExport = { onExportRoute(it) }
+                            onExport = { onExportRoute(it) },
+                            onStartReplay = onStartReplay,
+                            onPauseReplay = onPauseReplay,
+                            onResumeReplay = onResumeReplay,
+                            onStopReplay = onStopReplay,
                         )
                     }
                 }
@@ -139,34 +159,83 @@ internal fun RoutesScreen(
 @Composable
 private fun RouteCard(
     route: com.locationjoystick.core.model.Route,
+    playbackState: RoutePlaybackState,
     onTap: () -> Unit,
     onEdit: (com.locationjoystick.core.model.Route) -> Unit,
     onDelete: (com.locationjoystick.core.model.Route) -> Unit,
     onExport: (com.locationjoystick.core.model.Route) -> Unit,
+    onStartReplay: (com.locationjoystick.core.model.Route, Boolean) -> Unit,
+    onPauseReplay: () -> Unit,
+    onResumeReplay: () -> Unit,
+    onStopReplay: () -> Unit,
 ) {
-    Row(
+    val isActiveRoute = playbackState.activeRouteId == route.id
+    val isPlaying = isActiveRoute && playbackState.isPlaying
+    val isPaused = isActiveRoute && playbackState.isPaused
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-            .clickable { onTap() }
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(bottom = 12.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(route.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                "${route.waypoints.size} waypoints",
-                style = MaterialTheme.typography.bodySmall
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                .clickable { onTap() }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(route.name, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "${route.waypoints.size} waypoints",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            IconButton(onClick = { onEdit(route) }) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit")
+            }
+            IconButton(onClick = { onExport(route) }) {
+                Icon(Icons.Default.FileDownload, contentDescription = "Export GPX")
+            }
+            IconButton(onClick = { onDelete(route) }) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete")
+            }
         }
-        IconButton(onClick = { onEdit(route) }) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit")
-        }
-        IconButton(onClick = { onExport(route) }) {
-            Icon(Icons.Default.FileDownload, contentDescription = "Export GPX")
-        }
-        IconButton(onClick = { onDelete(route) }) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete")
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            when {
+                isPlaying -> {
+                    IconButton(onClick = onPauseReplay) {
+                        Icon(Icons.Default.Pause, contentDescription = "Pause")
+                    }
+                    IconButton(onClick = onStopReplay) {
+                        Icon(Icons.Default.Stop, contentDescription = "Stop")
+                    }
+                }
+                isPaused -> {
+                    IconButton(onClick = onResumeReplay) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Resume")
+                    }
+                    IconButton(onClick = onStopReplay) {
+                        Icon(Icons.Default.Stop, contentDescription = "Stop")
+                    }
+                }
+                else -> {
+                    IconButton(onClick = { onStartReplay(route, false) }) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Play forward")
+                    }
+                    IconButton(onClick = { onStartReplay(route, true) }) {
+                        Icon(Icons.Default.Replay, contentDescription = "Play backward")
+                    }
+                }
+            }
         }
     }
 }

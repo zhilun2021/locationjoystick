@@ -3,6 +3,7 @@ package com.locationjoystick.core.routing.di
 import com.locationjoystick.core.routing.OsrmClient
 import com.locationjoystick.core.routing.RoamingEngine
 import com.locationjoystick.core.routing.RouteInterpolator
+import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,4 +28,9 @@ object RoutingModule {
         osrmClient: OsrmClient,
         routeInterpolator: RouteInterpolator,
     ): RoamingEngine = RoamingEngine(osrmClient, routeInterpolator)
+
+    @Provides
+    @Singleton
+    fun provideRouteReplayEngine(routeInterpolator: RouteInterpolator): RouteReplayEngine =
+        RouteReplayEngine(routeInterpolator)
 }

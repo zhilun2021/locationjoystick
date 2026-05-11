@@ -61,4 +61,12 @@ class RouteRepository @Inject constructor(
             Log.e(TAG, "Failed to delete route: $id", e)
         }
     }
+
+    suspend fun removeWaypoint(waypointId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            waypointDao.delete(waypointId)
+        }.onFailure { e ->
+            Log.e(TAG, "Failed to remove waypoint: $waypointId", e)
+        }
+    }
 }

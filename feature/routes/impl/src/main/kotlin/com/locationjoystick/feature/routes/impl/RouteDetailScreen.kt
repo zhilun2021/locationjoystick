@@ -1,13 +1,18 @@
 package com.locationjoystick.feature.routes.impl
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -26,6 +31,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -38,6 +44,12 @@ class RouteDetailViewModel @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = null
         )
+
+    fun removeWaypoint(waypointId: String) {
+        viewModelScope.launch {
+            routeRepository.removeWaypoint(waypointId)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,19 +74,25 @@ fun RouteDetailScreen(
                     .padding(16.dp)
             ) {
                 items(route!!.waypoints, key = { it.id }) { waypoint ->
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 12.dp)
+                            .padding(bottom = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            "Waypoint ${waypoint.orderIndex + 1}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                        Text(
-                            "${String.format("%.4f", waypoint.position.latitude)}, ${String.format("%.4f", waypoint.position.longitude)}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Waypoint ${waypoint.orderIndex + 1}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            Text(
+                                "${String.format("%.4f", waypoint.position.latitude)}, ${String.format("%.4f", waypoint.position.longitude)}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        IconButton(onClick = { viewModel.removeWaypoint(waypoint.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Remove waypoint")
+                        }
                     }
                 }
             }
