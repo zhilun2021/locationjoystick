@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import java.io.File
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
@@ -14,6 +15,19 @@ class LjApplicationConventionPlugin : Plugin<Project> {
             extensions.configure<ApplicationExtension> {
                 compileSdk = 34
 
+                val releaseKeystorePath = System.getenv("KEYSTORE_PATH")
+
+                if (releaseKeystorePath != null) {
+                    signingConfigs {
+                        create("release") {
+                            storeFile = File(releaseKeystorePath)
+                            storePassword = System.getenv("STORE_PASSWORD")
+                            keyAlias = System.getenv("KEY_ALIAS")
+                            keyPassword = System.getenv("KEY_PASSWORD")
+                        }
+                    }
+                }
+
                 defaultConfig {
                     minSdk = 31
                     targetSdk = 34
@@ -22,6 +36,15 @@ class LjApplicationConventionPlugin : Plugin<Project> {
 
                 buildFeatures {
                     buildConfig = true
+                }
+
+                buildTypes {
+                    release {
+                        isMinifyEnabled = false
+                        if (releaseKeystorePath != null) {
+                            signingConfig = signingConfigs.getByName("release")
+                        }
+                    }
                 }
 
                 compileOptions {

@@ -2,6 +2,10 @@ name: Release APK
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.2.0)'
+        required: true
 
 jobs:
   build-apk:
@@ -30,21 +34,24 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
       - name: Build Release APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: ./gradlew assembleRelease
 
       - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release-unsigned.apk locationjoystick-${{ github.ref_name }}.apk
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: locationjoystick-${{ github.ref_name }}
-          path: locationjoystick-${{ github.ref_name }}.apk
+        run: mv app/build/outputs/apk/release/app-release.apk locationjoystick-${{ inputs.version }}.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: locationjoystick-${{ github.ref_name }}.apk
+          tag_name: ${{ inputs.version }}
+          files: locationjoystick-${{ inputs.version }}.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
