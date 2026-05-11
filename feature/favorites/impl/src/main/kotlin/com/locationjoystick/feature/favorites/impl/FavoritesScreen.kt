@@ -3,6 +3,8 @@ package com.locationjoystick.feature.favorites.impl
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -99,12 +101,12 @@ internal fun FavoritesScreen(
                 ExtendedFloatingActionButton(
                     onClick = onNavigateToMapPicker,
                     icon = { Icon(Icons.Rounded.Map, null) },
-                    text = { Text("+ map") }
+                    text = { Text("map") }
                 )
                 ExtendedFloatingActionButton(
                     onClick = { showAddSheet = true },
                     icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("+ coordinates") }
+                    text = { Text("coordinates") }
                 )
             }
         }
@@ -250,7 +252,9 @@ private fun AddFavoriteSheet(
             label = { Text("Latitude") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
 
         OutlinedTextField(
@@ -259,7 +263,9 @@ private fun AddFavoriteSheet(
             label = { Text("Longitude") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
         )
 
         Row(
