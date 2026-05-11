@@ -10,14 +10,14 @@ on a created route, the row displayed in the route list, the buttons overflows t
 
 ## route crash
 
-when starting a route, the app crashes
+when clicking on a route row, to display the waypoint, the app crashes. we should also remove the "edit" button and move the name edit to the click on row.
 
 ## UX consistency
 
-when saving a route, the input popups open and ask for the name of the route
-when saving a favorite from a map, the input is always displayed for the name
+when creating a route, clicking save opens a modal to enter the name
+when creating a favorite from a map, the input for the name is always present before saving
 
-change the favorite from a map creation so it opens the popup on save click (like the route behavior)
+change the create favorite from map behavior to behave like create route
 
 ## route edit
 
