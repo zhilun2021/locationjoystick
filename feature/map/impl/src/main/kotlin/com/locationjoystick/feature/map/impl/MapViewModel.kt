@@ -1,22 +1,40 @@
 package com.locationjoystick.feature.map.impl
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.atan2
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import javax.inject.Inject
+
+private const val TAG = "MapViewModel"
+private const val ACTION_UPDATE_POSITION = "com.locationjoystick.ACTION_UPDATE_POSITION"
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
+    private val context: Context,
     private val locationRepository: LocationRepository,
     private val routeRepository: RouteRepository,
     private val favoriteRepository: FavoriteRepository,
@@ -24,6 +42,8 @@ class MapViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+
+    private var walkToJob: Job? = null
 
     init {
         observeLocationState()
@@ -135,14 +155,130 @@ class MapViewModel @Inject constructor(
 
     private fun teleportTo(position: LatLng) {
         viewModelScope.launch {
-            locationRepository.updatePosition(position)
+            try {
+                val intent = Intent(ACTION_UPDATE_POSITION).apply {
+                    component = ComponentName(
+                        context,
+                        MockLocationService::class.java
+                    )
+                    putExtra("lat", position.latitude)
+                    putExtra("lon", position.longitude)
+                }
+                context.startService(intent)
+                Log.d(TAG, "Teleport to ${position.latitude}, ${position.longitude}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Teleport failed", e)
+            }
         }
     }
 
     private fun walkTo(position: LatLng) {
-        viewModelScope.launch {
-            locationRepository.updatePosition(position)
+        walkToJob?.cancel()
+        walkToJob = viewModelScope.launch {
+            try {
+                val targetLat = position.latitude
+                val targetLon = position.longitude
+                val speedMs = 1.39
+
+                while (true) {
+                    val current = _uiState.value.currentPosition
+                    if (current == null) {
+                        Log.w(TAG, "No current position; stopping walk")
+                        break
+                    }
+
+                    val distanceM = haversineDistance(
+                        current.latitude, current.longitude,
+                        targetLat, targetLon
+                    )
+                    if (distanceM < 1.0) {
+                        Log.d(TAG, "Reached target; stopping walk")
+                        break
+                    }
+
+                    val bearing = calculateBearing(
+                        current.latitude, current.longitude,
+                        targetLat, targetLon
+                    )
+                    val advanceDistance = minOf(speedMs * 1.0, distanceM)
+                    val newPos = advancePosition(
+                        current.latitude, current.longitude,
+                        bearing, advanceDistance
+                    )
+
+                    withContext(Dispatchers.Main) {
+                        try {
+                            val intent = Intent(ACTION_UPDATE_POSITION).apply {
+                                component = ComponentName(
+                                    context,
+                                    MockLocationService::class.java
+                                )
+                                putExtra("lat", newPos.first)
+                                putExtra("lon", newPos.second)
+                            }
+                            context.startService(intent)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Walk update failed", e)
+                        }
+                    }
+
+                    delay(1000)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Walk interrupted", e)
+            }
         }
+    }
+
+    private fun haversineDistance(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val R = 6371000.0  // Earth radius in meters
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2) * sin(dLon / 2)
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        return R * c
+    }
+
+    private fun calculateBearing(
+        lat1: Double, lon1: Double,
+        lat2: Double, lon2: Double
+    ): Double {
+        val dLon = Math.toRadians(lon2 - lon1)
+        val lat1Rad = Math.toRadians(lat1)
+        val lat2Rad = Math.toRadians(lat2)
+        val y = sin(dLon) * cos(lat2Rad)
+        val x = cos(lat1Rad) * sin(lat2Rad) -
+                sin(lat1Rad) * cos(lat2Rad) * cos(dLon)
+        var bearing = Math.toDegrees(atan2(y, x))
+        bearing = (bearing + 360) % 360
+        return bearing
+    }
+
+    private fun advancePosition(
+        lat: Double, lon: Double,
+        bearingDeg: Double, distanceM: Double
+    ): Pair<Double, Double> {
+        val R = 6371000.0
+        val lat1 = Math.toRadians(lat)
+        val lon1 = Math.toRadians(lon)
+        val bearing = Math.toRadians(bearingDeg)
+        val angular = distanceM / R
+
+        val lat2 = asin(
+            sin(lat1) * cos(angular) +
+            cos(lat1) * sin(angular) * cos(bearing)
+        )
+        val lon2 = lon1 + atan2(
+            sin(bearing) * sin(angular) * cos(lat1),
+            cos(angular) - sin(lat1) * sin(lat2)
+        )
+
+        return Math.toDegrees(lat2) to Math.toDegrees(lon2)
     }
 
     private fun startSpoofing() {

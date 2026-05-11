@@ -1,9 +1,12 @@
 package com.locationjoystick.feature.favorites.impl
 
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.FavoriteLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +18,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
+    private val context: Context,
     private val favoriteRepository: FavoriteRepository,
     private val locationRepository: LocationRepository,
 ) : ViewModel() {
@@ -33,9 +37,12 @@ class FavoritesViewModel @Inject constructor(
         )
 
     fun teleportTo(favorite: FavoriteLocation) {
-        viewModelScope.launch {
-            locationRepository.updatePosition(favorite.position)
+        val intent = Intent(context, MockLocationService::class.java).apply {
+            action = MockLocationService.ACTION_UPDATE_POSITION
+            putExtra("lat", favorite.position.latitude)
+            putExtra("lon", favorite.position.longitude)
         }
+        context.startService(intent)
     }
 
     fun deleteFavorite(favoriteId: String) {

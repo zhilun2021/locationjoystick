@@ -47,6 +47,7 @@ class MockLocationService : Service() {
         private const val LOCATION_ACCURACY = 3.0f
 
         const val ACTION_STOP = "com.locationjoystick.core.location.ACTION_STOP"
+        const val ACTION_UPDATE_POSITION = "com.locationjoystick.core.location.ACTION_UPDATE_POSITION"
         const val ACTION_ROUTE_REPLAY_START = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_START"
         const val ACTION_ROUTE_REPLAY_PAUSE = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_PAUSE"
         const val ACTION_ROUTE_REPLAY_RESUME = "com.locationjoystick.core.location.ACTION_ROUTE_REPLAY_RESUME"
@@ -93,6 +94,11 @@ class MockLocationService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_UPDATE_POSITION -> {
+                val lat = intent?.getDoubleExtra("lat", currentLat) ?: currentLat
+                val lon = intent?.getDoubleExtra("lon", currentLon) ?: currentLon
+                updatePosition(lat, lon)
+            }
             ACTION_ROUTE_REPLAY_START -> {
                 val routeId = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return START_STICKY
                 val isBackward = intent.getBooleanExtra(EXTRA_IS_BACKWARD, false)
@@ -126,6 +132,11 @@ class MockLocationService : Service() {
     }
 
     fun startSpoofing(lat: Double, lon: Double) {
+        if (_state.value == MockLocationState.RUNNING) {
+            Log.i(TAG, "Spoofing already running; ignoring duplicate startSpoofing()")
+            return
+        }
+
         currentLat = lat
         currentLon = lon
         currentSpeedMs = 0.0f
@@ -159,6 +170,7 @@ class MockLocationService : Service() {
             locationRepository.stopSpoofing()
             locationRepository.setActiveRouteId(null)
         }
+        stopSelf()
         Log.i(TAG, "Spoofing stopped")
     }
 
