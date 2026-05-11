@@ -19,24 +19,18 @@ when creating a favorite from a map, the input for the name is always present be
 
 change the create favorite from map behavior to behave like create route
 
-## route edit
-
-when editing a route, we can only change the name, the list of waypoint should be displayed in order, the user should be able to remove a waypoint
-
-cancelling the edit leaves the route as its current value
-
 ## route following the roads
 
-it follows the road assuming we are a car, so it only create roads that doesn't violate the code of conduct for the car, can it find the road without taking the road circulation order?
+it follows the road assuming we are a car, it should find the shortest way instead, and not follow the direction of traffic.
 
-## settings speed input
+## settings input
 
-there seems to be a state issue because when I edit the field it's a bit funky, instead of updating the value on every keystroke, let's add a "save" button at the bottom of the page, so we only create one updan the user is actually done
+remove any keystroke listener on input and do not save on button state change, add a save button
 
 ## onboarding screen
 
-when every non-optional setting(s) are valid for onboarding, just go directly to the "map" view this makes the usage simpler for user that have closed the app and already have valid settings, they don't have to scroll to have the "start locationjoystick button"
+we should skip the onboarding screen when all of the required settings are met, and go directly to the "map" view. also remove the "optional" battery optimization option recommendation.
 
 ## route start
 
-in the "route" view we should add a toggle at the top of the list "walk/teleport" so we can decide to either walk to the first waypoint of the route, or gets teleported to it
+when starting a route there should be two icon: the current "start" icon should walk to the first gpx of the route, basically saying that the route starts from current location. second icon should be "play" icon, this sets the current location to be the first gpx of the route.
