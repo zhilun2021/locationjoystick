@@ -6,19 +6,30 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
+import android.view.Gravity
 import android.view.View
-import android.widget.Button
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.MockLocationService
+import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.overlay.OverlayService
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -30,14 +41,17 @@ class FloatingWidgetService : OverlayService(), LifecycleOwner, SavedStateRegist
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
     @Inject lateinit var routeRepository: RouteRepository
     @Inject lateinit var locationRepository: LocationRepository
+    @Inject lateinit var favoriteRepository: FavoriteRepository
+    @Inject lateinit var settingsRepository: SettingsRepository
 
-    private var routePickerPopup: RoutePickerPopup? = null
+    private var panelLayout: LinearLayout? = null
 
     private var mockLocationService: MockLocationService? = null
     private val serviceConnection = object : ServiceConnection {
@@ -71,8 +85,9 @@ class FloatingWidgetService : OverlayService(), LifecycleOwner, SavedStateRegist
 
     override fun onDestroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        routePickerPopup?.dismiss()
-        routePickerPopup = null
+        serviceScope.cancel()
+        panelLayout?.visibility = View.GONE
+        panelLayout = null
         try {
             unbindService(serviceConnection)
         } catch (e: IllegalArgumentException) {
@@ -82,36 +97,50 @@ class FloatingWidgetService : OverlayService(), LifecycleOwner, SavedStateRegist
     }
 
     override fun createOverlayView(): View {
-        return Button(this).apply {
-            text = "Routes"
-            setOnClickListener { toggleRoutePicker() }
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+        panelLayout = panel
+
+        serviceScope.launch {
+            settingsRepository.getWidgetFeatures().collect { features ->
+                rebuildPanel(panel, features)
+            }
+        }
+
+        return panel
+    }
+
+    private fun rebuildPanel(panel: LinearLayout, features: List<WidgetFeature>) {
+        panel.removeAllViews()
+        if (features.isEmpty()) {
+            val placeholder = TextView(this).apply {
+                text = "No items configured"
+            }
+            panel.addView(placeholder)
+        } else {
+            features.forEach { feature ->
+                val button = ImageButton(this).apply {
+                    contentDescription = feature.toContentDescription()
+                    setOnClickListener { onFeatureButtonClicked(feature) }
+                }
+                panel.addView(button)
+            }
         }
     }
 
-    private fun toggleRoutePicker() {
-        val popup = routePickerPopup
-        if (popup != null) {
-            popup.dismiss()
-            routePickerPopup = null
-        } else {
-            val newPopup = RoutePickerPopup(
-                context = this,
-                windowManager = windowManager,
-                lifecycleOwner = this,
-                savedStateRegistryOwner = this,
-                routeRepository = routeRepository,
-                onRouteSelected = { route, isBackward ->
-                    startRouteReplay(route.id, isBackward)
-                    routePickerPopup?.dismiss()
-                    routePickerPopup = null
-                },
-                onDismiss = {
-                    routePickerPopup = null
-                },
-            )
-            newPopup.show()
-            routePickerPopup = newPopup
-        }
+    private fun onFeatureButtonClicked(feature: WidgetFeature) {
+        // Stubs — logic implemented in Tasks 5–9
+        Log.d(TAG, "Feature button clicked: $feature")
+    }
+
+    private fun WidgetFeature.toContentDescription(): String = when (this) {
+        WidgetFeature.JOYSTICK_TOGGLE -> "Show/hide joystick"
+        WidgetFeature.JOYSTICK_LOCK -> "Lock joystick position"
+        WidgetFeature.ROUTES_PICKER -> "Routes picker"
+        WidgetFeature.FAVORITES_PICKER -> "Favorites picker"
+        WidgetFeature.SPEED_CYCLE -> "Speed cycle"
     }
 
     private fun startRouteReplay(routeId: String, isBackward: Boolean) {
