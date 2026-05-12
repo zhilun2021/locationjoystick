@@ -181,6 +181,7 @@ class MockLocationService : Service() {
         currentLon = lon
         currentSpeedMs = 0.0f
         currentBearing = 0.0f
+        locationRepository.setPositionInternal(LatLng(lat, lon))
 
         setupTestProvider()
         startUpdateLoop()
@@ -192,8 +193,11 @@ class MockLocationService : Service() {
     fun updatePosition(lat: Double, lon: Double) {
         currentLat = lat
         currentLon = lon
+        locationRepository.setPositionInternal(LatLng(lat, lon))
     }
 
+    // Joystick/walk callers: update locationRepository before calling this method (sets speed/bearing only).
+    // Route replay uses onPositionUpdate lambda instead — does not call this method.
     fun updatePositionWithVector(lat: Double, lon: Double, speedMs: Float, bearing: Float) {
         currentLat = lat
         currentLon = lon

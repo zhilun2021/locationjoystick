@@ -31,7 +31,7 @@ import kotlin.math.sqrt
 import javax.inject.Inject
 
 private const val TAG = "MapViewModel"
-private const val ACTION_UPDATE_POSITION = "com.locationjoystick.ACTION_UPDATE_POSITION"
+private const val ACTION_UPDATE_POSITION = "com.locationjoystick.core.location.ACTION_UPDATE_POSITION"
 
 @HiltViewModel
 class MapViewModel @Inject constructor(
@@ -284,6 +284,8 @@ class MapViewModel @Inject constructor(
 
     private fun startSpoofing() {
         viewModelScope.launch {
+            val startPos = locationRepository.currentPosition.value ?: LatLng(48.8566, 2.3522)
+            locationRepository.setPositionInternal(startPos)  // seed service volatile fields via observer
             locationRepository.startSpoofing()
         }
     }
