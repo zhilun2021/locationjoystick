@@ -391,6 +391,32 @@ internal fun SettingsScreen(
                             )
                         }
 
+                        // Map shortcut
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = WidgetFeature.MAP in uiState.enabledWidgetFeatures,
+                                onCheckedChange = { isChecked ->
+                                    val updated = uiState.enabledWidgetFeatures.toMutableSet()
+                                    if (isChecked) {
+                                        updated.add(WidgetFeature.MAP)
+                                    } else {
+                                        updated.remove(WidgetFeature.MAP)
+                                    }
+                                    onSetWidgetFeatures(updated)
+                                },
+                            )
+                            Text(
+                                "Map shortcut",
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text("Data Management", style = MaterialTheme.typography.headlineSmall)

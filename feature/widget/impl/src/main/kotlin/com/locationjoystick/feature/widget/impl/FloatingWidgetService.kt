@@ -28,6 +28,7 @@ import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Route
@@ -331,6 +332,10 @@ class FloatingWidgetService :
                     true,
                 )
             }
+
+            WidgetFeature.MAP -> {
+                Pair(Icons.Rounded.LocationOn, true)
+            }
         }
 
     private fun syncJoystickState() {
@@ -360,6 +365,7 @@ class FloatingWidgetService :
             WidgetFeature.ROUTES_PICKER -> showRoutesPopup(anchor)
             WidgetFeature.FAVORITES_PICKER -> showFavoritesPopup(anchor)
             WidgetFeature.SPEED_CYCLE -> cycleSpeedProfile()
+            WidgetFeature.MAP -> openMap()
         }
     }
 
@@ -691,6 +697,18 @@ class FloatingWidgetService :
         }
     }
 
+    private fun openMap() {
+        try {
+            val intent = Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            }
+            startActivity(intent)
+            Log.d(TAG, "Opened map screen")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open map screen", e)
+        }
+    }
+
     private fun WidgetFeature.toContentDescription(): String =
         when (this) {
             WidgetFeature.JOYSTICK_TOGGLE -> "Show/hide joystick"
@@ -698,6 +716,7 @@ class FloatingWidgetService :
             WidgetFeature.ROUTES_PICKER -> "Routes picker"
             WidgetFeature.FAVORITES_PICKER -> "Favorites picker"
             WidgetFeature.SPEED_CYCLE -> "Speed cycle"
+            WidgetFeature.MAP -> "Open map"
         }
 
     private fun startRouteReplay(

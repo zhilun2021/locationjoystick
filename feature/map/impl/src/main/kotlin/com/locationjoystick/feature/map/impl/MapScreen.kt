@@ -367,6 +367,13 @@ private fun PendingTapSheet(
             ) {
                 Text("Walk here")
             }
+            Spacer(Modifier.height(4.dp))
+            TextButton(
+                onClick = { onAction(MapAction.ClearPendingTap) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Do nothing")
+            }
         }
     }
 }

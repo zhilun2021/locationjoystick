@@ -6,4 +6,5 @@ enum class WidgetFeature {
     ROUTES_PICKER,
     FAVORITES_PICKER,
     SPEED_CYCLE,
+    MAP,
 }
