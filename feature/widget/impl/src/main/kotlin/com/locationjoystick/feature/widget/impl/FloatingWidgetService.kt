@@ -1,8 +1,10 @@
 package com.locationjoystick.feature.widget.impl
 
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.util.Log
@@ -22,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import androidx.core.content.ContextCompat
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -80,6 +83,14 @@ class FloatingWidgetService :
     private var walkToJob: Job? = null
 
     private var mockLocationService: MockLocationService? = null
+    private val overlayVisibilityReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                ACTION_OVERLAY_HIDE -> hideOverlay()
+                ACTION_OVERLAY_SHOW -> showOverlay()
+            }
+        }
+    }
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(
@@ -101,6 +112,11 @@ class FloatingWidgetService :
         savedStateRegistryController.performRestore(null)
         super.onCreate()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        val filter = IntentFilter().apply {
+            addAction(ACTION_OVERLAY_HIDE)
+            addAction(ACTION_OVERLAY_SHOW)
+        }
+        ContextCompat.registerReceiver(this, overlayVisibilityReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         bindService(
             Intent(this, MockLocationService::class.java),
             serviceConnection,
@@ -128,6 +144,11 @@ class FloatingWidgetService :
         serviceScope.cancel()
         panelLayout?.visibility = View.GONE
         panelLayout = null
+        try {
+            unregisterReceiver(overlayVisibilityReceiver)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Overlay visibility receiver not registered", e)
+        }
         try {
             unbindService(serviceConnection)
         } catch (e: IllegalArgumentException) {

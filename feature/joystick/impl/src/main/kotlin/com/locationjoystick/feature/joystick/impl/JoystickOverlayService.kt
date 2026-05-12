@@ -2,9 +2,11 @@ package com.locationjoystick.feature.joystick.impl
 
 import android.annotation.SuppressLint
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.graphics.PixelFormat
 import android.os.Binder
@@ -15,6 +17,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
+import androidx.core.content.ContextCompat
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.MockLocationService
@@ -57,6 +60,15 @@ class JoystickOverlayService : OverlayService() {
 
     private val binder = LocalBinder()
 
+    private val overlayVisibilityReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                ACTION_OVERLAY_HIDE -> hideOverlay()
+                ACTION_OVERLAY_SHOW -> showOverlay()
+            }
+        }
+    }
+
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(
@@ -75,6 +87,11 @@ class JoystickOverlayService : OverlayService() {
 
     override fun onCreate() {
         super.onCreate()
+        val filter = IntentFilter().apply {
+            addAction(ACTION_OVERLAY_HIDE)
+            addAction(ACTION_OVERLAY_SHOW)
+        }
+        ContextCompat.registerReceiver(this, overlayVisibilityReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         bindService(
             Intent(this, MockLocationService::class.java),
             serviceConnection,
@@ -86,6 +103,11 @@ class JoystickOverlayService : OverlayService() {
 
     override fun onDestroy() {
         serviceScope.cancel()
+        try {
+            unregisterReceiver(overlayVisibilityReceiver)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, "Overlay visibility receiver not registered", e)
+        }
         try {
             unbindService(serviceConnection)
         } catch (e: IllegalArgumentException) {

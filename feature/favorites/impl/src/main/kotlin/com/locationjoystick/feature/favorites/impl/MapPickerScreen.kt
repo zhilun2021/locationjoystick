@@ -19,12 +19,15 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.locationjoystick.core.overlay.OverlayService
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -82,6 +85,15 @@ internal fun MapPickerScreen(
     val markerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val selectedPosition = remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var showNameDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showNameDialog) {
+        context.sendBroadcast(
+            Intent(
+                if (showNameDialog) OverlayService.ACTION_OVERLAY_HIDE
+                else OverlayService.ACTION_OVERLAY_SHOW,
+            ),
+        )
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer =
