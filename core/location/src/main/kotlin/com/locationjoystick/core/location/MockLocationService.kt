@@ -6,15 +6,16 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationManager
 import android.location.provider.ProviderProperties
 import android.os.Binder
 import android.os.IBinder
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import android.content.pm.ServiceInfo
 import androidx.core.app.ServiceCompat
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -45,6 +46,11 @@ class MockLocationService : Service() {
         private const val CHANNEL_ID = "location_spoof_channel"
         private const val UPDATE_INTERVAL_MS = 1000L
         private const val LOCATION_ACCURACY = 3.0f
+
+        private const val JOYSTICK_SERVICE_CLASS =
+            "com.locationjoystick.feature.joystick.impl.JoystickOverlayService"
+        private const val WIDGET_SERVICE_CLASS =
+            "com.locationjoystick.feature.widget.impl.FloatingWidgetService"
 
         const val ACTION_STOP = "com.locationjoystick.core.location.ACTION_STOP"
         const val ACTION_UPDATE_POSITION = "com.locationjoystick.core.location.ACTION_UPDATE_POSITION"
@@ -90,13 +96,20 @@ class MockLocationService : Service() {
 
     private fun observeLocationState() {
         serviceScope.launch {
-            locationRepository.mockLocationState.collect { state ->
+            _state.collect { state ->
                 when (state) {
                     MockLocationState.RUNNING -> {
                         if (updateJob == null) {
                             setupTestProvider()
                             startUpdateLoop()
                             Log.i(TAG, "State changed to RUNNING - started update loop")
+                        }
+                        if (Settings.canDrawOverlays(this@MockLocationService)) {
+                            startService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
+                            startService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
+                            Log.i(TAG, "Overlay services started")
+                        } else {
+                            Log.i(TAG, "SYSTEM_ALERT_WINDOW not granted — skipping overlay start")
                         }
                     }
                     MockLocationState.IDLE, MockLocationState.ERROR -> {
@@ -106,6 +119,9 @@ class MockLocationService : Service() {
                             removeTestProvider()
                             Log.i(TAG, "State changed to IDLE/ERROR - stopped update loop")
                         }
+                        stopService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
+                        stopService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
+                        Log.i(TAG, "Overlay services stopped")
                     }
                     MockLocationState.PAUSED -> {
                         if (updateJob != null) {
@@ -113,6 +129,7 @@ class MockLocationService : Service() {
                             updateJob = null
                             Log.i(TAG, "State changed to PAUSED - paused update loop")
                         }
+                        // Overlays remain visible during pause
                     }
                 }
             }
