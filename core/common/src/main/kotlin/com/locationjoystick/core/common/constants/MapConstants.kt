@@ -9,7 +9,7 @@ object MapConstants {
     const val DEFAULT_LON = 2.3522
 
     // Default zoom level for all map screens
-    const val DEFAULT_ZOOM = 30.0
+    const val DEFAULT_ZOOM = 15.0
 
     // OSM tile source URL
     const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
