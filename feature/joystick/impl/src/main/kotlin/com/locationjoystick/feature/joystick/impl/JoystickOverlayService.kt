@@ -1,7 +1,5 @@
 package com.locationjoystick.feature.joystick.impl
 
-import android.annotation.SuppressLint
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -13,7 +11,6 @@ import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
-import android.view.MotionEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
@@ -38,7 +35,7 @@ import kotlin.math.sin
 class JoystickOverlayService : OverlayService() {
     companion object {
         private const val TAG = "JoystickOverlayService"
-        private const val JOYSTICK_SIZE_DP = 160
+        private const val JOYSTICK_SIZE_DP = 120
         private const val MOVE_STEP_SECONDS = 0.1
     }
 
@@ -136,7 +133,6 @@ class JoystickOverlayService : OverlayService() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     override fun createOverlayView(): View {
         val view = JoystickView(this)
 
@@ -154,7 +150,25 @@ class JoystickOverlayService : OverlayService() {
             Log.d(TAG, "Joystick released — position held")
         }
 
-        makeDraggable(view)
+        var dragInitialX = 0
+        var dragInitialY = 0
+        var dragInitialRawX = 0f
+        var dragInitialRawY = 0f
+
+        view.onDragHandleDown = { rawX, rawY ->
+            val params = overlayView?.layoutParams as? WindowManager.LayoutParams
+            dragInitialX = params?.x ?: 0
+            dragInitialY = params?.y ?: 0
+            dragInitialRawX = rawX
+            dragInitialRawY = rawY
+        }
+
+        view.onDragHandleMoved = { rawX, rawY ->
+            val dx = (rawX - dragInitialRawX).toInt()
+            val dy = (rawY - dragInitialRawY).toInt()
+            updateOverlayPosition(dragInitialX + dx, dragInitialY + dy)
+        }
+
         return view
     }
 
@@ -214,36 +228,5 @@ class JoystickOverlayService : OverlayService() {
             speedMs = (speedMs * input.force).toFloat(),
             bearing = input.angleDegrees,
         )
-    }
-
-    private fun makeDraggable(view: View) {
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-
-        view.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    val params = v.layoutParams as? android.view.WindowManager.LayoutParams
-                    initialX = params?.x ?: 0
-                    initialY = params?.y ?: 0
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
-                    false
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    val dx = (event.rawX - initialTouchX).toInt()
-                    val dy = (event.rawY - initialTouchY).toInt()
-                    updateOverlayPosition(initialX + dx, initialY + dy)
-                    false
-                }
-
-                else -> {
-                    false
-                }
-            }
-        }
     }
 }

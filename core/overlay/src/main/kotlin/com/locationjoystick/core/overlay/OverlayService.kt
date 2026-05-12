@@ -59,8 +59,8 @@ abstract class OverlayService : Service() {
 
     abstract fun createOverlayView(): View
 
-    open fun getWindowManagerParams(view: View): WindowManager.LayoutParams {
-        return WindowManager
+    open fun getWindowManagerParams(view: View): WindowManager.LayoutParams =
+        WindowManager
             .LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -73,7 +73,6 @@ abstract class OverlayService : Service() {
                 x = 0
                 y = 0
             }
-    }
 
     protected fun updateOverlayPosition(
         x: Int,

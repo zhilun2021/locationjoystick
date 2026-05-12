@@ -16,21 +16,21 @@ class SpeedProfileTest {
     }
 
     @Test
-    fun `defaultProfiles walk speed is 1_4 mps`() {
+    fun `defaultProfiles walk speed is 2 kmh`() {
         val walk = SpeedProfile.defaultProfiles().first { it.id == "walk" }
-        assertEquals(1.4, walk.speedMetersPerSecond, 0.001)
+        assertEquals(0.5556, walk.speedMetersPerSecond, 0.001)
     }
 
     @Test
-    fun `defaultProfiles run speed is 3_0 mps`() {
+    fun `defaultProfiles run speed is 8 kmh`() {
         val run = SpeedProfile.defaultProfiles().first { it.id == "run" }
-        assertEquals(3.0, run.speedMetersPerSecond, 0.001)
+        assertEquals(2.2222, run.speedMetersPerSecond, 0.001)
     }
 
     @Test
-    fun `defaultProfiles bike speed is 5_5 mps`() {
+    fun `defaultProfiles bike speed is 15 kmh`() {
         val bike = SpeedProfile.defaultProfiles().first { it.id == "bike" }
-        assertEquals(5.5, bike.speedMetersPerSecond, 0.001)
+        assertEquals(4.1667, bike.speedMetersPerSecond, 0.001)
     }
 
     @Test
