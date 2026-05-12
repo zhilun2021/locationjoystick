@@ -217,11 +217,13 @@ fun RouteDetailScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     "Waypoint ${waypoint.orderIndex + 1}",
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                                 Text(
                                     "${String.format("%.4f", waypoint.position.latitude)}, " +
                                         "${String.format("%.4f", waypoint.position.longitude)}",
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
