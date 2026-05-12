@@ -1,12 +1,17 @@
 package com.locationjoystick.core.ui.component
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -37,7 +45,6 @@ fun NominatimSearchBar(
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<NominatimResult>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
-    val showDropdown = results.isNotEmpty() || (query.length >= 2 && !isLoading)
 
     LaunchedEffect(query) {
         if (query.length < 2) {
@@ -82,40 +89,57 @@ fun NominatimSearchBar(
         }
     }
 
-    OutlinedTextField(
-        value = query,
-        onValueChange = { query = it },
-        modifier = modifier.fillMaxWidth(),
-        placeholder = { Text("Search location...") },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-        singleLine = true,
-    )
-    DropdownMenu(
-        expanded = showDropdown,
-        onDismissRequest = { results = emptyList() },
+    val showResults = results.isNotEmpty() || (query.length >= 2 && !isLoading)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(4.dp, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface),
     ) {
-        if (results.isEmpty() && query.length >= 2 && !isLoading) {
-            DropdownMenuItem(
-                text = { Text("No results found", maxLines = 1) },
-                onClick = {},
-                enabled = false,
-            )
-        }
-        results.forEach { result ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        result.displayName,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                onClick = {
-                    onLocationSelected(result.lat, result.lon, result.displayName)
-                    query = ""
-                    results = emptyList()
-                },
-            )
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface),
+            placeholder = { Text("Search location...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            singleLine = true,
+            shape = if (showResults) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+            else RoundedCornerShape(12.dp),
+        )
+
+        if (showResults) {
+            HorizontalDivider()
+            if (results.isEmpty() && query.length >= 2 && !isLoading) {
+                Text(
+                    text = "No results found",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            results.forEach { result ->
+                Text(
+                    text = result.displayName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onLocationSelected(result.lat, result.lon, result.displayName)
+                            query = ""
+                            results = emptyList()
+                        }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+                HorizontalDivider()
+            }
         }
     }
 }

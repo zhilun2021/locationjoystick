@@ -46,7 +46,7 @@ internal fun RoamingScreen(
 ) {
     Scaffold(
         topBar = {
-            LjTopBar(title = "locationjoystick", onMenuClick = onOpenDrawer)
+            LjTopBar(title = "lj", onMenuClick = onOpenDrawer)
         },
     ) { paddingValues ->
         Box(

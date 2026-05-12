@@ -136,7 +136,7 @@ internal fun MapScreen(
         contentWindowInsets = WindowInsets.safeDrawing,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            LjTopBar(title = "locationjoystick", onMenuClick = onOpenDrawer)
+            LjTopBar(title = "lj", onMenuClick = onOpenDrawer)
         },
         floatingActionButton = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

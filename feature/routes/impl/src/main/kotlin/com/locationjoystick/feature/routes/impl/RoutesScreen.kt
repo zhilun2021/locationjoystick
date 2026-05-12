@@ -98,7 +98,7 @@ internal fun RoutesScreen(
     Scaffold(
         topBar = {
             LjTopBar(
-                title = "locationjoystick",
+                title = "lj",
                 onMenuClick = onOpenDrawer,
                 actions = {
                     IconButton(onClick = { showAddMenu = !showAddMenu }) {

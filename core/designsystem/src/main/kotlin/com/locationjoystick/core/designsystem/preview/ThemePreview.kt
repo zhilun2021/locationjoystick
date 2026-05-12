@@ -35,7 +35,7 @@ private fun ThemePreview() {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
-                    text = "locationjoystick",
+                    text = "lj",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
                 )
