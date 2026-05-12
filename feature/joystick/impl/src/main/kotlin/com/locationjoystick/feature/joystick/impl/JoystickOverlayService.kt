@@ -122,6 +122,7 @@ class JoystickOverlayService : OverlayService() {
 
     fun setIsLocked(value: Boolean) {
         locked = value
+        (overlayView as? JoystickView)?.isLocked = value
         Log.d(TAG, "Joystick locked: $value")
     }
 
@@ -138,6 +139,8 @@ class JoystickOverlayService : OverlayService() {
     override fun createOverlayView(): View {
         val view = JoystickView(this)
 
+        view.isLocked = locked
+
         view.onInputChanged = { input ->
             if (input.force > 0f) {
                 serviceScope.launch {
@@ -146,7 +149,7 @@ class JoystickOverlayService : OverlayService() {
             }
         }
 
-        view.shouldResetOnRelease = { !locked }
+        view.shouldResetOnRelease = { !view.isLocked }
 
         view.onReleased = {
             Log.d(TAG, "Joystick released — position held")
@@ -197,12 +200,16 @@ class JoystickOverlayService : OverlayService() {
         val speedProfile = settingsRepository.getActiveSpeedProfile().first()
         val speedMs = speedProfile.speedMetersPerSecond
 
+        // Convert screen math angle (0=east, CCW, screen-Y inverted) to geographic bearing (0=north, CW).
+        // Derivation: bearing = atan2(cos(α), -sin(α)) where α is the screen math angle.
         val angleRad = Math.toRadians(input.angleDegrees.toDouble())
+        val bearingRad = Math.atan2(cos(angleRad), -sin(angleRad))
+        val bearingDeg = ((Math.toDegrees(bearingRad) + 360.0) % 360.0)
         val distanceMeters = speedMs * MOVE_STEP_SECONDS * input.force
 
-        val dLat = distanceMeters * cos(angleRad) / 111320.0
+        val dLat = distanceMeters * cos(bearingRad) / 111320.0
         val dLon =
-            distanceMeters * sin(angleRad) /
+            distanceMeters * sin(bearingRad) /
                 (111320.0 * cos(Math.toRadians(currentPos.latitude)))
 
         val nextPos =
@@ -217,7 +224,7 @@ class JoystickOverlayService : OverlayService() {
             lat = nextPos.latitude,
             lon = nextPos.longitude,
             speedMs = (speedMs * input.force).toFloat(),
-            bearing = input.angleDegrees,
+            bearing = bearingDeg.toFloat(),
         )
     }
 }

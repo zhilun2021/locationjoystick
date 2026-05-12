@@ -8,6 +8,8 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.MotionEvent
+import androidx.compose.ui.graphics.toArgb
+import com.locationjoystick.core.designsystem.LjAccent
 import com.locationjoystick.core.overlay.OverlayView
 import kotlin.math.atan2
 import kotlin.math.hypot
@@ -39,12 +41,29 @@ class JoystickView
         var onReleased: (() -> Unit)? = null
         var shouldResetOnRelease: (() -> Boolean)? = null
 
+        /** When true, outer circle turns accent colour and knob stays at last position. */
+        var isLocked: Boolean = false
+            set(value) {
+                val wasLocked = field
+                field = value
+                // Transitioning locked → unlocked: snap knob back to centre
+                if (wasLocked && !value) {
+                    knobOffsetX = 0f
+                    knobOffsetY = 0f
+                    onInputChanged?.invoke(JoystickInput(angleDegrees = 0f, force = 0f))
+                }
+                updateLockedAppearance()
+                invalidate()
+            }
+
         /**
          * Called with raw screen deltas (dx, dy) while the user drags the handle.
          * The service should call [updateOverlayPosition] accordingly.
          */
         var onDragHandleMoved: ((rawX: Float, rawY: Float) -> Unit)? = null
         var onDragHandleDown: ((rawX: Float, rawY: Float) -> Unit)? = null
+
+        private val accentArgb = LjAccent.toArgb()
 
         private val outerPaint =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -60,6 +79,20 @@ class JoystickView
                 style = Paint.Style.STROKE
                 strokeWidth = 4f
             }
+
+        private fun updateLockedAppearance() {
+            if (isLocked) {
+                outerPaint.color = accentArgb
+                outerPaint.alpha = 180
+                outerBorderPaint.color = accentArgb
+                outerBorderPaint.alpha = 220
+            } else {
+                outerPaint.color = Color.WHITE
+                outerPaint.alpha = OUTER_ALPHA
+                outerBorderPaint.color = Color.WHITE
+                outerBorderPaint.alpha = 160
+            }
+        }
 
         private val knobPaint =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
