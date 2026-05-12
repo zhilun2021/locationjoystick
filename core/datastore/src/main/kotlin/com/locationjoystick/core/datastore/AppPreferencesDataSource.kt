@@ -10,6 +10,9 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.locationjoystick.core.model.SpeedProfile
+import com.locationjoystick.core.model.SpeedProfile.Companion.BIKE_SPEED_MPS
+import com.locationjoystick.core.model.SpeedProfile.Companion.RUN_SPEED_MPS
+import com.locationjoystick.core.model.SpeedProfile.Companion.WALK_SPEED_MPS
 import com.locationjoystick.core.model.WidgetFeature
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -177,9 +180,9 @@ class AppPreferencesDataSource
         companion object {
             const val DATASTORE_FILE_NAME = "app_preferences"
 
-            const val DEFAULT_WALK_SPEED_MS = 1.4
-            const val DEFAULT_RUN_SPEED_MS = 3.0
-            const val DEFAULT_BIKE_SPEED_MS = 5.5
+            const val DEFAULT_WALK_SPEED_MS = WALK_SPEED_MPS
+            const val DEFAULT_RUN_SPEED_MS = RUN_SPEED_MPS
+            const val DEFAULT_BIKE_SPEED_MS = BIKE_SPEED_MPS
             const val DEFAULT_ACTIVE_PROFILE_ID = "walk"
 
             const val MIN_SPEED_MS = 0.1
@@ -188,6 +191,9 @@ class AppPreferencesDataSource
             val DEFAULT_WIDGET_ITEMS: Set<String> =
                 setOf(
                     WidgetFeature.JOYSTICK_TOGGLE.name.lowercase(),
+                    WidgetFeature.JOYSTICK_LOCK.name.lowercase(),
+                    WidgetFeature.ROUTES_PICKER.name.lowercase(),
+                    WidgetFeature.FAVORITES_PICKER.name.lowercase(),
                     WidgetFeature.SPEED_CYCLE.name.lowercase(),
                 )
 

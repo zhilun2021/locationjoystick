@@ -1,13 +1,14 @@
 package com.locationjoystick.feature.settings.impl
 
+import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 
 data class SettingsUiState(
     val isLoading: Boolean = true,
-    val walkSpeed: Double = 0.556,
-    val runSpeed: Double = 2.222,
-    val bikeSpeed: Double = 4.167,
+    val walkSpeed: Double = SpeedProfile.WALK_SPEED_MPS,
+    val runSpeed: Double = SpeedProfile.RUN_SPEED_MPS,
+    val bikeSpeed: Double = SpeedProfile.BIKE_SPEED_MPS,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val enabledWidgetFeatures: Set<WidgetFeature> = WidgetFeature.entries.toSet(),
     val isDirty: Boolean = false,

@@ -35,7 +35,7 @@ import kotlin.math.sin
 class JoystickOverlayService : OverlayService() {
     companion object {
         private const val TAG = "JoystickOverlayService"
-        private const val JOYSTICK_SIZE_DP = 120
+        private const val JOYSTICK_SIZE_DP = 90
         private const val MOVE_STEP_SECONDS = 0.1
     }
 
