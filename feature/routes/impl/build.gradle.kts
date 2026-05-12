@@ -18,4 +18,6 @@ dependencies {
     implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.maplibre.android.sdk)
+
+    testImplementation("junit:junit:4.13.2")
 }

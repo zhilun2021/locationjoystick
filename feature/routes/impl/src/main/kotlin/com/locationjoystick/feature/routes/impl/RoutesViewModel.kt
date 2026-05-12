@@ -202,7 +202,7 @@ class RoutesViewModel @Inject constructor(
         }
     }
 
-    private suspend fun readGpxContent(uri: Uri): String {
+    internal suspend fun readGpxContent(uri: Uri): String {
         return withContext(Dispatchers.IO) {
             context.contentResolver.openInputStream(uri)?.use { stream ->
                 stream.bufferedReader().readText()
@@ -210,13 +210,13 @@ class RoutesViewModel @Inject constructor(
         }
     }
 
-    private fun extractGpxName(gpxContent: String): String {
+    internal fun extractGpxName(gpxContent: String): String {
         val nameRegex = Regex("<name>([^<]+)</name>")
         val match = nameRegex.find(gpxContent)
         return match?.groupValues?.get(1)?.takeIf { it.isNotEmpty() } ?: "Imported Route"
     }
 
-    private fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
+    internal fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
         val trkptRegex = Regex("""<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)""")
         return trkptRegex.findAll(gpxContent)
             .map { match ->
