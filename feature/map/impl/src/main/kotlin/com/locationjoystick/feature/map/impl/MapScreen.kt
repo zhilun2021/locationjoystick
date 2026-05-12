@@ -21,6 +21,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -53,6 +54,7 @@ import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.ui.component.LjTopBar
+import com.locationjoystick.core.ui.component.NominatimSearchBar
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -104,6 +106,7 @@ internal fun MapScreen(
         }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val positionSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val showSearch = remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
         val observer =
@@ -136,7 +139,18 @@ internal fun MapScreen(
         contentWindowInsets = WindowInsets.safeDrawing,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            LjTopBar(title = "lj", onMenuClick = onOpenDrawer)
+            LjTopBar(
+                title = "lj",
+                onMenuClick = onOpenDrawer,
+                actions = {
+                    IconButton(onClick = { showSearch.value = !showSearch.value }) {
+                        Icon(
+                            imageVector = LjIcons.Explore,
+                            contentDescription = "Search location",
+                        )
+                    }
+                },
+            )
         },
         floatingActionButton = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -253,6 +267,26 @@ internal fun MapScreen(
                 },
                 modifier = Modifier.fillMaxSize(),
             )
+
+            if (showSearch.value) {
+                NominatimSearchBar(
+                    onLocationSelected = { lat, lon, _ ->
+                        mapRef.value?.animateCamera(
+                            CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                            500,
+                        )
+                        showSearch.value = false
+                    },
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(
+                                top = paddingValues.calculateTopPadding() + 8.dp,
+                                start = 12.dp,
+                                end = 12.dp,
+                            ),
+                )
+            }
         }
     }
 
