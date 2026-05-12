@@ -1,17 +1,26 @@
 package com.locationjoystick.feature.favorites.impl
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -85,6 +94,7 @@ internal fun MapPickerScreen(
     val markerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val selectedPosition = remember { mutableStateOf<Pair<Double, Double>?>(null) }
     var showNameDialog by remember { mutableStateOf(false) }
+    var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(showNameDialog) {
         context.sendBroadcast(
@@ -201,23 +211,48 @@ internal fun MapPickerScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Search bar — top overlay
-            NominatimSearchBar(
-                onLocationSelected = { lat, lon, _ ->
-                    selectedPosition.value = lat to lon
-                    val map = mapRef.value ?: return@NominatimSearchBar
-                    map.animateCamera(
-                        CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
-                        500,
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 16.dp, bottom = 16.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                AnimatedVisibility(
+                    visible = showSearchBar,
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
+                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
+                ) {
+                    NominatimSearchBar(
+                        onLocationSelected = { lat, lon, _ ->
+                            selectedPosition.value = lat to lon
+                            showSearchBar = false
+                            val map = mapRef.value ?: return@NominatimSearchBar
+                            map.animateCamera(
+                                CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                                500,
+                            )
+                            val src = markerSource.value ?: return@NominatimSearchBar
+                            src.setGeoJson(buildMarkerGeoJson(lat, lon))
+                        },
+                        modifier = Modifier
+                            .widthIn(max = 300.dp)
+                            .padding(bottom = 8.dp),
                     )
-                    val src = markerSource.value ?: return@NominatimSearchBar
-                    src.setGeoJson(buildMarkerGeoJson(lat, lon))
-                },
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-            )
+                }
+                FloatingActionButton(
+                    onClick = { showSearchBar = !showSearchBar },
+                    containerColor = if (showSearchBar) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search location",
+                    )
+                }
+            }
         }
     }
 
