@@ -217,12 +217,12 @@ internal fun RouteCreatorScreen(
                                 CameraPosition
                                     .Builder()
                                     .target(
-                                        if (initialPosition != null)
+                                        if (initialPosition != null) {
                                             MapLatLng(initialPosition.latitude, initialPosition.longitude)
-                                        else
+                                        } else {
                                             MapLatLng(MapConstants.DEFAULT_LAT, MapConstants.DEFAULT_LON)
-                                    )
-                                    .zoom(MapConstants.DEFAULT_ZOOM)
+                                        },
+                                    ).zoom(MapConstants.DEFAULT_ZOOM)
                                     .build()
 
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->

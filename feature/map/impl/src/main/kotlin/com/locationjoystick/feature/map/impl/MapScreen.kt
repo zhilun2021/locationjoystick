@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -50,8 +52,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.locationjoystick.core.common.constants.MapConstants
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.FavoriteLocation
@@ -192,12 +192,12 @@ internal fun MapScreen(
                                 CameraPosition
                                     .Builder()
                                     .target(
-                                        if (initialPosition != null)
+                                        if (initialPosition != null) {
                                             MapLatLng(initialPosition.latitude, initialPosition.longitude)
-                                        else
+                                        } else {
                                             MapLatLng(MapConstants.DEFAULT_LAT, MapConstants.DEFAULT_LON)
-                                    )
-                                    .zoom(MapConstants.DEFAULT_ZOOM)
+                                        },
+                                    ).zoom(MapConstants.DEFAULT_ZOOM)
                                     .build()
 
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
