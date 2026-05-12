@@ -1,5 +1,6 @@
 package com.locationjoystick.feature.favorites.impl
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -99,7 +100,11 @@ internal fun MapPickerScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .animateContentSize()
+    ) {
         TopAppBar(
             title = { Text("Pick Location") },
             navigationIcon = {
@@ -181,30 +186,32 @@ internal fun MapPickerScreen(
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(16.dp)
-        ) {
-            val pos = selectedPosition.value
-            if (pos != null) {
-                Text(
-                    "Latitude: ${String.format("%.4f", pos.first)}",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Text(
-                    "Longitude: ${String.format("%.4f", pos.second)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            Button(
-                onClick = { showNameDialog = true },
-                enabled = selectedPosition.value != null,
-                modifier = Modifier.fillMaxWidth()
+        if (selectedPosition.value != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(16.dp)
             ) {
-                Text("Save")
+                val pos = selectedPosition.value
+                if (pos != null) {
+                    Text(
+                        "Latitude: ${String.format("%.4f", pos.first)}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        "Longitude: ${String.format("%.4f", pos.second)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                Button(
+                    onClick = { showNameDialog = true },
+                    enabled = selectedPosition.value != null,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save")
+                }
             }
         }
     }
