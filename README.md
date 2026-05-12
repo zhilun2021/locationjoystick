@@ -122,24 +122,30 @@ MVVM + Repository. ViewModels expose `StateFlow`/`SharedFlow`. Compose collects 
 
 ### Modules
 
+Each feature split into `:api` (public contract) + `:impl` (implementation).
+
 | Module | Purpose |
 |--------|---------|
 | `:app` | Entry point, Hilt setup, NavGraph |
-| `:core:model` | Domain data classes |
+| `:core:common` | Utilities, extensions, constants |
 | `:core:data` | Repositories, DataStore preferences |
 | `:core:database` | Room DB, DAOs, entities |
 | `:core:datastore` | DataStore preferences source |
+| `:core:designsystem` | Design tokens, theme, typography |
 | `:core:location` | Mock GPS foreground service + movement engine |
+| `:core:model` | Pure Kotlin domain data classes |
+| `:core:overlay` | Shared WindowManager overlay utilities |
 | `:core:routing` | OSRM client + route interpolation |
-| `:core:ui` | Shared Compose components + theme |
-| `:core:common` | Utilities, extensions, constants |
-| `:feature:map` | Main map screen |
-| `:feature:joystick` | Floating joystick overlay |
-| `:feature:routes` | Route list, editor, recorder |
-| `:feature:favorites` | Favorites list + teleport |
-| `:feature:roaming` | Roaming config + control |
-| `:feature:widget` | Floating widget overlay |
-| `:feature:settings` | Speed presets, import/export, permissions |
+| `:core:testing` | Shared test utilities, fakes |
+| `:core:ui` | Shared Compose components |
+| `:feature:favorites:api` / `:impl` | Favorites list, MapPicker, teleport |
+| `:feature:joystick:api` / `:impl` | Floating joystick overlay service |
+| `:feature:map:api` / `:impl` | MapLibre screen, map interactions |
+| `:feature:roaming:api` / `:impl` | Roaming config, RoamingEngine |
+| `:feature:routes:api` / `:impl` | Route list, editor, replay |
+| `:feature:settings:api` / `:impl` | Speed profiles, widget config, export/import |
+| `:feature:setup:api` / `:impl` | Multi-step onboarding flow |
+| `:feature:widget:api` / `:impl` | Floating widget overlay service |
 
 ---
 

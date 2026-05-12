@@ -41,7 +41,7 @@ Offline-first. No backend. No accounts. All data on-device in Room + DataStore.
 
 ## Architecture
 
-Multi-module, NowInAndroid-style. Each feature = Gradle module. Shared code in `:core:*`.
+Multi-module, NowInAndroid-style. Each feature = two Gradle modules (`api` + `impl`). Shared code in `:core:*`.
 
 MVVM + Repository pattern. ViewModel → Repository → DataSource (Room / DataStore / LocationManager). ViewModels expose `StateFlow`/`SharedFlow`. Compose UI collects via `collectAsStateWithLifecycle()`.
 
@@ -57,21 +57,39 @@ Coroutines: `viewModelScope` for UI-bound work. `ServiceScope` (tied to service 
 
 ## Module Map
 
+Each feature is split into `:api` (public contracts/interfaces) and `:impl` (implementation). App module wires them via Hilt.
+
 ```
-:app                        — Application entry, Hilt setup, NavGraph
-:core:data                  — Repositories, DataStore preferences
-:core:database              — Room database, DAOs, entities
-:core:model                 — Domain models (pure Kotlin, no Android deps)
-:core:network               — OSRM client (Retrofit/Ktor), offline fallback
-:core:ui                    — Shared Compose components, theme, typography
-:feature:map                — MapLibre screen, map interactions
-:feature:routes             — Route list, route editor, route replay
-:feature:favorites          — Favorites list, teleport action
-:feature:settings           — Speed profiles, widget config, export/import
-:feature:joystick           — Floating joystick overlay service
-:feature:widget             — Floating widget overlay service
-:service:location           — MockLocationService (ForegroundService)
-:service:roaming            — RoamingEngine, OSRM path resolver
+:app                          — Application entry, Hilt setup, NavGraph
+
+:core:common                  — Utilities, extensions, constants
+:core:data                    — Repositories, DataStore preferences
+:core:database                — Room database, DAOs, entities
+:core:datastore               — DataStore preferences source
+:core:designsystem            — Design tokens, theme, typography
+:core:location                — MockLocationService (ForegroundService) + movement engine
+:core:model                   — Domain models (pure Kotlin, no Android deps)
+:core:overlay                 — Shared WindowManager overlay utilities
+:core:routing                 — OSRM client + route interpolation
+:core:testing                 — Shared test utilities, fakes
+:core:ui                      — Shared Compose components
+
+:feature:favorites:api        — Favorites public API
+:feature:favorites:impl       — Favorites list, MapPicker, teleport
+:feature:joystick:api         — Joystick public API
+:feature:joystick:impl        — Floating joystick overlay service
+:feature:map:api              — Map public API
+:feature:map:impl             — MapLibre screen, map interactions
+:feature:roaming:api          — Roaming public API
+:feature:roaming:impl         — Roaming config, RoamingEngine
+:feature:routes:api           — Routes public API
+:feature:routes:impl          — Route list, editor, replay
+:feature:settings:api         — Settings public API
+:feature:settings:impl        — Speed profiles, widget config, export/import
+:feature:setup:api            — Setup/onboarding public API
+:feature:setup:impl           — Multi-step onboarding flow
+:feature:widget:api           — Widget public API
+:feature:widget:impl          — Floating widget overlay service
 ```
 
 ---
@@ -93,7 +111,7 @@ Edge cases:
 - `elapsedRealtimeNanos` must be monotonically increasing. Never set fixed value.
 - `accuracy` below 1.0f can trigger anti-cheat. Keep 2.0–5.0f.
 
-Key files: `:service:location/MockLocationService.kt`, `:core:data/LocationRepository.kt`
+Key files: `:core:location/MockLocationService.kt`, `:core:data/LocationRepository.kt`
 
 ---
 
@@ -103,7 +121,7 @@ Persistent notification while spoofing active. App keeps running when minimized 
 
 Declared with `foregroundServiceType="location"`. Started via `ServiceCompat.startForeground` with `FOREGROUND_SERVICE_TYPE_LOCATION` (required API 34+). Restart behavior: `START_STICKY`. Notification channel: `IMPORTANCE_LOW`, channel ID `"location_spoof_channel"`. Update loop runs as coroutine with `SupervisorJob()` scope. Cleanup: cancel scope + remove test provider in `onDestroy`.
 
-Key files: `:service:location/MockLocationService.kt`
+Key files: `:core:location/MockLocationService.kt`
 
 ---
 
@@ -111,7 +129,7 @@ Key files: `:service:location/MockLocationService.kt`
 
 Circular overlay on all apps. Drag → moves fake location. Release → stops. Draggable anywhere on screen.
 
-Requires `SYSTEM_ALERT_WINDOW`. Uses `TYPE_APPLICATION_OVERLAY` with `FLAG_NOT_FOCUSABLE` (mandatory — prevents stealing keyboard focus from game) and `FLAG_NOT_TOUCH_MODAL`. Drag-to-reposition via `View.OnTouchListener` updating `WindowManager.LayoutParams`. Input normalized to direction vector, multiplied by speed (m/s), new lat/lon via Haversine. Pushed to `MockLocationService`.
+Requires `SYSTEM_ALERT_WINDOW`. Uses `TYPE_APPLICATION_OVERLAY` with `FLAG_NOT_FOCUSABLE` (mandatory — prevents stealing keyboard focus from game) and `FLAG_NOT_TOUCH_MODAL`. Drag-to-reposition via `View.OnTouchListener` updating `WindowManager.LayoutParams`. Input normalized to direction vector, multiplied by speed (m/s), new lat/lon via Haversine. Pushed to `MockLocationService`. Overlay utilities shared via `:core:overlay`.
 
 Cleanup critical: must call `windowManager.removeView` in `onDestroy` with null/attached check.
 
@@ -119,7 +137,7 @@ Edge cases:
 - Revoking `SYSTEM_ALERT_WINDOW` while overlay showing → `removeView` throws. Wrap in try/catch.
 - MIUI/ColorOS: overlay permissions reset on reboot. Show reminder on startup.
 
-Key files: `:feature:joystick/JoystickOverlayService.kt`, `:feature:joystick/JoystickView.kt`
+Key files: `:feature:joystick:impl/JoystickOverlayService.kt`, `:feature:joystick:impl/JoystickView.kt`
 
 ---
 
@@ -133,7 +151,7 @@ Interactions: long-press → bottom sheet "Walk here / Teleport here". Tap route
 
 Edge cases: forward all lifecycle events to `MapView`. Never call MapLibre APIs before `onMapReady`.
 
-Key files: `:feature:map/MapScreen.kt`, `:feature:map/MapViewModel.kt`
+Key files: `:feature:map:impl/MapScreen.kt`, `:feature:map:impl/MapViewModel.kt`
 
 ---
 
@@ -153,7 +171,7 @@ Recording: collect real location at 1 Hz, simplify via Ramer-Douglas-Peucker (ep
 
 Edge cases: <2 waypoints → disable replay. Resume replay after service restart (persist waypoint index in DataStore).
 
-Key files: `:feature:routes/RouteListScreen.kt`, `:feature:routes/RouteEditorScreen.kt`, `:feature:routes/RouteViewModel.kt`, `:core:database/RouteDao.kt`, `:service:location/RouteReplayEngine.kt`
+Key files: `:feature:routes:impl/RouteListScreen.kt`, `:feature:routes:impl/RouteEditorScreen.kt`, `:feature:routes:impl/RouteViewModel.kt`, `:core:database/RouteDao.kt`, `:core:location/RouteReplayEngine.kt`
 
 ---
 
@@ -165,7 +183,7 @@ Two add flows: **+ coordinates** (inline dialog with name/lat/lon fields) and **
 
 Storage: `FavoriteEntity` flat table (no relations). Teleport: set position directly, push one update, camera jumps. Sort by `createdAt` desc default; optional alpha sort.
 
-Key files: `:feature:favorites/FavoritesScreen.kt`, `:feature:favorites/FavoritesViewModel.kt`, `:core:database/FavoriteDao.kt`
+Key files: `:feature:favorites:impl/FavoritesScreen.kt`, `:feature:favorites:impl/FavoritesViewModel.kt`, `:core:database/FavoriteDao.kt`
 
 ---
 
@@ -177,7 +195,7 @@ Stored in DataStore. UI: three chips or segmented button in widget + Settings. C
 
 Edge cases: clamp 0.1–15.0 m/s. Warn inline below speed input when >8 m/s (anti-cheat risk). Warning uses `MaterialTheme.colorScheme.error`, generic language — no game names.
 
-Key files: `:feature:settings/SpeedSettingsScreen.kt`, `:core:data/SpeedProfileRepository.kt`
+Key files: `:feature:settings:impl/SpeedSettingsScreen.kt`, `:core:data/SpeedProfileRepository.kt`
 
 ---
 
@@ -185,11 +203,11 @@ Key files: `:feature:settings/SpeedSettingsScreen.kt`, `:core:data/SpeedProfileR
 
 Small floating button overlay. Tap → expand panel with configured quick-access controls. Items configured in Settings.
 
-Same overlay mechanism as joystick. Separate service, toggled independently. State: collapsed (FAB) / expanded (panel) via `ValueAnimator`. Items stored in DataStore as `stringSetPreferencesKey`. Binds to `MockLocationService` in `onStartCommand`, unbinds in `onDestroy`.
+Same overlay mechanism as joystick (via `:core:overlay`). Separate service, toggled independently. State: collapsed (FAB) / expanded (panel) via `ValueAnimator`. Items stored in DataStore as `stringSetPreferencesKey`. Binds to `MockLocationService` in `onStartCommand`, unbinds in `onDestroy`.
 
 Edge cases: no items configured → show placeholder. Clamp panel to screen bounds. Re-clamp on `onConfigurationChanged`.
 
-Key files: `:feature:widget/FloatingWidgetService.kt`, `:feature:widget/WidgetPanel.kt`, `:feature:settings/WidgetConfigScreen.kt`
+Key files: `:feature:widget:impl/FloatingWidgetService.kt`, `:feature:widget:impl/WidgetPanel.kt`, `:feature:settings:impl/WidgetConfigScreen.kt`
 
 ---
 
@@ -201,7 +219,7 @@ Walk here: bearing computed from current to target, advance at `currentSpeed` m/
 
 Edge cases: new walk-here cancels previous. Walk-here while route replaying → ask confirmation to stop replay.
 
-Key files: `:feature:map/MapViewModel.kt`
+Key files: `:feature:map:impl/MapViewModel.kt`
 
 ---
 
@@ -215,7 +233,7 @@ OSRM endpoint: `https://router.project-osrm.org/route/v1/{profile}/{lon1},{lat1}
 
 Edge cases: cache last OSRM route (don't re-fetch while walking it). Radius/duration changes apply on next waypoint pick. Persist start time in DataStore (survives restarts).
 
-Key files: `:service:roaming/RoamingEngine.kt`, `:core:network/OsrmClient.kt`, `:feature:settings/RoamingConfigScreen.kt`
+Key files: `:feature:roaming:impl/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:feature:settings:impl/RoamingConfigScreen.kt`
 
 ---
 
@@ -231,13 +249,13 @@ Import: file picker (`OpenDocument`, MIME `application/json`) → parse + valida
 
 Edge cases: malformed JSON → show "Invalid file". Missing fields → use `@SerialName` defaults. Skip confirmation on fresh install (empty DB).
 
-Key files: `:feature:settings/ExportImportScreen.kt`, `:core:data/ExportRepository.kt`
+Key files: `:feature:settings:impl/ExportImportScreen.kt`, `:core:data/ExportRepository.kt`
 
 ---
 
 ### Setup / Onboarding
 
-First launch → multi-step onboarding. Track completion via `ONBOARDING_COMPLETE` DataStore key.
+First launch → multi-step onboarding. Track completion via `ONBOARDING_COMPLETE` DataStore key. Module: `:feature:setup` (not `:feature:onboarding`).
 
 Steps:
 1. Welcome
@@ -250,7 +268,7 @@ Permission checks: `ContextCompat.checkSelfPermission`, `Settings.canDrawOverlay
 
 Edge cases: allow skipping each permission (show banner for missing). Detect revoked permissions on `onResume`.
 
-Key files: `:feature:onboarding/OnboardingScreen.kt`, `:feature:onboarding/OnboardingViewModel.kt`
+Key files: `:feature:setup:impl/SetupScreen.kt`, `:feature:setup:impl/SetupViewModel.kt`
 
 ---
 
@@ -275,10 +293,10 @@ All in `:core:model`. Pure Kotlin — no Android imports, no Room annotations. R
 
 | Service | Module | Type | Purpose |
 |---------|--------|------|---------|
-| `MockLocationService` | `:service:location` | ForegroundService | Owns `LocationManager` test provider. Exposes `StateFlow<SpoofState>`. Commands: `startSpoofing`, `updatePosition`, `stopSpoofing`. |
-| `JoystickOverlayService` | `:feature:joystick` | Service | Manages `WindowManager` overlay. Reads joystick input → `LocationRepository.updatePosition()`. |
-| `FloatingWidgetService` | `:feature:widget` | Service | Manages widget overlay. Binds to `MockLocationService`. |
-| `RoamingEngine` | `:service:roaming` | Class (not service) | Instantiated by `MockLocationService`. Owns OSRM client + random waypoint picker. Runs on service scope. |
+| `MockLocationService` | `:core:location` | ForegroundService | Owns `LocationManager` test provider. Exposes `StateFlow<SpoofState>`. Commands: `startSpoofing`, `updatePosition`, `stopSpoofing`. |
+| `JoystickOverlayService` | `:feature:joystick:impl` | Service | Manages `WindowManager` overlay. Reads joystick input → `LocationRepository.updatePosition()`. |
+| `FloatingWidgetService` | `:feature:widget:impl` | Service | Manages widget overlay. Binds to `MockLocationService`. |
+| `RoamingEngine` | `:feature:roaming:impl` | Class (not service) | Instantiated by `MockLocationService`. Owns OSRM client + random waypoint picker. Runs on service scope. |
 
 ---
 
@@ -365,6 +383,8 @@ Notes:
 - `randomPointInRadius`: output always within specified radius
 - Export/import serialization: round-trip full `ExportBundle` through JSON
 
+Shared test utilities in `:core:testing`.
+
 ### Integration Tests (`:feature:*`)
 - Hilt testing with `@HiltAndroidTest`
 - Full route save → list → replay with in-memory Room
@@ -372,7 +392,7 @@ Notes:
 
 ### UI Tests (Compose)
 - `ComposeTestRule` for screen-level tests
-- Onboarding flow: mock permission states, assert correct screen transitions
+- Setup flow: mock permission states, assert correct screen transitions
 - Route editor: add waypoints, assert polyline updates
 
 ### What NOT to test

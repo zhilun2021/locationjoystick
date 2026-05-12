@@ -26,3 +26,4 @@ Thumbs.db
 .omc
 # Added by code-review-graph
 .code-review-graph/
+.agents
