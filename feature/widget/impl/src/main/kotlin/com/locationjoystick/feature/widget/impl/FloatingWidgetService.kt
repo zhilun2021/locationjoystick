@@ -17,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -24,7 +25,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
-import androidx.core.content.ContextCompat
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -83,14 +83,18 @@ class FloatingWidgetService :
     private var walkToJob: Job? = null
 
     private var mockLocationService: MockLocationService? = null
-    private val overlayVisibilityReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                ACTION_OVERLAY_HIDE -> hideOverlay()
-                ACTION_OVERLAY_SHOW -> showOverlay()
+    private val overlayVisibilityReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                when (intent.action) {
+                    ACTION_OVERLAY_HIDE -> hideOverlay()
+                    ACTION_OVERLAY_SHOW -> showOverlay()
+                }
             }
         }
-    }
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(
@@ -112,10 +116,11 @@ class FloatingWidgetService :
         savedStateRegistryController.performRestore(null)
         super.onCreate()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        val filter = IntentFilter().apply {
-            addAction(ACTION_OVERLAY_HIDE)
-            addAction(ACTION_OVERLAY_SHOW)
-        }
+        val filter =
+            IntentFilter().apply {
+                addAction(ACTION_OVERLAY_HIDE)
+                addAction(ACTION_OVERLAY_SHOW)
+            }
         ContextCompat.registerReceiver(this, overlayVisibilityReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         bindService(
             Intent(this, MockLocationService::class.java),

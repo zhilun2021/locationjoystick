@@ -60,14 +60,18 @@ class JoystickOverlayService : OverlayService() {
 
     private val binder = LocalBinder()
 
-    private val overlayVisibilityReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                ACTION_OVERLAY_HIDE -> hideOverlay()
-                ACTION_OVERLAY_SHOW -> showOverlay()
+    private val overlayVisibilityReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                when (intent.action) {
+                    ACTION_OVERLAY_HIDE -> hideOverlay()
+                    ACTION_OVERLAY_SHOW -> showOverlay()
+                }
             }
         }
-    }
 
     private val serviceConnection =
         object : ServiceConnection {
@@ -87,10 +91,11 @@ class JoystickOverlayService : OverlayService() {
 
     override fun onCreate() {
         super.onCreate()
-        val filter = IntentFilter().apply {
-            addAction(ACTION_OVERLAY_HIDE)
-            addAction(ACTION_OVERLAY_SHOW)
-        }
+        val filter =
+            IntentFilter().apply {
+                addAction(ACTION_OVERLAY_HIDE)
+                addAction(ACTION_OVERLAY_SHOW)
+            }
         ContextCompat.registerReceiver(this, overlayVisibilityReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
         bindService(
             Intent(this, MockLocationService::class.java),

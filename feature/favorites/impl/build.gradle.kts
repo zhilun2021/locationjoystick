@@ -10,6 +10,7 @@ dependencies {
     implementation(project(":feature:favorites:api"))
     implementation(project(":core:data"))
     implementation(project(":core:location"))
+    implementation(project(":core:overlay"))
     implementation(project(":core:ui"))
 
     implementation(libs.hilt.navigation.compose)
