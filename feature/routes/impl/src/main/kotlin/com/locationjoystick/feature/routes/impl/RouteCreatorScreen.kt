@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.locationjoystick.core.common.constants.MapConstants
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.ui.component.NominatimSearchBar
@@ -67,10 +68,6 @@ private const val SEGMENTS_SOURCE_ID = "segments-source"
 private const val SEGMENTS_LAYER_ID = "segments-layer"
 private const val WAYPOINTS_SOURCE_ID = "waypoints-source"
 private const val WAYPOINTS_LAYER_ID = "waypoints-layer"
-private const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-private const val DEFAULT_ZOOM = 15.0
-private const val DEFAULT_LAT = 48.8566
-private const val DEFAULT_LON = 2.3522
 
 @Composable
 fun RouteCreatorRoute(
@@ -215,15 +212,15 @@ internal fun RouteCreatorScreen(
                             map.cameraPosition =
                                 CameraPosition
                                     .Builder()
-                                    .target(MapLatLng(DEFAULT_LAT, DEFAULT_LON))
-                                    .zoom(DEFAULT_ZOOM)
+                                    .target(MapLatLng(MapConstants.DEFAULT_LAT, MapConstants.DEFAULT_LON))
+                                    .zoom(MapConstants.DEFAULT_ZOOM)
                                     .build()
 
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
                                 style.addSource(
                                     RasterSource(
                                         OSM_SOURCE_ID,
-                                        TileSet("2.2.0", OSM_TILE_URL).apply { maxZoom = 19f },
+                                        TileSet("2.2.0", MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
                                         256,
                                     ),
                                 )
@@ -275,22 +272,7 @@ internal fun RouteCreatorScreen(
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
 
-            // Back button — top-start overlay
-            IconButton(
-                onClick = onBack,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(top = paddingValues.calculateTopPadding() + 8.dp, start = 8.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-
-            // Search bar — top overlay, offset from back button, shown when toggled
+            // Search bar — top overlay, shown when toggled
             if (showSearch) {
                 NominatimSearchBar(
                     onLocationSelected = { lat, lon, _ ->

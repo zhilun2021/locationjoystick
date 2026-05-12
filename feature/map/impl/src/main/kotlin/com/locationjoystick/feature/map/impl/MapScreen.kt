@@ -47,6 +47,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import com.locationjoystick.core.common.constants.MapConstants
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.FavoriteLocation
@@ -71,10 +72,6 @@ private const val OSM_SOURCE_ID = "osm-source"
 private const val OSM_LAYER_ID = "osm-layer"
 private const val POSITION_SOURCE_ID = "position-source"
 private const val POSITION_LAYER_ID = "position-layer"
-private const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-private const val DEFAULT_ZOOM = 12.0
-private const val DEFAULT_LAT = 48.8566
-private const val DEFAULT_LON = 2.3522
 
 fun NavGraphBuilder.mapScreen(onOpenDrawer: () -> Unit) {
     composable(route = MAP_ROUTE) {
@@ -178,15 +175,15 @@ internal fun MapScreen(
                             map.cameraPosition =
                                 CameraPosition
                                     .Builder()
-                                    .target(MapLatLng(DEFAULT_LAT, DEFAULT_LON))
-                                    .zoom(DEFAULT_ZOOM)
+                                    .target(MapLatLng(MapConstants.DEFAULT_LAT, MapConstants.DEFAULT_LON))
+                                    .zoom(MapConstants.DEFAULT_ZOOM)
                                     .build()
 
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
                                 style.addSource(
                                     RasterSource(
                                         OSM_SOURCE_ID,
-                                        TileSet("2.2.0", OSM_TILE_URL).apply { maxZoom = 19f },
+                                        TileSet("2.2.0", MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
                                         256,
                                     ),
                                 )

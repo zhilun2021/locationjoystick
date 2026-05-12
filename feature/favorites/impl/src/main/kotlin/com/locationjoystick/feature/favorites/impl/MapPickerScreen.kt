@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.locationjoystick.core.common.constants.MapConstants
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.ui.component.NominatimSearchBar
 import org.maplibre.android.MapLibre
@@ -64,10 +65,6 @@ private const val OSM_SOURCE_ID = "osm-source"
 private const val OSM_LAYER_ID = "osm-layer"
 private const val MARKER_SOURCE_ID = "marker-source"
 private const val MARKER_LAYER_ID = "marker-layer"
-private const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-private const val DEFAULT_ZOOM = 15.0
-private const val DEFAULT_LAT = 48.8566
-private const val DEFAULT_LON = 2.3522
 
 @Composable
 fun MapPickerRoute(
@@ -170,15 +167,15 @@ internal fun MapPickerScreen(
                             map.cameraPosition =
                                 CameraPosition
                                     .Builder()
-                                    .target(MapLatLng(DEFAULT_LAT, DEFAULT_LON))
-                                    .zoom(DEFAULT_ZOOM)
+                                    .target(MapLatLng(MapConstants.DEFAULT_LAT, MapConstants.DEFAULT_LON))
+                                    .zoom(MapConstants.DEFAULT_ZOOM)
                                     .build()
 
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
                                 style.addSource(
                                     RasterSource(
                                         OSM_SOURCE_ID,
-                                        TileSet("2.2.0", OSM_TILE_URL).apply { maxZoom = 19f },
+                                        TileSet("2.2.0", MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
                                         256,
                                     ),
                                 )
