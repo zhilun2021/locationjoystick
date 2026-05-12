@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -52,6 +54,7 @@ import com.locationjoystick.core.ui.component.LjTopBar
 fun RoutesRoute(
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: (RouteType) -> Unit,
+    onImportGpx: () -> Unit,
     onOpenDrawer: () -> Unit,
     viewModel: RoutesViewModel,
 ) {
@@ -63,6 +66,7 @@ fun RoutesRoute(
         playbackState = playbackState,
         onNavigateToDetail = onNavigateToDetail,
         onNavigateToCreate = onNavigateToCreate,
+        onImportGpx = onImportGpx,
         onOpenDrawer = onOpenDrawer,
         onDeleteRoute = viewModel::deleteRoute,
         onExportRoute = { route -> viewModel.exportRouteAsGpx(context, route) },
@@ -79,6 +83,7 @@ internal fun RoutesScreen(
     playbackState: RoutePlaybackState,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: (RouteType) -> Unit,
+    onImportGpx: () -> Unit,
     onOpenDrawer: () -> Unit,
     onDeleteRoute: (String) -> Unit,
     onExportRoute: (com.locationjoystick.core.model.Route) -> Unit,
@@ -88,10 +93,40 @@ internal fun RoutesScreen(
     onStopReplay: () -> Unit,
 ) {
     var deletingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
+    var showAddMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            LjTopBar(title = "locationjoystick", onMenuClick = onOpenDrawer)
+            LjTopBar(
+                title = "locationjoystick",
+                onMenuClick = onOpenDrawer,
+                actions = {
+                    IconButton(onClick = { showAddMenu = !showAddMenu }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Add options")
+                    }
+                    DropdownMenu(
+                        expanded = showAddMenu,
+                        onDismissRequest = { showAddMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add from map") },
+                            onClick = {
+                                onNavigateToCreate(RouteType.STRAIGHT)
+                                showAddMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.Map, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add from GPX") },
+                            onClick = {
+                                onImportGpx()
+                                showAddMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Add, null) }
+                        )
+                    }
+                }
+            )
         },
     ) { paddingValues ->
         Box(

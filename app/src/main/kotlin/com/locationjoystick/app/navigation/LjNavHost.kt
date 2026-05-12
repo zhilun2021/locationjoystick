@@ -80,6 +80,7 @@ fun LjNavHost(
                     onNavigateToCreate = { routeType ->
                         navController.navigate("$ROUTE_CREATOR_ROUTE/${routeType.name}")
                     },
+                    onImportGpx = {},
                     onOpenDrawer = onOpenDrawer,
                     viewModel = hiltViewModel()
                 )
