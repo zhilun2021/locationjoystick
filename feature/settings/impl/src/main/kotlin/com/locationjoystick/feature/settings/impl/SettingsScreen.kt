@@ -150,42 +150,48 @@ internal fun SettingsScreen(
                         Text("Unit: ", modifier = Modifier.weight(0.3f))
                         Row(modifier = Modifier.weight(0.7f)) {
                             val isKmh = uiState.speedUnit == SpeedUnit.KMH
-                            if (isKmh) {
-                                FilledTonalButton(
-                                    onClick = { onSetSpeedUnit(SpeedUnit.KMH) },
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .padding(end = 4.dp),
-                                ) {
-                                    Text("km/h")
+                            
+                            Row(
+                                modifier = Modifier.weight(0.7f)
+                            ) {
+                                if (isKmh) {
+                                    OutlinedButton(
+                                        onClick = { onSetSpeedUnit(SpeedUnit.KMH) },
+                                        modifier = Modifier
+                                            .weight(0.5f)
+                                            .padding(end = 4.dp),
+                                    ) {
+                                        Text("km/h")
+                                    }
+                                } else {
+                                    FilledTonalButton(
+                                        onClick = { onSetSpeedUnit(SpeedUnit.KMH) },
+                                        modifier = Modifier
+                                            .weight(0.5f)
+                                            .padding(end = 4.dp),
+                                    ) {
+                                        Text("km/h")
+                                    }
                                 }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { onSetSpeedUnit(SpeedUnit.KMH) },
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .padding(end = 4.dp),
-                                ) {
-                                    Text("km/h")
-                                }
-                            }
-                            if (!isKmh) {
-                                FilledTonalButton(
-                                    onClick = { onSetSpeedUnit(SpeedUnit.MPH) },
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .padding(start = 4.dp),
-                                ) {
-                                    Text("mph")
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { onSetSpeedUnit(SpeedUnit.MPH) },
-                                    modifier = Modifier
-                                        .weight(0.5f)
-                                        .padding(start = 4.dp),
-                                ) {
-                                    Text("mph")
+                            
+                                if (!isKmh) {
+                                    OutlinedButton(
+                                        onClick = { onSetSpeedUnit(SpeedUnit.MPH) },
+                                        modifier = Modifier
+                                            .weight(0.5f)
+                                            .padding(start = 4.dp),
+                                    ) {
+                                        Text("mph")
+                                    }
+                                } else {
+                                    FilledTonalButton(
+                                        onClick = { onSetSpeedUnit(SpeedUnit.MPH) },
+                                        modifier = Modifier
+                                            .weight(0.5f)
+                                            .padding(start = 4.dp),
+                                    ) {
+                                        Text("mph")
+                                    }
                                 }
                             }
                         }
@@ -414,7 +420,6 @@ private fun SpeedProfileInput(
     var localValue by remember(displaySpeed) {
         mutableStateOf(String.format("%.1f", displaySpeed))
     }
-    var isDirty by remember(displaySpeed) { mutableStateOf(false) }
 
     val parsedValue = localValue.toDoubleOrNull()
     val isValid = parsedValue != null && parsedValue in 0.1..15.0
@@ -423,10 +428,14 @@ private fun SpeedProfileInput(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(label, modifier = Modifier.weight(0.2f))
+        Text(
+            label,
+            modifier = Modifier.weight(0.2f),
+        )
+
         Row(
             modifier = Modifier
-                .weight(0.5f)
+                .weight(0.8f)
                 .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -434,27 +443,26 @@ private fun SpeedProfileInput(
                 value = localValue,
                 onValueChange = { newValue ->
                     localValue = newValue
-                    isDirty = true
+
+                    val parsed = newValue.toDoubleOrNull()
+                    if (parsed != null && parsed in 0.1..15.0) {
+                        onSpeedChange(parsed)
+                    }
                 },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                isError = localValue.isNotBlank() && !isValid,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal
+                ),
             )
+
             Spacer(modifier = Modifier.width(4.dp))
-            Text(unit, modifier = Modifier.width(40.dp))
-        }
-        Button(
-            onClick = {
-                if (parsedValue != null) {
-                    val clamped = parsedValue.coerceIn(0.1, 15.0)
-                    onSpeedChange(clamped)
-                    isDirty = false
-                }
-            },
-            enabled = isDirty && isValid,
-            modifier = Modifier.weight(0.3f),
-        ) {
-            Text("Save")
+
+            Text(
+                unit,
+                modifier = Modifier.width(40.dp),
+            )
         }
     }
 }
