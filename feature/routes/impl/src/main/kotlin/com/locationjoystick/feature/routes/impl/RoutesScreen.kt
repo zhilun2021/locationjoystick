@@ -15,20 +15,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,10 +61,10 @@ fun RoutesRoute(
     RoutesScreen(
         uiState = uiState,
         playbackState = playbackState,
+        onNavigateToDetail = onNavigateToDetail,
         onNavigateToCreate = onNavigateToCreate,
         onOpenDrawer = onOpenDrawer,
         onDeleteRoute = viewModel::deleteRoute,
-        onRenameRoute = viewModel::renameRoute,
         onExportRoute = { route -> viewModel.exportRouteAsGpx(context, route) },
         onStartReplay = { route, fromFirstWaypoint -> viewModel.startReplay(route, fromFirstWaypoint) },
         onPauseReplay = viewModel::pauseReplay,
@@ -76,38 +77,21 @@ fun RoutesRoute(
 internal fun RoutesScreen(
     uiState: RoutesUiState,
     playbackState: RoutePlaybackState,
+    onNavigateToDetail: (String) -> Unit,
     onNavigateToCreate: (RouteType) -> Unit,
     onOpenDrawer: () -> Unit,
     onDeleteRoute: (String) -> Unit,
-    onRenameRoute: (String, String) -> Unit,
     onExportRoute: (com.locationjoystick.core.model.Route) -> Unit,
     onStartReplay: (com.locationjoystick.core.model.Route, Boolean) -> Unit,
     onPauseReplay: () -> Unit,
     onResumeReplay: () -> Unit,
     onStopReplay: () -> Unit,
 ) {
-    var renamingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
     var deletingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
 
     Scaffold(
         topBar = {
             LjTopBar(title = "locationjoystick", onMenuClick = onOpenDrawer)
-        },
-        floatingActionButton = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = { onNavigateToCreate(RouteType.GUIDED) },
-                    icon = { Icon(Icons.Rounded.Map, null) },
-                    text = { Text("guided route") }
-                )
-                ExtendedFloatingActionButton(
-                    onClick = { onNavigateToCreate(RouteType.STRAIGHT) },
-                    icon = { Icon(Icons.Rounded.Add, null) },
-                    text = { Text("route") }
-                )
-            }
         },
     ) { paddingValues ->
         Box(
@@ -121,7 +105,7 @@ internal fun RoutesScreen(
                 }
                 uiState.routes.isEmpty() -> {
                     EmptyState(
-                        icon = Icons.Rounded.Add,
+                        icon = Icons.Default.PlayArrow,
                         message = "No routes yet",
                         modifier = Modifier.align(Alignment.Center)
                     )
@@ -138,9 +122,9 @@ internal fun RoutesScreen(
                             RouteCard(
                                 route = route,
                                 playbackState = playbackState,
-                                onTap = { renamingRoute = route },
-                                onDelete = { deletingRoute = it },
-                                onExport = { onExportRoute(it) },
+                                onNavigateToEdit = { onNavigateToDetail(route.id) },
+                                onDeleteRoute = { deletingRoute = route },
+                                onExport = { onExportRoute(route) },
                                 onStartReplay = onStartReplay,
                                 onPauseReplay = onPauseReplay,
                                 onResumeReplay = onResumeReplay,
@@ -151,17 +135,6 @@ internal fun RoutesScreen(
                 }
             }
         }
-    }
-
-    renamingRoute?.let { route ->
-        RenameRouteDialog(
-            routeName = route.name,
-            onDismiss = { renamingRoute = null },
-            onSave = { newName ->
-                onRenameRoute(route.id, newName)
-                renamingRoute = null
-            }
-        )
     }
 
     deletingRoute?.let { route ->
@@ -180,8 +153,8 @@ internal fun RoutesScreen(
 private fun RouteCard(
     route: com.locationjoystick.core.model.Route,
     playbackState: RoutePlaybackState,
-    onTap: () -> Unit,
-    onDelete: (com.locationjoystick.core.model.Route) -> Unit,
+    onNavigateToEdit: (String) -> Unit,
+    onDeleteRoute: (com.locationjoystick.core.model.Route) -> Unit,
     onExport: (com.locationjoystick.core.model.Route) -> Unit,
     onStartReplay: (com.locationjoystick.core.model.Route, Boolean) -> Unit,
     onPauseReplay: () -> Unit,
@@ -192,6 +165,7 @@ private fun RouteCard(
     val isPlaying = isActiveRoute && playbackState.isPlaying
     val isPaused = isActiveRoute && playbackState.isPaused
     val isActive = isPlaying || isPaused
+    var menuExpanded by remember { mutableStateOf(false) }
 
     val distanceText = remember(route.waypoints) {
         if (route.waypoints.size < 2) {
@@ -214,11 +188,10 @@ private fun RouteCard(
             .padding(bottom = 12.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
     ) {
-        // Row 1: name + distance (tap to rename)
+        // Row 1: name + distance + 3-dot menu
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable { onTap() }
                 .padding(start = 12.dp, end = 4.dp, top = 12.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -230,11 +203,39 @@ private fun RouteCard(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            IconButton(onClick = { onExport(route) }) {
-                Icon(Icons.Default.FileDownload, contentDescription = "Export GPX")
-            }
-            IconButton(onClick = { onDelete(route) }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete")
+            Box {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            menuExpanded = false
+                            onNavigateToEdit(route.id)
+                        },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Export") },
+                        onClick = {
+                            menuExpanded = false
+                            onExport(route)
+                        },
+                        leadingIcon = { Icon(Icons.Default.FileDownload, contentDescription = null) }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = {
+                            menuExpanded = false
+                            onDeleteRoute(route)
+                        },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) }
+                    )
+                }
             }
         }
 
@@ -287,43 +288,7 @@ private fun RouteCard(
     }
 }
 
-@Composable
-private fun RenameRouteDialog(
-    routeName: String,
-    onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
-) {
-    var name by remember { mutableStateOf(routeName) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Rename Route") },
-        text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Route name") },
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    if (name.isNotEmpty()) {
-                        onSave(name)
-                    }
-                }
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
 
 @Composable
 private fun DeleteConfirmDialog(

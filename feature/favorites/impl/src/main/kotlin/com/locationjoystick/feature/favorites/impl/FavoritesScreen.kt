@@ -23,12 +23,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -90,27 +92,42 @@ internal fun FavoritesScreen(
     var editingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
     var deletingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
 
+    var showAddMenu by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
-            LjTopBar(title = "locationjoystick", onMenuClick = onOpenDrawer)
+            LjTopBar(
+                title = "locationjoystick",
+                onMenuClick = onOpenDrawer,
+                actions = {
+                    IconButton(onClick = { showAddMenu = !showAddMenu }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Add options")
+                    }
+                    DropdownMenu(
+                        expanded = showAddMenu,
+                        onDismissRequest = { showAddMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Add via Map") },
+                            onClick = {
+                                onNavigateToMapPicker()
+                                showAddMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.Map, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add Coordinates") },
+                            onClick = {
+                                showAddSheet = true
+                                showAddMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.Add, null) }
+                        )
+                    }
+                }
+            )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ExtendedFloatingActionButton(
-                    onClick = onNavigateToMapPicker,
-                    icon = { Icon(Icons.Rounded.Map, null) },
-                    text = { Text("map") }
-                )
-                ExtendedFloatingActionButton(
-                    onClick = { showAddSheet = true },
-                    icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("coordinates") }
-                )
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { scaffoldPadding ->
         Box(
             modifier = Modifier
@@ -198,6 +215,8 @@ private fun FavoriteCard(
     onEdit: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
     onDelete: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -213,11 +232,31 @@ private fun FavoriteCard(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        IconButton(onClick = { onEdit(favorite) }) {
-            Icon(Icons.Default.Edit, contentDescription = "Edit")
-        }
-        IconButton(onClick = { onDelete(favorite) }) {
-            Icon(Icons.Default.Delete, contentDescription = "Delete")
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Edit") },
+                    onClick = {
+                        onEdit(favorite)
+                        menuExpanded = false
+                    },
+                    leadingIcon = { Icon(Icons.Default.Edit, null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        onDelete(favorite)
+                        menuExpanded = false
+                    },
+                    leadingIcon = { Icon(Icons.Default.Delete, null) }
+                )
+            }
         }
     }
 }

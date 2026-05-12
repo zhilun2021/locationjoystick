@@ -1,5 +1,6 @@
 package com.locationjoystick.feature.routes.impl
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,10 +16,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -29,18 +34,27 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.model.Route
+import com.locationjoystick.core.ui.component.LjTopBar
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import android.util.Log
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
 
 @HiltViewModel
 class RouteDetailViewModel @Inject constructor(
     private val routeRepository: RouteRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
+    companion object {
+        private const val TAG = "RouteDetailViewModel"
+    }
 
     private val routeId: String = checkNotNull(savedStateHandle["routeId"])
 
@@ -50,9 +64,28 @@ class RouteDetailViewModel @Inject constructor(
         initialValue = null
     )
 
+    private val _nameError = MutableStateFlow(false)
+    val nameError: StateFlow<Boolean> = _nameError.asStateFlow()
+
     fun removeWaypoint(waypointId: String) {
         viewModelScope.launch {
             routeRepository.removeWaypoint(waypointId)
+        }
+    }
+
+    suspend fun renameRoute(name: String) {
+        if (name.isBlank()) {
+            _nameError.value = true
+            return
+        }
+        _nameError.value = false
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                routeRepository.renameRoute(routeId, name)
+            } catch (e: Exception) {
+                Log.e(TAG, "rename failed", e)
+                _nameError.value = true
+            }
         }
     }
 }
@@ -61,13 +94,35 @@ class RouteDetailViewModel @Inject constructor(
 @Composable
 fun RouteDetailScreen(
     routeId: String,
+    onNavigateBack: () -> Unit,
     viewModel: RouteDetailViewModel = hiltViewModel(),
 ) {
     val route by viewModel.route.collectAsStateWithLifecycle()
+    val nameError by viewModel.nameError.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+    
+    var editedName by remember { mutableStateOf("") }
+    
+    if (route != null && editedName.isEmpty()) {
+        editedName = route!!.name
+    }
+    
+    // Save-on-back handler
+    BackHandler {
+        if (editedName != route?.name && editedName.isNotBlank()) {
+            coroutineScope.launch {
+                viewModel.renameRoute(editedName)
+                onNavigateBack()
+            }
+        } else {
+            onNavigateBack()
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(route?.name ?: "Route Details") },
+        LjTopBar(
+            title = "Route Details",
+            onMenuClick = {},
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
@@ -79,11 +134,34 @@ fun RouteDetailScreen(
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
+                    // Editable name field
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = editedName,
+                                onValueChange = { editedName = it },
+                                label = { Text("Route name") },
+                                isError = nameError,
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                            if (nameError) {
+                                Text(
+                                    "Name cannot be empty",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    // Numbered waypoints
                     items(route!!.waypoints, key = { it.id }) { waypoint ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 12.dp),
+                                .padding(bottom = 12.dp, top = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {

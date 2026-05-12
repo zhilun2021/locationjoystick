@@ -1,5 +1,6 @@
 package com.locationjoystick.core.ui.component
 
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,6 +17,7 @@ fun LjTopBar(
     title: String,
     onMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
         title = { Text(text = title) },
@@ -27,6 +29,7 @@ fun LjTopBar(
                 )
             }
         },
+        actions = actions,
         modifier = modifier,
     )
 }

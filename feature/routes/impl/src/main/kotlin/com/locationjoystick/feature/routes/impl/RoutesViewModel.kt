@@ -2,6 +2,7 @@ package com.locationjoystick.feature.routes.impl
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
@@ -148,5 +149,10 @@ class RoutesViewModel @Inject constructor(
         }
         appendLine("  </trkseg></trk>")
         append("</gpx>")
+    }
+
+    suspend fun importGpx(uri: Uri) {
+        // Stub: GPX import to be implemented
+        // TODO: Parse GPX file from uri, extract waypoints, create route
     }
 }

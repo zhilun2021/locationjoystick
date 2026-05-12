@@ -69,4 +69,16 @@ class RouteRepository @Inject constructor(
             Log.e(TAG, "Failed to remove waypoint: $waypointId", e)
         }
     }
+
+    suspend fun renameRoute(routeId: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val entity = routeDao.getById(routeId)
+            if (entity != null) {
+                val updated = entity.copy(name = name, updatedAt = System.currentTimeMillis())
+                routeDao.update(updated)
+            }
+        }.onFailure { e ->
+            Log.e(TAG, "Failed to rename route: $routeId", e)
+        }
+    }
 }

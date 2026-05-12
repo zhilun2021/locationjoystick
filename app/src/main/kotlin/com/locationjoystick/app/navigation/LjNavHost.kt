@@ -94,7 +94,10 @@ fun LjNavHost(
 
             composable("$ROUTE_DETAIL_ROUTE/{routeId}") { backStackEntry ->
                 val routeId = backStackEntry.arguments?.getString("routeId") ?: return@composable
-                RouteDetailScreen(routeId = routeId)
+                RouteDetailScreen(
+                    routeId = routeId,
+                    onNavigateBack = { navController.navigateUp() }
+                )
             }
         }
 
