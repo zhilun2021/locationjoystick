@@ -197,6 +197,7 @@ class MapViewModel
 
         private fun walkTo(position: LatLng) {
             walkToJob?.cancel()
+            locationRepository.setWalkTarget(position)
             walkToJob =
                 viewModelScope.launch {
                     try {
@@ -261,6 +262,8 @@ class MapViewModel
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Walk interrupted", e)
+                    } finally {
+                        locationRepository.setWalkTarget(null)
                     }
                 }
         }

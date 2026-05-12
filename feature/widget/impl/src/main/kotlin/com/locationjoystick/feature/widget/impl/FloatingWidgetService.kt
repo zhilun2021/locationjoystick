@@ -32,6 +32,9 @@ import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Route
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -71,6 +74,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -114,6 +118,11 @@ class FloatingWidgetService :
     private val _joystickVisible = MutableStateFlow(false)
     private val _joystickLocked = MutableStateFlow(false)
     private val _activeProfileId = MutableStateFlow("walk")
+
+    // Route/walk-to active state exposed to Compose
+    private val _isRouteActive = MutableStateFlow(false)
+    private val _isRoutePaused = MutableStateFlow(false)
+    private val _routeExpanded = MutableStateFlow(false)
 
     private var mockLocationService: MockLocationService? = null
 
@@ -195,6 +204,23 @@ class FloatingWidgetService :
                 _activeProfileId.value = profile.id
             }
         }
+        lifecycleScope.launch {
+            kotlinx.coroutines.flow.combine(
+                locationRepository.walkTarget,
+                locationRepository.activeRouteId,
+                locationRepository.mockLocationState,
+                locationRepository.isWalkPaused,
+            ) { walkTarget, activeRouteId, state, walkPaused ->
+                val active = walkTarget != null || activeRouteId != null
+                val paused = walkPaused ||
+                    (activeRouteId != null && state == com.locationjoystick.core.model.MockLocationState.PAUSED)
+                active to paused
+            }.collect { (active, paused) ->
+                if (!active) _routeExpanded.value = false
+                _isRouteActive.value = active
+                _isRoutePaused.value = paused
+            }
+        }
     }
 
     override fun onStartCommand(
@@ -246,6 +272,9 @@ class FloatingWidgetService :
             val joystickVisible by _joystickVisible.collectAsState()
             val joystickLocked by _joystickLocked.collectAsState()
             val activeProfileId by _activeProfileId.collectAsState()
+            val isRouteActive by _isRouteActive.collectAsState()
+            val isRoutePaused by _isRoutePaused.collectAsState()
+            val routeExpanded by _routeExpanded.collectAsState()
 
             MaterialTheme {
                 WidgetPanel(
@@ -253,7 +282,13 @@ class FloatingWidgetService :
                     joystickVisible = joystickVisible,
                     joystickLocked = joystickLocked,
                     activeProfileId = activeProfileId,
+                    isRouteActive = isRouteActive,
+                    isRoutePaused = isRoutePaused,
+                    routeExpanded = routeExpanded,
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature, view) },
+                    onRouteClicked = { onRouteIconClicked(view) },
+                    onRoutePauseResume = { onRoutePauseResumeClicked() },
+                    onRouteStop = { onRouteStopClicked() },
                 )
             }
         }
@@ -267,7 +302,13 @@ class FloatingWidgetService :
         joystickVisible: Boolean,
         joystickLocked: Boolean,
         activeProfileId: String,
+        isRouteActive: Boolean,
+        isRoutePaused: Boolean,
+        routeExpanded: Boolean,
         onFeatureClicked: (WidgetFeature) -> Unit,
+        onRouteClicked: () -> Unit,
+        onRoutePauseResume: () -> Unit,
+        onRouteStop: () -> Unit,
     ) {
         if (features.isEmpty()) {
             // No-op: placeholder not rendered as overlay is collapsed when empty
@@ -275,23 +316,83 @@ class FloatingWidgetService :
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             features.forEach { feature ->
-                val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
-                val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier =
-                        Modifier
-                            .padding(4.dp)
-                            .size(48.dp)
-                            .background(Color.Black, CircleShape)
-                            .clickable { onFeatureClicked(feature) },
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = feature.toContentDescription(),
-                        tint = iconTint,
-                        modifier = Modifier.size(28.dp),
-                    )
+                if (feature == WidgetFeature.ROUTES_PICKER) {
+                    // Route icon — green when active
+                    val routeIconTint = if (isRouteActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier =
+                            Modifier
+                                .padding(4.dp)
+                                .size(48.dp)
+                                .background(Color.Black, CircleShape)
+                                .clickable { onRouteClicked() },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Route,
+                            contentDescription = "Routes picker",
+                            tint = routeIconTint,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    // Subicons shown only when route active and expanded
+                    if (isRouteActive && routeExpanded) {
+                        // PAUSE or RESUME button
+                        val pauseResumeIcon = if (isRoutePaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
+                        val pauseResumeTint = if (isRoutePaused) Color(0xFF4CAF50) else Color(0xFF757575)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier =
+                                Modifier
+                                    .padding(4.dp)
+                                    .size(48.dp)
+                                    .background(Color.Black, CircleShape)
+                                    .clickable { onRoutePauseResume() },
+                        ) {
+                            Icon(
+                                imageVector = pauseResumeIcon,
+                                contentDescription = if (isRoutePaused) "Resume route" else "Pause route",
+                                tint = pauseResumeTint,
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                        // STOP button — red
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier =
+                                Modifier
+                                    .padding(4.dp)
+                                    .size(48.dp)
+                                    .background(Color.Black, CircleShape)
+                                    .clickable { onRouteStop() },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Stop,
+                                contentDescription = "Stop route",
+                                tint = Color(0xFFF44336),
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                    }
+                } else {
+                    val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
+                    val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier =
+                            Modifier
+                                .padding(4.dp)
+                                .size(48.dp)
+                                .background(Color.Black, CircleShape)
+                                .clickable { onFeatureClicked(feature) },
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = feature.toContentDescription(),
+                            tint = iconTint,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
                 }
             }
         }
@@ -368,6 +469,139 @@ class FloatingWidgetService :
             WidgetFeature.SPEED_CYCLE -> cycleSpeedProfile()
             WidgetFeature.MAP -> openMap()
         }
+    }
+
+    private fun onRouteIconClicked(anchor: View) {
+        if (_isRouteActive.value) {
+            // Toggle expanded subicons
+            _routeExpanded.value = !_routeExpanded.value
+        } else {
+            // No active route: open route list popup as normal
+            showRoutesPopup(anchor)
+        }
+    }
+
+    private fun onRoutePauseResumeClicked() {
+        if (_isRoutePaused.value) {
+            // Resume
+            if (locationRepository.walkTarget.value != null) {
+                // Walk-to resume: unpause the walk job
+                locationRepository.setWalkPaused(false)
+                resumeWalkToJob()
+            } else {
+                // Route replay resume
+                val intent = Intent(this, MockLocationService::class.java).apply {
+                    action = MockLocationService.ACTION_ROUTE_REPLAY_RESUME
+                    putExtra(MockLocationService.EXTRA_SPEED_MS, 1.4)
+                }
+                startService(intent)
+            }
+        } else {
+            // Pause
+            if (locationRepository.walkTarget.value != null) {
+                // Walk-to pause: suspend the walk job
+                pauseWalkToJob()
+                locationRepository.setWalkPaused(true)
+            } else {
+                // Route replay pause
+                val intent = Intent(this, MockLocationService::class.java).apply {
+                    action = MockLocationService.ACTION_ROUTE_REPLAY_PAUSE
+                }
+                startService(intent)
+            }
+        }
+    }
+
+    private fun onRouteStopClicked() {
+        _routeExpanded.value = false
+        if (locationRepository.walkTarget.value != null) {
+            // Stop walk-to
+            walkToJob?.cancel()
+            walkToJob = null
+            locationRepository.setWalkTarget(null)
+        } else {
+            // Stop route replay
+            val intent = Intent(this, MockLocationService::class.java).apply {
+                action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
+            }
+            startService(intent)
+        }
+    }
+
+    private fun pauseWalkToJob() {
+        walkToJob?.cancel()
+        walkToJob = null
+    }
+
+    private fun resumeWalkToJob() {
+        val target = locationRepository.walkTarget.value ?: return
+        startWalkToPosition(target)
+    }
+
+    private fun startWalkToPosition(target: LatLng) {
+        walkToJob?.cancel()
+        walkToJob =
+            serviceScope.launch {
+                try {
+                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                    val targetLat = target.latitude
+                    val targetLon = target.longitude
+
+                    while (true) {
+                        val current = locationRepository.currentPosition.value
+                        if (current == null) {
+                            Log.w(TAG, "No current position; stopping walk to target")
+                            break
+                        }
+
+                        val distanceM =
+                            haversineDistance(
+                                current.latitude,
+                                current.longitude,
+                                targetLat,
+                                targetLon,
+                            )
+                        if (distanceM < 1.0) {
+                            Log.d(TAG, "Reached walk target")
+                            break
+                        }
+
+                        val bearing =
+                            calculateBearing(
+                                current.latitude,
+                                current.longitude,
+                                targetLat,
+                                targetLon,
+                            )
+                        val advanceM = min(speedMs * 1.0, distanceM)
+                        val (newLat, newLon) =
+                            advancePosition(
+                                current.latitude,
+                                current.longitude,
+                                bearing,
+                                advanceM,
+                            )
+
+                        try {
+                            val intent =
+                                Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
+                                    action = MockLocationService.ACTION_UPDATE_POSITION
+                                    putExtra("lat", newLat)
+                                    putExtra("lon", newLon)
+                                }
+                            startService(intent)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Walk update failed", e)
+                        }
+
+                        delay(1000L)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Walk to position interrupted", e)
+                } finally {
+                    locationRepository.setWalkTarget(null)
+                }
+            }
     }
 
     private fun showFavoritesPopup(anchor: View) {
@@ -462,67 +696,8 @@ class FloatingWidgetService :
     }
 
     private fun startWalkToFavorite(favorite: FavoriteLocation) {
-        walkToJob?.cancel()
-        walkToJob =
-            serviceScope.launch {
-                try {
-                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                    val targetLat = favorite.position.latitude
-                    val targetLon = favorite.position.longitude
-
-                    while (true) {
-                        val current = locationRepository.currentPosition.value
-                        if (current == null) {
-                            Log.w(TAG, "No current position; stopping walk to ${favorite.name}")
-                            break
-                        }
-
-                        val distanceM =
-                            haversineDistance(
-                                current.latitude,
-                                current.longitude,
-                                targetLat,
-                                targetLon,
-                            )
-                        if (distanceM < 1.0) {
-                            Log.d(TAG, "Reached favorite: ${favorite.name}")
-                            break
-                        }
-
-                        val bearing =
-                            calculateBearing(
-                                current.latitude,
-                                current.longitude,
-                                targetLat,
-                                targetLon,
-                            )
-                        val advanceM = min(speedMs * 1.0, distanceM)
-                        val (newLat, newLon) =
-                            advancePosition(
-                                current.latitude,
-                                current.longitude,
-                                bearing,
-                                advanceM,
-                            )
-
-                        try {
-                            val intent =
-                                Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
-                                    action = MockLocationService.ACTION_UPDATE_POSITION
-                                    putExtra("lat", newLat)
-                                    putExtra("lon", newLon)
-                                }
-                            startService(intent)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Walk update failed", e)
-                        }
-
-                        delay(1000L)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Walk to favorite interrupted", e)
-                }
-            }
+        locationRepository.setWalkTarget(favorite.position)
+        startWalkToPosition(favorite.position)
     }
 
     private fun toggleJoystick() {

@@ -35,6 +35,14 @@ class LocationRepository
         private val _isReplayBackward = MutableStateFlow(false)
         val isReplayBackward: StateFlow<Boolean> = _isReplayBackward.asStateFlow()
 
+        /** Non-null while a walk-to-target movement is in progress. Cleared on arrival or cancel. */
+        private val _walkTarget = MutableStateFlow<LatLng?>(null)
+        val walkTarget: StateFlow<LatLng?> = _walkTarget.asStateFlow()
+
+        /** Whether walk-to movement is currently paused (walkTarget set but ticks suspended). */
+        private val _isWalkPaused = MutableStateFlow(false)
+        val isWalkPaused: StateFlow<Boolean> = _isWalkPaused.asStateFlow()
+
         fun observePosition(): Flow<LatLng?> = _currentPosition.asStateFlow()
 
         fun observeState(): Flow<MockLocationState> = _mockLocationState.asStateFlow()
@@ -83,5 +91,14 @@ class LocationRepository
 
         fun setIsReplayBackward(backward: Boolean) {
             _isReplayBackward.value = backward
+        }
+
+        fun setWalkTarget(target: LatLng?) {
+            _walkTarget.value = target
+            if (target == null) _isWalkPaused.value = false
+        }
+
+        fun setWalkPaused(paused: Boolean) {
+            _isWalkPaused.value = paused
         }
     }
