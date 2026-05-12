@@ -67,7 +67,8 @@ fun FavoritesRoute(
         uiState = uiState,
         snackbarHostState = snackbarHostState,
         onTeleport = viewModel::teleportTo,
-        onDelete = { viewModel.deleteFavorite(it.id) },
+        onSetPendingDeleteId = viewModel::setPendingDeleteId,
+        onConfirmDelete = viewModel::confirmDelete,
         onAddFavorite = viewModel::addFavorite,
         onUpdateFavorite = viewModel::updateFavorite,
         onNavigateToMapPicker = onNavigateToMapPicker,
@@ -81,7 +82,8 @@ internal fun FavoritesScreen(
     uiState: FavoritesUiState,
     snackbarHostState: SnackbarHostState,
     onTeleport: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
-    onDelete: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
+    onSetPendingDeleteId: (String?) -> Unit,
+    onConfirmDelete: () -> Unit,
     onAddFavorite: (String, Double, Double) -> Unit,
     onUpdateFavorite: (String, String, Double, Double) -> Unit,
     onNavigateToMapPicker: () -> Unit = {},
@@ -90,7 +92,6 @@ internal fun FavoritesScreen(
     val context = LocalContext.current
     var showAddSheet by remember { mutableStateOf(false) }
     var editingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
-    var deletingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
 
     var showAddMenu by remember { mutableStateOf(false) }
 
@@ -168,7 +169,7 @@ internal fun FavoritesScreen(
                                     clipboard.setPrimaryClip(ClipData.newPlainText("coordinates", coords))
                                 },
                                 onEdit = { editingFavorite = it },
-                                onDelete = { deletingFavorite = it },
+                                onDelete = { onSetPendingDeleteId(it.id) },
                             )
                         }
                     }
@@ -202,15 +203,18 @@ internal fun FavoritesScreen(
         )
     }
 
-    deletingFavorite?.let { favorite ->
-        DeleteConfirmDialog(
-            name = favorite.name,
-            onDismiss = { deletingFavorite = null },
-            onConfirm = {
-                onDelete(favorite)
-                deletingFavorite = null
-            },
-        )
+    uiState.pendingDeleteId?.let { favoriteId ->
+        val favorite = uiState.favorites.find { it.id == favoriteId }
+        if (favorite != null) {
+            DeleteConfirmDialog(
+                name = favorite.name,
+                onDismiss = { onSetPendingDeleteId(null) },
+                onConfirm = {
+                    onConfirmDelete()
+                    onSetPendingDeleteId(null)
+                },
+            )
+        }
     }
 }
 

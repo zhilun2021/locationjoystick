@@ -10,8 +10,10 @@ import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.FavoriteLocation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -25,13 +27,18 @@ class FavoritesViewModel
         private val favoriteRepository: FavoriteRepository,
         private val locationRepository: LocationRepository,
     ) : ViewModel() {
+        private val _pendingDeleteId = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+
         val uiState: StateFlow<FavoritesUiState> =
-            favoriteRepository
-                .getFavorites()
-                .map { favorites ->
+            kotlinx.coroutines.flow
+                .combine(
+                    favoriteRepository.getFavorites(),
+                    _pendingDeleteId,
+                ) { favorites, pendingDeleteId ->
                     FavoritesUiState(
                         favorites = favorites,
                         isLoading = false,
+                        pendingDeleteId = pendingDeleteId,
                     )
                 }.stateIn(
                     scope = viewModelScope,
@@ -103,5 +110,15 @@ class FavoritesViewModel
                     ),
                 )
             }
+        }
+
+        fun setPendingDeleteId(id: String?) {
+            _pendingDeleteId.value = id
+        }
+
+        fun confirmDelete() {
+            val idToDelete = _pendingDeleteId.value ?: return
+            _pendingDeleteId.value = null
+            deleteFavorite(idToDelete)
         }
     }
