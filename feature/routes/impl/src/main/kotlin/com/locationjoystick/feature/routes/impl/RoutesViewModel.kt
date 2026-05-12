@@ -11,10 +11,11 @@ import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.location.MockLocationService
-import com.locationjoystick.core.model.LatLon
+import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
+import com.locationjoystick.core.model.Waypoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -181,7 +182,14 @@ class RoutesViewModel @Inject constructor(
         return withContext(Dispatchers.IO) {
             val gpxContent = readGpxContent(uri)
             val name = extractGpxName(gpxContent)
-            val waypoints = parseGpxWaypoints(gpxContent)
+            val latLngs = parseGpxWaypoints(gpxContent)
+            val waypoints = latLngs.mapIndexed { index, latLng ->
+                Waypoint(
+                    id = UUID.randomUUID().toString(),
+                    position = latLng,
+                    orderIndex = index
+                )
+            }
             Route(
                 id = UUID.randomUUID().toString(),
                 name = name,
@@ -208,13 +216,13 @@ class RoutesViewModel @Inject constructor(
         return match?.groupValues?.get(1)?.takeIf { it.isNotEmpty() } ?: "Imported Route"
     }
 
-    private fun parseGpxWaypoints(gpxContent: String): List<LatLon> {
+    private fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
         val trkptRegex = Regex("""<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)""")
         return trkptRegex.findAll(gpxContent)
             .map { match ->
                 val lat = match.groupValues[1].toDoubleOrNull() ?: return@map null
                 val lon = match.groupValues[2].toDoubleOrNull() ?: return@map null
-                LatLon(lat, lon)
+                LatLng(lat, lon)
             }
             .filterNotNull()
             .toList()
