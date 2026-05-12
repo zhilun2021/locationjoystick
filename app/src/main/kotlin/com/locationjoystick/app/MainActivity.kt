@@ -1,5 +1,6 @@
 package com.locationjoystick.app
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +12,17 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_NAVIGATE_TO_MAP = "navigate_to_map"
+        const val ACTION_MOVE_TO_BACK = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
+    }
+
+    private var navigateToMapCallback: (() -> Unit)? = null
+
+    fun setNavigateToMapCallback(callback: () -> Unit) {
+        navigateToMapCallback = callback
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -26,8 +38,27 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LjTheme {
-                LjApp()
+                LjApp(
+                    onSetNavigateToMapCallback = { cb -> navigateToMapCallback = cb },
+                )
             }
+        }
+
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_MAP, false) == true) {
+            navigateToMapCallback?.invoke()
+        }
+        if (intent?.action == ACTION_MOVE_TO_BACK) {
+            moveTaskToBack(true)
         }
     }
 }

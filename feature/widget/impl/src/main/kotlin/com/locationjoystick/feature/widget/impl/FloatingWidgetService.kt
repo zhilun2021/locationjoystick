@@ -38,9 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -279,11 +279,12 @@ class FloatingWidgetService :
                 val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .size(48.dp)
-                        .background(Color.Black, CircleShape)
-                        .clickable { onFeatureClicked(feature) },
+                    modifier =
+                        Modifier
+                            .padding(4.dp)
+                            .size(48.dp)
+                            .background(Color.Black, CircleShape)
+                            .clickable { onFeatureClicked(feature) },
                 ) {
                     Icon(
                         imageVector = icon,
@@ -430,6 +431,7 @@ class FloatingWidgetService :
                     setOnClickListener {
                         teleportToFavorite(favorite)
                         onDismiss()
+                        moveAppToBack()
                     }
                 },
             )
@@ -440,6 +442,7 @@ class FloatingWidgetService :
                     setOnClickListener {
                         startWalkToFavorite(favorite)
                         onDismiss()
+                        moveAppToBack()
                     }
                 },
             )
@@ -618,6 +621,7 @@ class FloatingWidgetService :
                     setOnClickListener {
                         startRouteReplay(route.id, false)
                         onDismiss()
+                        moveAppToBack()
                     }
                 },
             )
@@ -628,6 +632,7 @@ class FloatingWidgetService :
                     setOnClickListener {
                         startRouteReplay(route.id, true)
                         onDismiss()
+                        moveAppToBack()
                     }
                 },
             )
@@ -699,13 +704,29 @@ class FloatingWidgetService :
 
     private fun openMap() {
         try {
-            val intent = Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            }
+            val intent =
+                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    putExtra("navigate_to_map", true)
+                }
             startActivity(intent)
             Log.d(TAG, "Opened map screen")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open map screen", e)
+        }
+    }
+
+    private fun moveAppToBack() {
+        try {
+            val intent =
+                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
+                    action = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                }
+            startActivity(intent)
+            Log.d(TAG, "Sent move-to-back to MainActivity")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send move-to-back", e)
         }
     }
 

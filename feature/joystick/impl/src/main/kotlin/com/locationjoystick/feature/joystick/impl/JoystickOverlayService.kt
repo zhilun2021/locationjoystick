@@ -224,12 +224,13 @@ class JoystickOverlayService : OverlayService() {
 
     private fun startLockedMovement(input: JoystickInput) {
         stopLockedMovement()
-        lockedMovementJob = serviceScope.launch {
-            while (true) {
-                delay(MOVE_STEP_MS)
-                applyJoystickInput(input)
+        lockedMovementJob =
+            serviceScope.launch {
+                while (true) {
+                    delay(MOVE_STEP_MS)
+                    applyJoystickInput(input)
+                }
             }
-        }
     }
 
     private fun stopLockedMovement() {
