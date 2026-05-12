@@ -1,18 +1,11 @@
 package com.locationjoystick.feature.favorites.impl
 
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
@@ -208,50 +201,48 @@ internal fun MapPickerScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            Column(
+            // Search bar — top overlay, shown when toggled
+            if (showSearchBar) {
+                NominatimSearchBar(
+                    onLocationSelected = { lat, lon, _ ->
+                        selectedPosition.value = lat to lon
+                        showSearchBar = false
+                        val map = mapRef.value ?: return@NominatimSearchBar
+                        map.animateCamera(
+                            CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                            500,
+                        )
+                        val src = markerSource.value ?: return@NominatimSearchBar
+                        src.setGeoJson(buildMarkerGeoJson(lat, lon))
+                    },
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(
+                                top = paddingValues.calculateTopPadding() + 8.dp,
+                                start = 56.dp,
+                                end = 12.dp,
+                            ),
+                )
+            }
+
+            FloatingActionButton(
+                onClick = { showSearchBar = !showSearchBar },
                 modifier =
                     Modifier
                         .align(Alignment.BottomStart)
                         .padding(start = 16.dp, bottom = 16.dp),
-                horizontalAlignment = Alignment.Start,
+                containerColor =
+                    if (showSearchBar) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
             ) {
-                AnimatedVisibility(
-                    visible = showSearchBar,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
-                    exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
-                ) {
-                    NominatimSearchBar(
-                        onLocationSelected = { lat, lon, _ ->
-                            selectedPosition.value = lat to lon
-                            showSearchBar = false
-                            val map = mapRef.value ?: return@NominatimSearchBar
-                            map.animateCamera(
-                                CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
-                                500,
-                            )
-                            val src = markerSource.value ?: return@NominatimSearchBar
-                            src.setGeoJson(buildMarkerGeoJson(lat, lon))
-                        },
-                        modifier =
-                            Modifier
-                                .widthIn(max = 300.dp)
-                                .padding(bottom = 8.dp),
-                    )
-                }
-                FloatingActionButton(
-                    onClick = { showSearchBar = !showSearchBar },
-                    containerColor =
-                        if (showSearchBar) {
-                            MaterialTheme.colorScheme.primaryContainer
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search location",
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "Search location",
+                )
             }
         }
     }

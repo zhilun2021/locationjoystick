@@ -92,23 +92,29 @@ fun NominatimSearchBar(
     val showResults = results.isNotEmpty() || (query.length >= 2 && !isLoading)
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(4.dp, RoundedCornerShape(12.dp))
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .shadow(4.dp, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surface),
     ) {
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface),
             placeholder = { Text("Search location...") },
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
             singleLine = true,
-            shape = if (showResults) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
-            else RoundedCornerShape(12.dp),
+            shape =
+                if (showResults) {
+                    RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                } else {
+                    RoundedCornerShape(12.dp)
+                },
         )
 
         if (showResults) {
@@ -118,9 +124,10 @@ fun NominatimSearchBar(
                     text = "No results found",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
             }
             results.forEach { result ->
@@ -129,14 +136,14 @@ fun NominatimSearchBar(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onLocationSelected(result.lat, result.lon, result.displayName)
-                            query = ""
-                            results = emptyList()
-                        }
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onLocationSelected(result.lat, result.lon, result.displayName)
+                                query = ""
+                                results = emptyList()
+                            }.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
                 HorizontalDivider()
             }
