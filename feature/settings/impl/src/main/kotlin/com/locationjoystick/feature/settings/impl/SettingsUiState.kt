@@ -10,4 +10,5 @@ data class SettingsUiState(
     val bikeSpeed: Double = 5.5,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val enabledWidgetFeatures: Set<WidgetFeature> = WidgetFeature.entries.toSet(),
+    val isDirty: Boolean = false,
 )

@@ -18,8 +18,10 @@ import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -42,20 +44,63 @@ class SettingsViewModel @Inject constructor(
         private const val TAG = "SettingsViewModel"
     }
 
-    val uiState: StateFlow<SettingsUiState> = combine(
+    private data class RepoState(
+        val walkSpeed: Double,
+        val runSpeed: Double,
+        val bikeSpeed: Double,
+        val speedUnit: SpeedUnit,
+        val widgetFeatures: Set<WidgetFeature>,
+    )
+
+    private data class DraftState(
+        val walkSpeed: Double? = null,
+        val runSpeed: Double? = null,
+        val bikeSpeed: Double? = null,
+        val speedUnit: SpeedUnit? = null,
+        val widgetFeatures: Set<WidgetFeature>? = null,
+    )
+
+    private val _draftWalkSpeed = MutableStateFlow<Double?>(null)
+    private val _draftRunSpeed = MutableStateFlow<Double?>(null)
+    private val _draftBikeSpeed = MutableStateFlow<Double?>(null)
+    private val _draftSpeedUnit = MutableStateFlow<SpeedUnit?>(null)
+    private val _draftWidgetFeatures = MutableStateFlow<Set<WidgetFeature>?>(null)
+
+    private val _repoState = combine(
         settingsRepository.getWalkSpeed(),
         settingsRepository.getRunSpeed(),
         settingsRepository.getBikeSpeed(),
         settingsRepository.getSpeedUnit(),
         settingsRepository.getWidgetFeatures(),
     ) { walkSpeed, runSpeed, bikeSpeed, speedUnit, features ->
+        RepoState(walkSpeed, runSpeed, bikeSpeed, speedUnit, features.toSet())
+    }
+
+    private val _draftState = combine(
+        _draftWalkSpeed.asStateFlow(),
+        _draftRunSpeed.asStateFlow(),
+        _draftBikeSpeed.asStateFlow(),
+        _draftSpeedUnit.asStateFlow(),
+        _draftWidgetFeatures.asStateFlow(),
+    ) { draftWalk, draftRun, draftBike, draftUnit, draftFeatures ->
+        DraftState(draftWalk, draftRun, draftBike, draftUnit, draftFeatures)
+    }
+
+    val uiState: StateFlow<SettingsUiState> = combine(
+        _repoState,
+        _draftState,
+    ) { repoState, draftState ->
+        val isDirty = draftState.walkSpeed != null || draftState.runSpeed != null ||
+                draftState.bikeSpeed != null || draftState.speedUnit != null ||
+                draftState.widgetFeatures != null
         SettingsUiState(
             isLoading = false,
-            walkSpeed = walkSpeed,
-            runSpeed = runSpeed,
-            bikeSpeed = bikeSpeed,
-            speedUnit = speedUnit,
-            enabledWidgetFeatures = features.toSet(),
+            walkSpeed = draftState.walkSpeed ?: repoState.walkSpeed,
+            runSpeed = draftState.runSpeed ?: repoState.runSpeed,
+            bikeSpeed = draftState.bikeSpeed ?: repoState.bikeSpeed,
+            speedUnit = draftState.speedUnit ?: repoState.speedUnit,
+            enabledWidgetFeatures = draftState.widgetFeatures ?: repoState.widgetFeatures,
+            isDirty = isDirty,
         )
     }
         .stateIn(
@@ -66,35 +111,64 @@ class SettingsViewModel @Inject constructor(
 
     fun setWalkSpeed(displaySpeed: Double) {
         val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-        viewModelScope.launch {
-            settingsRepository.setWalkSpeed(ms)
-        }
+        _draftWalkSpeed.value = ms
     }
 
     fun setRunSpeed(displaySpeed: Double) {
         val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-        viewModelScope.launch {
-            settingsRepository.setRunSpeed(ms)
-        }
+        _draftRunSpeed.value = ms
     }
 
     fun setBikeSpeed(displaySpeed: Double) {
         val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-        viewModelScope.launch {
-            settingsRepository.setBikeSpeed(ms)
-        }
+        _draftBikeSpeed.value = ms
     }
 
     fun setSpeedUnit(unit: SpeedUnit) {
-        viewModelScope.launch {
-            settingsRepository.setSpeedUnit(unit)
-        }
+        _draftSpeedUnit.value = unit
     }
 
     fun setWidgetFeatures(features: Set<WidgetFeature>) {
+        _draftWidgetFeatures.value = features
+    }
+
+    fun saveChanges() {
         viewModelScope.launch {
-            settingsRepository.setWidgetFeatures(features.toList())
+            val draftWalk = _draftWalkSpeed.value
+            val draftRun = _draftRunSpeed.value
+            val draftBike = _draftBikeSpeed.value
+            val draftUnit = _draftSpeedUnit.value
+            val draftFeatures = _draftWidgetFeatures.value
+
+            if (draftWalk != null) {
+                settingsRepository.setWalkSpeed(draftWalk)
+                _draftWalkSpeed.value = null
+            }
+            if (draftRun != null) {
+                settingsRepository.setRunSpeed(draftRun)
+                _draftRunSpeed.value = null
+            }
+            if (draftBike != null) {
+                settingsRepository.setBikeSpeed(draftBike)
+                _draftBikeSpeed.value = null
+            }
+            if (draftUnit != null) {
+                settingsRepository.setSpeedUnit(draftUnit)
+                _draftSpeedUnit.value = null
+            }
+            if (draftFeatures != null) {
+                settingsRepository.setWidgetFeatures(draftFeatures.toList())
+                _draftWidgetFeatures.value = null
+            }
         }
+    }
+
+    fun discardChanges() {
+        _draftWalkSpeed.value = null
+        _draftRunSpeed.value = null
+        _draftBikeSpeed.value = null
+        _draftSpeedUnit.value = null
+        _draftWidgetFeatures.value = null
     }
 
     fun convertMsToDisplay(ms: Double, unit: SpeedUnit): Double {
@@ -120,7 +194,7 @@ class SettingsViewModel @Inject constructor(
                     SpeedProfile(id = "run", name = "Run", speedMetersPerSecond = state.runSpeed),
                     SpeedProfile(id = "bike", name = "Bike", speedMetersPerSecond = state.bikeSpeed),
                 )
-                val settings = AppSettings(speedUnit = state.speedUnit)
+                val settings = AppSettings(speedUnit = state.speedUnit, enabledWidgetFeatures = state.enabledWidgetFeatures.toList())
                 val routes = routeRepository.getRoutes().first()
                 val favorites = favoriteRepository.getFavorites().first()
 
