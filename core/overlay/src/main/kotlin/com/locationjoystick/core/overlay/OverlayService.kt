@@ -7,7 +7,6 @@ import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.WindowInsets
 import android.view.WindowManager
 
 abstract class OverlayService : Service() {
@@ -37,19 +36,14 @@ abstract class OverlayService : Service() {
     ): Int {
         if (overlayView == null) {
             val view = createOverlayView()
-
-            view.post {
-                try {
-                    val params = getWindowManagerParams(view)
-                    windowManager.addView(view, params)
-
-                    overlayView = view
-                    currentParams = params
-
-                    Log.d(tag, "Overlay view added to WindowManager")
-                } catch (e: Exception) {
-                    Log.e(tag, "Failed to add overlay view to WindowManager", e)
-                }
+            try {
+                val params = getWindowManagerParams(view)
+                windowManager.addView(view, params)
+                overlayView = view
+                currentParams = params
+                Log.d(tag, "Overlay view added to WindowManager")
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to add overlay view to WindowManager", e)
             }
         }
 
@@ -66,18 +60,6 @@ abstract class OverlayService : Service() {
     abstract fun createOverlayView(): View
 
     open fun getWindowManagerParams(view: View): WindowManager.LayoutParams {
-        val metrics = windowManager.currentWindowMetrics
-        val bounds = metrics.bounds
-
-        val insets =
-            metrics.windowInsets.getInsetsIgnoringVisibility(
-                WindowInsets.Type.systemBars(),
-            )
-
-        val usableHeight = bounds.height() - insets.top - insets.bottom
-
-        val centerY = insets.top + ((usableHeight / 2) - (view.measuredHeight / 2))
-
         return WindowManager
             .LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -87,9 +69,9 @@ abstract class OverlayService : Service() {
                     WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT,
             ).apply {
-                gravity = Gravity.TOP or Gravity.START
+                gravity = Gravity.CENTER_VERTICAL or Gravity.START
                 x = 0
-                y = centerY
+                y = 0
             }
     }
 

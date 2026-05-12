@@ -215,7 +215,7 @@ internal fun SetupScreen(
             LjPrimaryButton(
                 text = "Start using locationjoystick",
                 onClick = onSetupComplete,
-                enabled = uiState.canProceed,
+                enabled = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
