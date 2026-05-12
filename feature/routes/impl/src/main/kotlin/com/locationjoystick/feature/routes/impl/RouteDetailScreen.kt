@@ -11,7 +11,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,6 +76,16 @@ class RouteDetailViewModel @Inject constructor(
         }
     }
 
+    fun deleteRoute() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                routeRepository.deleteRoute(routeId)
+            } catch (e: Exception) {
+                Log.e(TAG, "delete failed", e)
+            }
+        }
+    }
+
     suspend fun renameRoute(name: String) {
         if (name.isBlank()) {
             _nameError.value = true
@@ -102,6 +115,7 @@ fun RouteDetailScreen(
     val coroutineScope = rememberCoroutineScope()
     
     var editedName by remember { mutableStateOf("") }
+    var showMenu by remember { mutableStateOf(false) }
     
     if (route != null && editedName.isEmpty()) {
         editedName = route!!.name
@@ -122,7 +136,27 @@ fun RouteDetailScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         LjTopBar(
             title = "Route Details",
-            onMenuClick = {},
+            onMenuClick = { showMenu = true },
+            actions = {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Delete route") },
+                        onClick = {
+                            showMenu = false
+                            coroutineScope.launch {
+                                viewModel.deleteRoute()
+                                onNavigateBack()
+                            }
+                        }
+                    )
+                }
+            }
         )
 
         Box(modifier = Modifier.fillMaxSize()) {
