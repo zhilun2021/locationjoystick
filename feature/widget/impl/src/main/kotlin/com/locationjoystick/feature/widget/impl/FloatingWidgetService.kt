@@ -15,7 +15,13 @@ import android.widget.LinearLayout
 import android.widget.PopupWindow
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
@@ -26,14 +32,16 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -264,16 +272,23 @@ class FloatingWidgetService :
             // No-op: placeholder not rendered as overlay is collapsed when empty
             return
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             features.forEach { feature ->
                 val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
-                val activeColor = MaterialTheme.colorScheme.onSurface
-                val inactiveColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                IconButton(onClick = { onFeatureClicked(feature) }) {
+                val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(48.dp)
+                        .background(Color.Black, CircleShape)
+                        .clickable { onFeatureClicked(feature) },
+                ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = feature.toContentDescription(),
-                        tint = if (active) activeColor else inactiveColor,
+                        tint = iconTint,
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             }
