@@ -4,8 +4,8 @@ data class AppSettings(
     val activeSpeedProfileId: String = "walk",
     val joystickStyle: JoystickStyle = JoystickStyle.FLOATING,
     val enabledWidgetFeatures: List<WidgetFeature> = listOf(
-        WidgetFeature.SPEED_PROFILE,
-        WidgetFeature.MOCK_STATE,
+        WidgetFeature.JOYSTICK_TOGGLE,
+        WidgetFeature.SPEED_CYCLE,
     ),
     val mapFollowsLocation: Boolean = true,
     val useRoadSnappingByDefault: Boolean = false,

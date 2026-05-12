@@ -1,9 +1,9 @@
 package com.locationjoystick.core.model
 
 enum class WidgetFeature {
-    SPEED_PROFILE,
-    CURRENT_COORDINATES,
-    MOCK_STATE,
-    ROUTE_PROGRESS,
-    ROAMING_TIMER,
+    JOYSTICK_TOGGLE,
+    JOYSTICK_LOCK,
+    ROUTES_PICKER,
+    FAVORITES_PICKER,
+    SPEED_CYCLE,
 }
