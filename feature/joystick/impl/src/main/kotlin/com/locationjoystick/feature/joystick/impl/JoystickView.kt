@@ -32,6 +32,7 @@ class JoystickView @JvmOverloads constructor(
 
     var onInputChanged: ((JoystickInput) -> Unit)? = null
     var onReleased: (() -> Unit)? = null
+    var shouldResetOnRelease: (() -> Boolean)? = null
 
     private val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
@@ -103,10 +104,12 @@ class JoystickView @JvmOverloads constructor(
             }
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                knobOffsetX = 0f
-                knobOffsetY = 0f
+                if (shouldResetOnRelease?.invoke() != false) {
+                    knobOffsetX = 0f
+                    knobOffsetY = 0f
+                    onInputChanged?.invoke(JoystickInput(angleDegrees = 0f, force = 0f))
+                }
                 onReleased?.invoke()
-                onInputChanged?.invoke(JoystickInput(angleDegrees = 0f, force = 0f))
                 invalidate()
                 return true
             }

@@ -44,6 +44,8 @@ class JoystickOverlayService : OverlayService() {
 
     private var mockLocationService: MockLocationService? = null
 
+    private var isLocked = false
+
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             mockLocationService = (binder as MockLocationService.LocalBinder).getService()
@@ -75,6 +77,11 @@ class JoystickOverlayService : OverlayService() {
         super.onDestroy()
     }
 
+    fun setLocked(locked: Boolean) {
+        isLocked = locked
+        Log.d(TAG, "Joystick locked: $locked")
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun createOverlayView(): View {
         val view = JoystickView(this)
@@ -86,6 +93,8 @@ class JoystickOverlayService : OverlayService() {
                 }
             }
         }
+
+        view.shouldResetOnRelease = { !isLocked }
 
         view.onReleased = {
             Log.d(TAG, "Joystick released — position held")
