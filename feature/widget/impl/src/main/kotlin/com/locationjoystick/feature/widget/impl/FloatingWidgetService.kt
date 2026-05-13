@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
@@ -356,7 +357,7 @@ class FloatingWidgetService :
                                     do {
                                         val event = awaitPointerEvent()
                                         val drag = event.changes.firstOrNull() ?: break
-                                        val delta = drag.positionChange()
+                                        val delta = drag.position - drag.previousPosition
                                         if (delta != androidx.compose.ui.geometry.Offset.Zero) {
                                             isDragging = true
                                             onDrag(delta.x, delta.y)
