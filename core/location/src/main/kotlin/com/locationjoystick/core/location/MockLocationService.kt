@@ -261,6 +261,11 @@ class MockLocationService : Service() {
             Log.i(TAG, "Spoofing already running; ignoring duplicate startSpoofing()")
             return
         }
+        // Reset ERROR state so a retry attempt can proceed cleanly.
+        if (_state.value == MockLocationState.ERROR) {
+            Log.i(TAG, "Clearing ERROR state before retry")
+            _state.value = MockLocationState.IDLE
+        }
 
         currentLat = lat
         currentLon = lon
@@ -398,6 +403,18 @@ class MockLocationService : Service() {
 
     private fun setupTestProvider() {
         if (providerAdded) return
+        // Attempt to remove any ghost provider left by a previous crash. If the process was killed
+        // mid-run the provider may still be registered under our package, causing addTestProvider
+        // to throw IllegalArgumentException. Removing first clears the slot safely.
+        try {
+            locationManager.removeTestProvider(LocationManager.GPS_PROVIDER)
+            Log.i(TAG, "Removed stale test provider before re-registering")
+        } catch (_: IllegalArgumentException) {
+            // Not registered — nothing to clear
+        } catch (e: Exception) {
+            Log.w(TAG, "Unexpected error clearing stale test provider", e)
+        }
+
         try {
             val properties =
                 ProviderProperties
