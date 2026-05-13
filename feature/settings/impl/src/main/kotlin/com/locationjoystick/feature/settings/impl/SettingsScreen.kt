@@ -87,6 +87,7 @@ fun SettingsRoute(
         onSetBikeSpeed = viewModel::setBikeSpeed,
         onSetSpeedUnit = viewModel::setSpeedUnit,
         onSetWidgetFeatures = viewModel::setWidgetFeatures,
+        onSetRememberLastLocation = viewModel::setRememberLastLocation,
         convertMsToDisplay = viewModel::convertMsToDisplay,
         onExport = { viewModel.exportSettings(context) },
         onImport = { importLauncher.launch(arrayOf("application/json")) },
@@ -104,6 +105,7 @@ internal fun SettingsScreen(
     onSetBikeSpeed: (Double) -> Unit,
     onSetSpeedUnit: (SpeedUnit) -> Unit,
     onSetWidgetFeatures: (Set<WidgetFeature>) -> Unit,
+    onSetRememberLastLocation: (Boolean) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -253,6 +255,28 @@ internal fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.errorContainer,
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Text("Map", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = uiState.rememberLastLocation,
+                                onCheckedChange = { onSetRememberLastLocation(it) },
+                            )
+                            Text(
+                                "Remember last location",
+                                modifier = Modifier.padding(start = 8.dp),
                             )
                         }
 

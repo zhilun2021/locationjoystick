@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.LatLng
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,6 +43,7 @@ class MapViewModel
         private val locationRepository: LocationRepository,
         private val routeRepository: RouteRepository,
         private val favoriteRepository: FavoriteRepository,
+        private val settingsRepository: SettingsRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()

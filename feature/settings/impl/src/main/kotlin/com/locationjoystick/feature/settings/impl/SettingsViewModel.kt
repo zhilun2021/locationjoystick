@@ -52,6 +52,7 @@ class SettingsViewModel
             val bikeSpeed: Double,
             val speedUnit: SpeedUnit,
             val widgetFeatures: Set<WidgetFeature>,
+            val rememberLastLocation: Boolean,
         )
 
         private data class DraftState(
@@ -60,6 +61,7 @@ class SettingsViewModel
             val bikeSpeed: Double? = null,
             val speedUnit: SpeedUnit? = null,
             val widgetFeatures: Set<WidgetFeature>? = null,
+            val rememberLastLocation: Boolean? = null,
         )
 
         private val _draftWalkSpeed = MutableStateFlow<Double?>(null)
@@ -67,27 +69,60 @@ class SettingsViewModel
         private val _draftBikeSpeed = MutableStateFlow<Double?>(null)
         private val _draftSpeedUnit = MutableStateFlow<SpeedUnit?>(null)
         private val _draftWidgetFeatures = MutableStateFlow<Set<WidgetFeature>?>(null)
+        private val _draftRememberLastLocation = MutableStateFlow<Boolean?>(null)
 
         private val _repoState =
             combine(
-                settingsRepository.getWalkSpeed(),
-                settingsRepository.getRunSpeed(),
-                settingsRepository.getBikeSpeed(),
-                settingsRepository.getSpeedUnit(),
-                settingsRepository.getWidgetFeatures(),
-            ) { walkSpeed, runSpeed, bikeSpeed, speedUnit, features ->
-                RepoState(walkSpeed, runSpeed, bikeSpeed, speedUnit, features.toSet())
+                combine(
+                    settingsRepository.getWalkSpeed(),
+                    settingsRepository.getRunSpeed(),
+                    settingsRepository.getBikeSpeed(),
+                ) { walkSpeed, runSpeed, bikeSpeed ->
+                    Triple(walkSpeed, runSpeed, bikeSpeed)
+                },
+                combine(
+                    settingsRepository.getSpeedUnit(),
+                    settingsRepository.getWidgetFeatures(),
+                    settingsRepository.getRememberLastLocation(),
+                ) { speedUnit, features, rememberLastLocation ->
+                    Triple(speedUnit, features, rememberLastLocation)
+                },
+            ) { speeds, settings ->
+                RepoState(
+                    walkSpeed = speeds.first,
+                    runSpeed = speeds.second,
+                    bikeSpeed = speeds.third,
+                    speedUnit = settings.first,
+                    widgetFeatures = settings.second.toSet(),
+                    rememberLastLocation = settings.third,
+                )
             }
 
         private val _draftState =
             combine(
-                _draftWalkSpeed.asStateFlow(),
-                _draftRunSpeed.asStateFlow(),
-                _draftBikeSpeed.asStateFlow(),
-                _draftSpeedUnit.asStateFlow(),
-                _draftWidgetFeatures.asStateFlow(),
-            ) { draftWalk, draftRun, draftBike, draftUnit, draftFeatures ->
-                DraftState(draftWalk, draftRun, draftBike, draftUnit, draftFeatures)
+                combine(
+                    _draftWalkSpeed.asStateFlow(),
+                    _draftRunSpeed.asStateFlow(),
+                    _draftBikeSpeed.asStateFlow(),
+                ) { walk, run, bike ->
+                    Triple(walk, run, bike)
+                },
+                combine(
+                    _draftSpeedUnit.asStateFlow(),
+                    _draftWidgetFeatures.asStateFlow(),
+                    _draftRememberLastLocation.asStateFlow(),
+                ) { unit, features, remember ->
+                    Triple(unit, features, remember)
+                },
+            ) { speeds, settings ->
+                DraftState(
+                    walkSpeed = speeds.first,
+                    runSpeed = speeds.second,
+                    bikeSpeed = speeds.third,
+                    speedUnit = settings.first,
+                    widgetFeatures = settings.second,
+                    rememberLastLocation = settings.third,
+                )
             }
 
         val uiState: StateFlow<SettingsUiState> =
@@ -98,7 +133,7 @@ class SettingsViewModel
                 val isDirty =
                     draftState.walkSpeed != null || draftState.runSpeed != null ||
                         draftState.bikeSpeed != null || draftState.speedUnit != null ||
-                        draftState.widgetFeatures != null
+                        draftState.widgetFeatures != null || draftState.rememberLastLocation != null
                 SettingsUiState(
                     isLoading = false,
                     walkSpeed = draftState.walkSpeed ?: repoState.walkSpeed,
@@ -106,6 +141,7 @@ class SettingsViewModel
                     bikeSpeed = draftState.bikeSpeed ?: repoState.bikeSpeed,
                     speedUnit = draftState.speedUnit ?: repoState.speedUnit,
                     enabledWidgetFeatures = draftState.widgetFeatures ?: repoState.widgetFeatures,
+                    rememberLastLocation = draftState.rememberLastLocation ?: repoState.rememberLastLocation,
                     isDirty = isDirty,
                 )
             }.stateIn(
@@ -137,6 +173,10 @@ class SettingsViewModel
             _draftWidgetFeatures.value = features
         }
 
+        fun setRememberLastLocation(enabled: Boolean) {
+            _draftRememberLastLocation.value = enabled
+        }
+
         fun saveChanges() {
             viewModelScope.launch {
                 val draftWalk = _draftWalkSpeed.value
@@ -144,6 +184,7 @@ class SettingsViewModel
                 val draftBike = _draftBikeSpeed.value
                 val draftUnit = _draftSpeedUnit.value
                 val draftFeatures = _draftWidgetFeatures.value
+                val draftRememberLastLocation = _draftRememberLastLocation.value
 
                 if (draftWalk != null) {
                     settingsRepository.setWalkSpeed(draftWalk)
@@ -165,6 +206,10 @@ class SettingsViewModel
                     settingsRepository.setWidgetFeatures(draftFeatures.toList())
                     _draftWidgetFeatures.value = null
                 }
+                if (draftRememberLastLocation != null) {
+                    settingsRepository.setRememberLastLocation(draftRememberLastLocation)
+                    _draftRememberLastLocation.value = null
+                }
             }
         }
 
@@ -174,6 +219,7 @@ class SettingsViewModel
             _draftBikeSpeed.value = null
             _draftSpeedUnit.value = null
             _draftWidgetFeatures.value = null
+            _draftRememberLastLocation.value = null
         }
 
         fun convertMsToDisplay(

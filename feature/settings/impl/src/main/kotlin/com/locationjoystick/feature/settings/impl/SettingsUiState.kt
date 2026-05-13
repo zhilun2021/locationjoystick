@@ -11,5 +11,6 @@ data class SettingsUiState(
     val bikeSpeed: Double = SpeedProfile.BIKE_SPEED_MPS,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val enabledWidgetFeatures: Set<WidgetFeature> = WidgetFeature.entries.toSet(),
+    val rememberLastLocation: Boolean = true,
     val isDirty: Boolean = false,
 )

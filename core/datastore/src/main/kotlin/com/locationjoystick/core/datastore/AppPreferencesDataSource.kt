@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedProfile.Companion.BIKE_SPEED_MPS
 import com.locationjoystick.core.model.SpeedProfile.Companion.RUN_SPEED_MPS
@@ -39,6 +40,9 @@ class AppPreferencesDataSource
             val ROAMING_TRANSPORT_MODE = stringPreferencesKey("roaming_transport_mode")
             val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
             val SPEED_UNIT = stringPreferencesKey("speed_unit")
+            val REMEMBER_LAST_LOCATION = booleanPreferencesKey("remember_last_location")
+            val LAST_LATITUDE = doublePreferencesKey("last_latitude")
+            val LAST_LONGITUDE = doublePreferencesKey("last_longitude")
         }
 
         fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -156,6 +160,43 @@ class AppPreferencesDataSource
 
         suspend fun setSpeedUnit(unit: String) {
             dataStore.edit { prefs -> prefs[Keys.SPEED_UNIT] = unit }
+        }
+
+        fun getRememberLastLocation(): Flow<Boolean> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading remember last location preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.REMEMBER_LAST_LOCATION] ?: true }
+
+        suspend fun setRememberLastLocation(enabled: Boolean) {
+            dataStore.edit { prefs -> prefs[Keys.REMEMBER_LAST_LOCATION] = enabled }
+        }
+
+        fun getLastLocation(): Flow<LatLng?> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading last location preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs ->
+                    val lat = prefs[Keys.LAST_LATITUDE]
+                    val lon = prefs[Keys.LAST_LONGITUDE]
+                    if (lat != null && lon != null) LatLng(lat, lon) else null
+                }
+
+        suspend fun setLastLocation(location: LatLng) {
+            dataStore.edit { prefs ->
+                prefs[Keys.LAST_LATITUDE] = location.latitude
+                prefs[Keys.LAST_LONGITUDE] = location.longitude
+            }
         }
 
         fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {

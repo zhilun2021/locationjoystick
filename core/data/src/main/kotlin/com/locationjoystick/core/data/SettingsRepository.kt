@@ -5,6 +5,7 @@ import com.locationjoystick.core.datastore.RoamingPreferences
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.model.AppSettings
 import com.locationjoystick.core.model.JoystickStyle
+import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
@@ -85,4 +86,12 @@ class SettingsRepository
                     SpeedUnit.KMH
                 }
             }
+
+        fun getRememberLastLocation(): Flow<Boolean> = dataSource.getRememberLastLocation()
+
+        suspend fun setRememberLastLocation(enabled: Boolean) = dataSource.setRememberLastLocation(enabled)
+
+        fun getLastLocation(): Flow<LatLng?> = dataSource.getLastLocation()
+
+        suspend fun setLastLocation(location: LatLng) = dataSource.setLastLocation(location)
     }
