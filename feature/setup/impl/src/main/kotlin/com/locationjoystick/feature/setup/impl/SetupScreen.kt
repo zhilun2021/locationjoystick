@@ -215,9 +215,19 @@ internal fun SetupScreen(
             LjPrimaryButton(
                 text = "Start using locationjoystick",
                 onClick = onSetupComplete,
-                enabled = true,
+                enabled = uiState.canProceed || uiState.isDebugBuild,
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            if (uiState.isDebugBuild && !uiState.canProceed) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Debug build — permissions optional",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -349,6 +359,24 @@ private fun SetupScreenPreview() {
                     locationPermissionGranted = true,
                     overlayPermissionGranted = false,
                     mockLocationEnabled = false,
+                ),
+            onCheckPermissions = {},
+            onSetupComplete = {},
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Debug — permissions missing")
+@Composable
+private fun SetupScreenDebugPreview() {
+    LjTheme {
+        SetupScreen(
+            uiState =
+                SetupUiState(
+                    locationPermissionGranted = false,
+                    overlayPermissionGranted = false,
+                    mockLocationEnabled = false,
+                    isDebugBuild = true,
                 ),
             onCheckPermissions = {},
             onSetupComplete = {},

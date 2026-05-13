@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.util.isMockLocationEnabled
 import com.locationjoystick.core.common.util.isOverlayPermissionGranted
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.feature.setup.impl.BuildConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ class SetupViewModel
         @ApplicationContext private val context: Context,
         private val settingsRepository: SettingsRepository,
     ) : ViewModel() {
-        private val _uiState = MutableStateFlow(SetupUiState())
+        private val _uiState = MutableStateFlow(SetupUiState(isDebugBuild = BuildConfig.DEBUG))
         val uiState: StateFlow<SetupUiState> = _uiState.asStateFlow()
 
         init {
