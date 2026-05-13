@@ -29,8 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
-import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
@@ -341,7 +341,7 @@ class FloatingWidgetService :
                 Image(
                     painter = painterResource(id = R.drawable.ic_app_launcher),
                     contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(25.dp),
                 )
             }
 
@@ -364,7 +364,7 @@ class FloatingWidgetService :
                                 imageVector = Icons.Rounded.Route,
                                 contentDescription = "Routes picker",
                                 tint = routeIconTint,
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(25.dp),
                             )
                         }
                         // Subicons shown only when route active and expanded
@@ -385,7 +385,7 @@ class FloatingWidgetService :
                                     imageVector = pauseResumeIcon,
                                     contentDescription = if (isRoutePaused) "Resume route" else "Pause route",
                                     tint = pauseResumeTint,
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(25.dp),
                                 )
                             }
                             // STOP button — red
@@ -402,7 +402,7 @@ class FloatingWidgetService :
                                     imageVector = Icons.Rounded.Stop,
                                     contentDescription = "Stop route",
                                     tint = Color(0xFFF44336),
-                                    modifier = Modifier.size(28.dp),
+                                    modifier = Modifier.size(25.dp),
                                 )
                             }
                         }
@@ -422,7 +422,7 @@ class FloatingWidgetService :
                                 imageVector = icon,
                                 contentDescription = feature.toContentDescription(),
                                 tint = iconTint,
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(25.dp),
                             )
                         }
                     }
@@ -439,7 +439,7 @@ class FloatingWidgetService :
     ): Pair<ImageVector, Boolean> =
         when (feature) {
             WidgetFeature.JOYSTICK_TOGGLE -> {
-                Pair(Icons.Rounded.Explore, joystickVisible)
+                Pair(Icons.Rounded.Visibility, joystickVisible)
             }
 
             WidgetFeature.JOYSTICK_LOCK -> {
