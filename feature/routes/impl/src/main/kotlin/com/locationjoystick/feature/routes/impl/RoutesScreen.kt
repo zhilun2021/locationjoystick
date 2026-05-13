@@ -109,7 +109,7 @@ internal fun RoutesScreen(
                         onDismissRequest = { showAddMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Add from map") },
+                            text = { Text("from map") },
                             onClick = {
                                 onNavigateToCreate(RouteType.STRAIGHT)
                                 showAddMenu = false
@@ -117,7 +117,7 @@ internal fun RoutesScreen(
                             leadingIcon = { Icon(Icons.Rounded.Map, null) },
                         )
                         DropdownMenuItem(
-                            text = { Text("Add from GPX") },
+                            text = { Text("from GPX file") },
                             onClick = {
                                 onImportGpx()
                                 showAddMenu = false

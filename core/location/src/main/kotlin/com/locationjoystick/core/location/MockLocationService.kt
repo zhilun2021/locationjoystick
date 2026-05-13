@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationManager
@@ -17,8 +18,11 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.location.BuildConfig
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.routing.RouteReplayEngine
@@ -42,7 +46,9 @@ class MockLocationService : Service() {
     companion object {
         private const val TAG = "MockLocationService"
         private const val NOTIFICATION_ID = 1001
+        private const val NOTIFICATION_ID_PERM_ERROR = 1002
         private const val CHANNEL_ID = "location_spoof_channel"
+        private const val CHANNEL_ID_PERM_ERROR = "location_perm_error_channel"
         private const val UPDATE_INTERVAL_MS = 1000L
         private const val LOCATION_ACCURACY = 3.0f
 
@@ -75,6 +81,8 @@ class MockLocationService : Service() {
     @Inject lateinit var locationRepository: LocationRepository
 
     @Inject lateinit var routeRepository: RouteRepository
+
+    @Inject lateinit var settingsRepository: SettingsRepository
 
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
@@ -152,11 +160,48 @@ class MockLocationService : Service() {
         }
     }
 
+    private fun hasLocationPermission(): Boolean =
+        ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
         startId: Int,
     ): Int {
+        if (!hasLocationPermission()) {
+            if (BuildConfig.DEBUG) {
+                // In debug builds, allow the service to start without location permission so
+                // spoofing can be iterated on without going through the full permission flow.
+                // FOREGROUND_SERVICE_TYPE_LOCATION requires permission on API 34+, so fall back
+                // to type 0 to avoid the SecurityException.
+                Log.w(TAG, "DEBUG: location permission missing — starting foreground with no service type.")
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), 0)
+            } else {
+                Log.e(TAG, "Location permission not granted — posting error notification and resetting onboarding.")
+                // Cannot call startForeground with FOREGROUND_SERVICE_TYPE_LOCATION without location
+                // permission granted — doing so throws SecurityException on API 34+. Start foreground
+                // with no service type as a fallback just long enough to post the error notification.
+                ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), 0)
+                postPermissionErrorNotification()
+                serviceScope.launch { settingsRepository.setOnboardingComplete(false) }
+                stopSelf()
+                return START_NOT_STICKY
+            }
+        } else {
+            // Permission is granted — safe to startForeground with FOREGROUND_SERVICE_TYPE_LOCATION.
+            // Android enforces a 5-second window from onStartCommand, so this must come before
+            // any other work.
+            ServiceCompat.startForeground(
+                this,
+                NOTIFICATION_ID,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+            )
+        }
+
         when (intent?.action) {
             ACTION_START -> {
                 val lat = intent.getDoubleExtra("lat", 48.8566)
@@ -196,13 +241,6 @@ class MockLocationService : Service() {
                 serviceScope.launch { handleReplayStop() }
             }
         }
-
-        ServiceCompat.startForeground(
-            this,
-            NOTIFICATION_ID,
-            buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
-        )
 
         return START_STICKY
     }
@@ -443,8 +481,40 @@ class MockLocationService : Service() {
                 description = "Active while mock location is running"
                 setShowBadge(false)
             }
+        val errorChannel =
+            NotificationChannel(
+                CHANNEL_ID_PERM_ERROR,
+                "Permission Errors",
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "Shown when required permissions are missing"
+            }
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
+        notificationManager.createNotificationChannel(errorChannel)
+    }
+
+    private fun postPermissionErrorNotification() {
+        val openAppIntent =
+            packageManager.getLaunchIntentForPackage(packageName)?.let { intent ->
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            }
+        val notification =
+            NotificationCompat
+                .Builder(this, CHANNEL_ID_PERM_ERROR)
+                .setContentTitle("Permissions missing")
+                .setContentText("Open the app and complete setup to start spoofing.")
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentIntent(openAppIntent)
+                .setAutoCancel(true)
+                .build()
+        getSystemService(NotificationManager::class.java)
+            .notify(NOTIFICATION_ID_PERM_ERROR, notification)
     }
 
     private fun buildNotification(): Notification {
