@@ -261,6 +261,32 @@ internal fun SettingsScreen(
                         Text("Floating Widget", style = MaterialTheme.typography.headlineSmall)
                         Spacer(modifier = Modifier.height(8.dp))
 
+                        // Map shortcut
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = WidgetFeature.MAP in uiState.enabledWidgetFeatures,
+                                onCheckedChange = { isChecked ->
+                                    val updated = uiState.enabledWidgetFeatures.toMutableSet()
+                                    if (isChecked) {
+                                        updated.add(WidgetFeature.MAP)
+                                    } else {
+                                        updated.remove(WidgetFeature.MAP)
+                                    }
+                                    onSetWidgetFeatures(updated)
+                                },
+                            )
+                            Text(
+                                "Map shortcut",
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+
                         // Joystick toggle
                         Row(
                             modifier =
@@ -387,32 +413,6 @@ internal fun SettingsScreen(
                             )
                             Text(
                                 "Speed cycle",
-                                modifier = Modifier.padding(start = 8.dp),
-                            )
-                        }
-
-                        // Map shortcut
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Checkbox(
-                                checked = WidgetFeature.MAP in uiState.enabledWidgetFeatures,
-                                onCheckedChange = { isChecked ->
-                                    val updated = uiState.enabledWidgetFeatures.toMutableSet()
-                                    if (isChecked) {
-                                        updated.add(WidgetFeature.MAP)
-                                    } else {
-                                        updated.remove(WidgetFeature.MAP)
-                                    }
-                                    onSetWidgetFeatures(updated)
-                                },
-                            )
-                            Text(
-                                "Map shortcut",
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }

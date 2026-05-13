@@ -190,6 +190,7 @@ class AppPreferencesDataSource
 
             val DEFAULT_WIDGET_ITEMS: Set<String> =
                 setOf(
+                    WidgetFeature.MAP.name.lowercase(),
                     WidgetFeature.JOYSTICK_TOGGLE.name.lowercase(),
                     WidgetFeature.JOYSTICK_LOCK.name.lowercase(),
                     WidgetFeature.ROUTES_PICKER.name.lowercase(),

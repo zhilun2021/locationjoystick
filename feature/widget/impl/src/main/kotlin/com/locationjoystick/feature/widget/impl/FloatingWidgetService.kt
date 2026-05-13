@@ -6,8 +6,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.ServiceConnection
+import android.graphics.drawable.ColorDrawable
 import android.os.IBinder
 import android.util.Log
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
@@ -28,12 +30,13 @@ import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.GpsFixed
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +63,7 @@ import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
@@ -84,6 +88,8 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
+import android.graphics.Color as AndroidColor
+import android.view.WindowManager as AndroidWindowManager
 
 @AndroidEntryPoint
 class FloatingWidgetService :
@@ -123,6 +129,9 @@ class FloatingWidgetService :
     private val _isRouteActive = MutableStateFlow(false)
     private val _isRoutePaused = MutableStateFlow(false)
     private val _routeExpanded = MutableStateFlow(false)
+
+    // Master panel expand/collapse — folded by default
+    private val _isPanelExpanded = MutableStateFlow(false)
 
     private var mockLocationService: MockLocationService? = null
 
@@ -205,21 +214,23 @@ class FloatingWidgetService :
             }
         }
         lifecycleScope.launch {
-            kotlinx.coroutines.flow.combine(
-                locationRepository.walkTarget,
-                locationRepository.activeRouteId,
-                locationRepository.mockLocationState,
-                locationRepository.isWalkPaused,
-            ) { walkTarget, activeRouteId, state, walkPaused ->
-                val active = walkTarget != null || activeRouteId != null
-                val paused = walkPaused ||
-                    (activeRouteId != null && state == com.locationjoystick.core.model.MockLocationState.PAUSED)
-                active to paused
-            }.collect { (active, paused) ->
-                if (!active) _routeExpanded.value = false
-                _isRouteActive.value = active
-                _isRoutePaused.value = paused
-            }
+            kotlinx.coroutines.flow
+                .combine(
+                    locationRepository.walkTarget,
+                    locationRepository.activeRouteId,
+                    locationRepository.mockLocationState,
+                    locationRepository.isWalkPaused,
+                ) { walkTarget, activeRouteId, state, walkPaused ->
+                    val active = walkTarget != null || activeRouteId != null
+                    val paused =
+                        walkPaused ||
+                            (activeRouteId != null && state == com.locationjoystick.core.model.MockLocationState.PAUSED)
+                    active to paused
+                }.collect { (active, paused) ->
+                    if (!active) _routeExpanded.value = false
+                    _isRouteActive.value = active
+                    _isRoutePaused.value = paused
+                }
         }
     }
 
@@ -275,8 +286,9 @@ class FloatingWidgetService :
             val isRouteActive by _isRouteActive.collectAsState()
             val isRoutePaused by _isRoutePaused.collectAsState()
             val routeExpanded by _routeExpanded.collectAsState()
+            val isPanelExpanded by _isPanelExpanded.collectAsState()
 
-            MaterialTheme {
+            LjTheme {
                 WidgetPanel(
                     features = features,
                     joystickVisible = joystickVisible,
@@ -285,6 +297,8 @@ class FloatingWidgetService :
                     isRouteActive = isRouteActive,
                     isRoutePaused = isRoutePaused,
                     routeExpanded = routeExpanded,
+                    isPanelExpanded = isPanelExpanded,
+                    onToggleMaster = { _isPanelExpanded.value = !_isPanelExpanded.value },
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature, view) },
                     onRouteClicked = { onRouteIconClicked(view) },
                     onRoutePauseResume = { onRoutePauseResumeClicked() },
@@ -305,41 +319,38 @@ class FloatingWidgetService :
         isRouteActive: Boolean,
         isRoutePaused: Boolean,
         routeExpanded: Boolean,
+        isPanelExpanded: Boolean,
+        onToggleMaster: () -> Unit,
         onFeatureClicked: (WidgetFeature) -> Unit,
         onRouteClicked: () -> Unit,
         onRoutePauseResume: () -> Unit,
         onRouteStop: () -> Unit,
     ) {
-        if (features.isEmpty()) {
-            // No-op: placeholder not rendered as overlay is collapsed when empty
-            return
-        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            features.forEach { feature ->
-                if (feature == WidgetFeature.ROUTES_PICKER) {
-                    // Route icon — green when active
-                    val routeIconTint = if (isRouteActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier =
-                            Modifier
-                                .padding(4.dp)
-                                .size(48.dp)
-                                .background(Color.Black, CircleShape)
-                                .clickable { onRouteClicked() },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Route,
-                            contentDescription = "Routes picker",
-                            tint = routeIconTint,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                    // Subicons shown only when route active and expanded
-                    if (isRouteActive && routeExpanded) {
-                        // PAUSE or RESUME button
-                        val pauseResumeIcon = if (isRoutePaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
-                        val pauseResumeTint = if (isRoutePaused) Color(0xFF4CAF50) else Color(0xFF757575)
+            // Master toggle icon — always visible
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier =
+                    Modifier
+                        .padding(4.dp)
+                        .size(48.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .clickable { onToggleMaster() },
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.GpsFixed,
+                    contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
+                    tint = Color.Black,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+
+            // Feature icons — only shown when panel expanded
+            if (isPanelExpanded) {
+                features.forEach { feature ->
+                    if (feature == WidgetFeature.ROUTES_PICKER) {
+                        // Route icon — green when active
+                        val routeIconTint = if (isRouteActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier =
@@ -347,16 +358,57 @@ class FloatingWidgetService :
                                     .padding(4.dp)
                                     .size(48.dp)
                                     .background(Color.Black, CircleShape)
-                                    .clickable { onRoutePauseResume() },
+                                    .clickable { onRouteClicked() },
                         ) {
                             Icon(
-                                imageVector = pauseResumeIcon,
-                                contentDescription = if (isRoutePaused) "Resume route" else "Pause route",
-                                tint = pauseResumeTint,
+                                imageVector = Icons.Rounded.Route,
+                                contentDescription = "Routes picker",
+                                tint = routeIconTint,
                                 modifier = Modifier.size(28.dp),
                             )
                         }
-                        // STOP button — red
+                        // Subicons shown only when route active and expanded
+                        if (isRouteActive && routeExpanded) {
+                            // PAUSE or RESUME button
+                            val pauseResumeIcon = if (isRoutePaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
+                            val pauseResumeTint = if (isRoutePaused) Color(0xFF4CAF50) else Color(0xFF757575)
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier =
+                                    Modifier
+                                        .padding(4.dp)
+                                        .size(48.dp)
+                                        .background(Color.Black, CircleShape)
+                                        .clickable { onRoutePauseResume() },
+                            ) {
+                                Icon(
+                                    imageVector = pauseResumeIcon,
+                                    contentDescription = if (isRoutePaused) "Resume route" else "Pause route",
+                                    tint = pauseResumeTint,
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                            // STOP button — red
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier =
+                                    Modifier
+                                        .padding(4.dp)
+                                        .size(48.dp)
+                                        .background(Color.Black, CircleShape)
+                                        .clickable { onRouteStop() },
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Stop,
+                                    contentDescription = "Stop route",
+                                    tint = Color(0xFFF44336),
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                        }
+                    } else {
+                        val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
+                        val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
                         Box(
                             contentAlignment = Alignment.Center,
                             modifier =
@@ -364,34 +416,15 @@ class FloatingWidgetService :
                                     .padding(4.dp)
                                     .size(48.dp)
                                     .background(Color.Black, CircleShape)
-                                    .clickable { onRouteStop() },
+                                    .clickable { onFeatureClicked(feature) },
                         ) {
                             Icon(
-                                imageVector = Icons.Rounded.Stop,
-                                contentDescription = "Stop route",
-                                tint = Color(0xFFF44336),
+                                imageVector = icon,
+                                contentDescription = feature.toContentDescription(),
+                                tint = iconTint,
                                 modifier = Modifier.size(28.dp),
                             )
                         }
-                    }
-                } else {
-                    val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
-                    val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier =
-                            Modifier
-                                .padding(4.dp)
-                                .size(48.dp)
-                                .background(Color.Black, CircleShape)
-                                .clickable { onFeatureClicked(feature) },
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = feature.toContentDescription(),
-                            tint = iconTint,
-                            modifier = Modifier.size(28.dp),
-                        )
                     }
                 }
             }
@@ -490,10 +523,11 @@ class FloatingWidgetService :
                 resumeWalkToJob()
             } else {
                 // Route replay resume
-                val intent = Intent(this, MockLocationService::class.java).apply {
-                    action = MockLocationService.ACTION_ROUTE_REPLAY_RESUME
-                    putExtra(MockLocationService.EXTRA_SPEED_MS, 1.4)
-                }
+                val intent =
+                    Intent(this, MockLocationService::class.java).apply {
+                        action = MockLocationService.ACTION_ROUTE_REPLAY_RESUME
+                        putExtra(MockLocationService.EXTRA_SPEED_MS, 1.4)
+                    }
                 startService(intent)
             }
         } else {
@@ -504,9 +538,10 @@ class FloatingWidgetService :
                 locationRepository.setWalkPaused(true)
             } else {
                 // Route replay pause
-                val intent = Intent(this, MockLocationService::class.java).apply {
-                    action = MockLocationService.ACTION_ROUTE_REPLAY_PAUSE
-                }
+                val intent =
+                    Intent(this, MockLocationService::class.java).apply {
+                        action = MockLocationService.ACTION_ROUTE_REPLAY_PAUSE
+                    }
                 startService(intent)
             }
         }
@@ -521,9 +556,10 @@ class FloatingWidgetService :
             locationRepository.setWalkTarget(null)
         } else {
             // Stop route replay
-            val intent = Intent(this, MockLocationService::class.java).apply {
-                action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
-            }
+            val intent =
+                Intent(this, MockLocationService::class.java).apply {
+                    action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
+                }
             startService(intent)
         }
     }
@@ -615,15 +651,19 @@ class FloatingWidgetService :
                         setPadding(16, 16, 16, 16)
                     }
 
+                val (popupWidth, popupHeight) = getPopupDimensions()
+
                 val popup =
                     PopupWindow(
                         ScrollView(this@FloatingWidgetService).apply { addView(listLayout) },
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        popupWidth,
+                        popupHeight,
                         true,
                     ).apply {
                         isOutsideTouchable = true
                         isFocusable = true
+                        setBackgroundDrawable(ColorDrawable(AndroidColor.DKGRAY))
+                        elevation = 16f
                     }
 
                 if (favorites.isEmpty()) {
@@ -639,7 +679,7 @@ class FloatingWidgetService :
                     }
                 }
 
-                popup.showAsDropDown(anchor)
+                showPopupCentered(popup, anchor)
             }
         }
     }
@@ -746,15 +786,19 @@ class FloatingWidgetService :
                         setPadding(16, 16, 16, 16)
                     }
 
+                val (popupWidth, popupHeight) = getPopupDimensions()
+
                 val popup =
                     PopupWindow(
                         ScrollView(this@FloatingWidgetService).apply { addView(listLayout) },
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        popupWidth,
+                        popupHeight,
                         true,
                     ).apply {
                         isOutsideTouchable = true
                         isFocusable = true
+                        setBackgroundDrawable(ColorDrawable(AndroidColor.DKGRAY))
+                        elevation = 16f
                     }
 
                 if (routes.isEmpty()) {
@@ -770,7 +814,7 @@ class FloatingWidgetService :
                     }
                 }
 
-                popup.showAsDropDown(anchor)
+                showPopupCentered(popup, anchor)
             }
         }
     }
@@ -812,6 +856,27 @@ class FloatingWidgetService :
                 },
             )
         }
+
+    private fun getPopupDimensions(): Pair<Int, Int> {
+        val wm = getSystemService(WINDOW_SERVICE) as AndroidWindowManager
+        val bounds = wm.currentWindowMetrics.bounds
+        val screenWidth = bounds.width()
+        val screenHeight = bounds.height()
+        return Pair((screenWidth * 0.8).toInt(), (screenHeight * 0.8).toInt())
+    }
+
+    private fun showPopupCentered(
+        popup: PopupWindow,
+        anchor: View,
+    ) {
+        val wm = getSystemService(WINDOW_SERVICE) as AndroidWindowManager
+        val bounds = wm.currentWindowMetrics.bounds
+        val screenWidth = bounds.width()
+        val screenHeight = bounds.height()
+        val xOffset = (screenWidth - popup.width) / 2
+        val yOffset = (screenHeight - popup.height) / 2
+        popup.showAtLocation(anchor, Gravity.NO_GRAVITY, xOffset, yOffset)
+    }
 
     private fun haversineDistance(
         lat1: Double,
@@ -893,13 +958,24 @@ class FloatingWidgetService :
 
     private fun moveAppToBack() {
         try {
-            val intent =
-                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
-                    action = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                }
-            startActivity(intent)
-            Log.d(TAG, "Sent move-to-back to MainActivity")
+            val am = getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+            val isAppForeground =
+                am.runningAppProcesses?.any { proc ->
+                    proc.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+                        proc.processName == packageName
+                } ?: false
+
+            if (isAppForeground) {
+                val intent =
+                    Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
+                        action = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    }
+                startActivity(intent)
+                Log.d(TAG, "App in foreground — sent move-to-back to MainActivity")
+            } else {
+                Log.d(TAG, "App already in background — no move-to-back needed")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send move-to-back", e)
         }
