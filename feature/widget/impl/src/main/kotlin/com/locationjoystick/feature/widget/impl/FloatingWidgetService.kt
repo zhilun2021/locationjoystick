@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
@@ -279,6 +280,10 @@ class FloatingWidgetService :
             }
         composeView = view
 
+        // Accumulate drag delta in overlay coordinate space
+        var dragOffsetX = 0f
+        var dragOffsetY = 0f
+
         view.setContent {
             val features by settingsRepository.getWidgetFeatures().collectAsState(initial = emptyList())
             val joystickVisible by _joystickVisible.collectAsState()
@@ -304,6 +309,11 @@ class FloatingWidgetService :
                     onRouteClicked = { onRouteIconClicked(view) },
                     onRoutePauseResume = { onRoutePauseResumeClicked() },
                     onRouteStop = { onRouteStopClicked() },
+                    onDrag = { dx, dy ->
+                        dragOffsetX += dx
+                        dragOffsetY += dy
+                        updateOverlayPosition(dragOffsetX.toInt(), dragOffsetY.toInt())
+                    },
                 )
             }
         }
@@ -326,9 +336,10 @@ class FloatingWidgetService :
         onRouteClicked: () -> Unit,
         onRoutePauseResume: () -> Unit,
         onRouteStop: () -> Unit,
+        onDrag: (dx: Float, dy: Float) -> Unit,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Master toggle icon — always visible
+            // Master toggle icon — always visible; drag to reposition, tap to toggle panel
             Box(
                 contentAlignment = Alignment.Center,
                 modifier =
@@ -336,7 +347,28 @@ class FloatingWidgetService :
                         .padding(4.dp)
                         .size(48.dp)
                         .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        .clickable { onToggleMaster() },
+                        .pointerInput(Unit) {
+                            var isDragging = false
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    isDragging = false
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val drag = event.changes.firstOrNull() ?: break
+                                        val delta = drag.positionChange()
+                                        if (delta != androidx.compose.ui.geometry.Offset.Zero) {
+                                            isDragging = true
+                                            onDrag(delta.x, delta.y)
+                                            drag.consume()
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                    if (!isDragging) {
+                                        onToggleMaster()
+                                    }
+                                }
+                            }
+                        },
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.ic_app_launcher),
