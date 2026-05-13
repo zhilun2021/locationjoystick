@@ -171,6 +171,26 @@ class MapViewModel
                         it.copy(showFavoritesSheet = false, favoriteTarget = null)
                     }
                 }
+
+                is MapAction.SaveCurrentLocation -> {
+                    val position = _uiState.value.currentPosition ?: return
+                    viewModelScope.launch {
+                        try {
+                            favoriteRepository.addFavorite(
+                                id =
+                                    java.util.UUID
+                                        .randomUUID()
+                                        .toString(),
+                                name = action.name,
+                                position = position,
+                                createdAt = System.currentTimeMillis(),
+                            )
+                            Log.d(TAG, "Saved current location as '${action.name}'")
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to save current location", e)
+                        }
+                    }
+                }
             }
         }
 

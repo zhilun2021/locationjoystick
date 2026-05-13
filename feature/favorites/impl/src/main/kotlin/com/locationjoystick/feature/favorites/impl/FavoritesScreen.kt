@@ -73,6 +73,7 @@ fun FavoritesRoute(
         onUpdateFavorite = viewModel::updateFavorite,
         onNavigateToMapPicker = onNavigateToMapPicker,
         onOpenDrawer = onOpenDrawer,
+        getCurrentPosition = { viewModel.currentSpoofPosition },
     )
 }
 
@@ -88,9 +89,12 @@ internal fun FavoritesScreen(
     onUpdateFavorite: (String, String, Double, Double) -> Unit,
     onNavigateToMapPicker: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
+    getCurrentPosition: () -> com.locationjoystick.core.model.LatLng? = { null },
 ) {
     val context = LocalContext.current
     var showAddSheet by remember { mutableStateOf(false) }
+    var prefillLat by remember { mutableStateOf("") }
+    var prefillLon by remember { mutableStateOf("") }
     var editingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
 
     var showAddMenu by remember { mutableStateOf(false) }
@@ -119,10 +123,23 @@ internal fun FavoritesScreen(
                         DropdownMenuItem(
                             text = { Text("Add from Coordinates") },
                             onClick = {
+                                prefillLat = ""
+                                prefillLon = ""
                                 showAddSheet = true
                                 showAddMenu = false
                             },
                             leadingIcon = { Icon(Icons.Default.Add, null) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Add from current location") },
+                            onClick = {
+                                val pos = getCurrentPosition()
+                                prefillLat = pos?.latitude?.toString() ?: ""
+                                prefillLon = pos?.longitude?.toString() ?: ""
+                                showAddSheet = true
+                                showAddMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Rounded.LocationOn, null) },
                         )
                     }
                 },
@@ -183,6 +200,8 @@ internal fun FavoritesScreen(
             onDismissRequest = { showAddSheet = false },
         ) {
             AddFavoriteSheet(
+                initialLat = prefillLat,
+                initialLon = prefillLon,
                 onDismiss = { showAddSheet = false },
                 onAdd = { name, lat, lon ->
                     onAddFavorite(name, lat, lon)
@@ -276,10 +295,12 @@ private fun FavoriteCard(
 private fun AddFavoriteSheet(
     onDismiss: () -> Unit,
     onAdd: (String, Double, Double) -> Unit,
+    initialLat: String = "",
+    initialLon: String = "",
 ) {
     var name by remember { mutableStateOf("") }
-    var lat by remember { mutableStateOf("") }
-    var lon by remember { mutableStateOf("") }
+    var lat by remember { mutableStateOf(initialLat) }
+    var lon by remember { mutableStateOf(initialLon) }
 
     Column(
         modifier =

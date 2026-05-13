@@ -45,4 +45,8 @@ sealed interface MapAction {
     ) : MapAction
 
     data object ClearPendingTap : MapAction
+
+    data class SaveCurrentLocation(
+        val name: String,
+    ) : MapAction
 }
