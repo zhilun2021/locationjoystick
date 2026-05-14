@@ -12,7 +12,7 @@ we should see our current location on the map when trying to create a new favori
 
 ## move speed
 
-it seems like our implementation doesn't properly respect the speed and/or meter per seconds, i've compared with other apps and we seem to move faster at the same km/h, we can take inspiration of open source apps such as: https://github.com/henryfung0/fake-gps-android/ https://github.com/mcastillof/faketraveler https://github.com/brutalharsh/mock-location-app https://github.com/noobexon1/XposedFakeLocation
+it seems like our implementation doesn't properly respect the speed and/or meter per seconds, i've compared with other apps and we seem to move faster (i'd say around 2 times faster) at the same km/h defined in the settings config, I'm comparing with GPS Joystick, we can take inspiration of open source apps such as: https://github.com/henryfung0/fake-gps-android/ https://github.com/mcastillof/faketraveler https://github.com/brutalharsh/mock-location-app https://github.com/noobexon1/XposedFakeLocation
 
 ## gps jitter
 
