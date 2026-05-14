@@ -95,6 +95,7 @@ fun SettingsRoute(
         onSetSpeedUnit = viewModel::setSpeedUnit,
         onSetWidgetFeatures = viewModel::setWidgetFeatures,
         onSetRememberLastLocation = viewModel::setRememberLastLocation,
+        onSetGpsJitterEnabled = viewModel::setGpsJitterEnabled,
         convertMsToDisplay = viewModel::convertMsToDisplay,
         onExport = { exportLauncher.launch("locationjoystick-export-${System.currentTimeMillis()}.json") },
         onImport = { importLauncher.launch(arrayOf("application/json")) },
@@ -113,6 +114,7 @@ internal fun SettingsScreen(
     onSetSpeedUnit: (SpeedUnit) -> Unit,
     onSetWidgetFeatures: (Set<WidgetFeature>) -> Unit,
     onSetRememberLastLocation: (Boolean) -> Unit,
+    onSetGpsJitterEnabled: (Boolean) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -285,6 +287,29 @@ internal fun SettingsScreen(
                                 "Remember last location",
                                 modifier = Modifier.padding(start = 8.dp),
                             )
+                        }
+
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = uiState.gpsJitterEnabled,
+                                onCheckedChange = { onSetGpsJitterEnabled(it) },
+                            )
+                            Column(
+                                modifier = Modifier.padding(start = 8.dp),
+                            ) {
+                                Text("GPS position jitter")
+                                Text(
+                                    "Adds subtle noise to each location update to reduce detection as mock location",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))

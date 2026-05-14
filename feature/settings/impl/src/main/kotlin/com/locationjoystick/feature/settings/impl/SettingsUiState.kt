@@ -12,5 +12,6 @@ data class SettingsUiState(
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val enabledWidgetFeatures: Set<WidgetFeature> = WidgetFeature.entries.toSet(),
     val rememberLastLocation: Boolean = true,
+    val gpsJitterEnabled: Boolean = true,
     val isDirty: Boolean = false,
 )

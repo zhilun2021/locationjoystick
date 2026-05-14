@@ -2,31 +2,39 @@
 
 This document references known issues for agents to pick them and iterate on
 
-## app crashing silently
+## silent crash
 
---------- beginning of system
-05-14 22:50:02.403  9847  9847 W VRI[PopupWindow:56577ba]: Dropping event due to root view being removed: MotionEvent { action=ACTION_MOVE, actionButton=0, id[0]=0, x[0]=700.0, y[0]=-44.0, toolType[0]=TOOL_TYPE_FINGER, buttonState=0, classification=AMBIGUOUS_GESTURE, metaState=0, flags=0x800, edgeFlags=0x0, pointerCount=1, historySize=0, eventTime=1430228, downTime=1430217, deviceId=4, source=0x1002, displayId=0, eventId=656390112 }
---------- beginning of main
-05-14 23:20:48.233  9847  9861 E OpenGLRenderer: Unable to match the desired swap behavior.
-05-14 23:20:50.227  9847  9861 E OpenGLRenderer: Unable to match the desired swap behavior.
-05-14 23:21:03.214  9847 10139 D LocationRepository: stopSpoofing requested
-05-14 23:21:03.218  9847 10140 I MockLocationService: Test provider removed
-05-14 23:21:03.218  9847 10140 I MockLocationService: State changed to IDLE/ERROR - stopped update loop
-05-14 23:21:03.224  9847 10140 I MockLocationService: Overlay services stopped
-05-14 23:21:03.262  9847  9847 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@f8ae2b7
-05-14 23:21:03.281  9847  9847 D FloatingWidgetService: Overlay view removed from WindowManager
-05-14 23:21:03.301  9847  9847 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@c0cd882
-05-14 23:21:03.313  9847  9847 D JoystickOverlayService: Overlay view removed from WindowManager
+05-14 23:42:24.071 23545 23559 E OpenGLRenderer: Unable to match the desired swap behavior.
+05-14 23:42:25.066 23545 23563 W Parcel  : Expecting binder but got null!
+05-14 23:42:25.095 23545 23559 E OpenGLRenderer: Unable to match the desired swap behavior.
+05-14 23:44:04.249 23545 23545 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@70d0427
+05-14 23:44:04.272 23545 23545 W InputEventReceiver: Attempted to finish an input event but the input event receiver has already been disposed.
+05-14 23:44:05.625 23545 23559 E OpenGLRenderer: Unable to match the desired swap behavior.
+05-14 23:44:07.653 23545 23559 E OpenGLRenderer: Unable to match the desired swap behavior.
+05-14 23:44:08.239 23545 23559 E OpenGLRenderer: Unable to match the desired swap behavior.
+05-14 23:44:44.351 23545 24317 I MockLocationService: Test provider removed
+05-14 23:44:44.354 23545 24032 D LocationRepository: stopSpoofing requested
+05-14 23:44:44.354 23545 24317 I MockLocationService: Spoofing stopped
+05-14 23:44:44.359 23545 24033 I MockLocationService: Overlay services stopped
+05-14 23:44:44.385 23545 23545 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@7f650a2
+05-14 23:44:44.396 23545 23545 D FloatingWidgetService: Overlay view removed from WindowManager
+05-14 23:44:44.415 23545 23545 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=android.view.ViewRootImpl$$ExternalSyntheticLambda17@8eb791d
+05-14 23:44:44.429 23545 23545 D JoystickOverlayService: Overlay view removed from WindowManager
+05-14 23:44:44.432 23545 24033 D LocationRepository: stopSpoofing requested
+05-14 23:44:44.432 23545 23545 I MockLocationService: Spoofing stopped
 
+## route and favorite floating screen
 
-## route and favorite creation from map
+when clicking the route or favorite icon from the floating overlay, it opens a floating window. that window should be with the black background and white text from LjColors. The window should have a padding all around the screen edges to represent the floating effect.
 
-we should see our current location on the map when trying to create a new favorite or a new route from the map screen
+Favorite specifics:
+- list every favorites
+- add button to:
+    - teleport to a favorite
+    - walk to a favorite
+    - add favorite from current location
 
-## move speed
-
-it seems like our implementation doesn't properly respect the speed and/or meter per seconds, i've compared with other apps and we seem to move faster (i'd say around 2 times faster) at the same km/h defined in the settings config, I'm comparing with GPS Joystick, we can take inspiration of open source apps such as: https://github.com/henryfung0/fake-gps-android/ https://github.com/mcastillof/faketraveler https://github.com/brutalharsh/mock-location-app https://github.com/noobexon1/XposedFakeLocation
-
-## gps jitter
-
-in order to avoid triggering the anti cheat behavior detection of certain apps and games (such as pokemon go) we should add a small gps jitter, other apps provide such feature: https://github.com/henryfung0/fake-gps-android/ https://github.com/mcastillof/faketraveler https://github.com/brutalharsh/mock-location-app https://github.com/noobexon1/XposedFakeLocation
+Route specifics:
+- route is running/being replayed/ongoing:
+    - on the right of the route floating icon (if not enough space, open on the left):
+        - 

@@ -43,6 +43,7 @@ class AppPreferencesDataSource
             val REMEMBER_LAST_LOCATION = booleanPreferencesKey("remember_last_location")
             val LAST_LATITUDE = doublePreferencesKey("last_latitude")
             val LAST_LONGITUDE = doublePreferencesKey("last_longitude")
+            val GPS_JITTER_ENABLED = booleanPreferencesKey("gps_jitter_enabled")
         }
 
         fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -197,6 +198,21 @@ class AppPreferencesDataSource
                 prefs[Keys.LAST_LATITUDE] = location.latitude
                 prefs[Keys.LAST_LONGITUDE] = location.longitude
             }
+        }
+
+        fun getGpsJitter(): Flow<Boolean> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading GPS jitter preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.GPS_JITTER_ENABLED] ?: true }
+
+        suspend fun setGpsJitter(enabled: Boolean) {
+            dataStore.edit { prefs -> prefs[Keys.GPS_JITTER_ENABLED] = enabled }
         }
 
         fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {

@@ -238,10 +238,11 @@ internal fun RouteCreatorScreen(
                                 style.addLayer(RasterLayer(OSM_LAYER_ID, OSM_SOURCE_ID))
 
                                 if (initialPosition != null) {
-                                    val currentPosSrc = GeoJsonSource(
-                                        CURRENT_POS_SOURCE_ID,
-                                        """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${initialPosition.longitude},${initialPosition.latitude}]},"properties":{}}]}""",
-                                    )
+                                    val currentPosSrc =
+                                        GeoJsonSource(
+                                            CURRENT_POS_SOURCE_ID,
+                                            """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${initialPosition.longitude},${initialPosition.latitude}]},"properties":{}}]}""",
+                                        )
                                     style.addSource(currentPosSrc)
                                     style.addLayer(
                                         CircleLayer(CURRENT_POS_LAYER_ID, CURRENT_POS_SOURCE_ID)

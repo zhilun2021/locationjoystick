@@ -51,6 +51,7 @@ class MockLocationService : Service() {
         private const val CHANNEL_ID_PERM_ERROR = "location_perm_error_channel"
         private const val UPDATE_INTERVAL_MS = 1000L
         private const val LOCATION_ACCURACY = 3.0f
+        private const val JITTER_SIGMA_METERS = 2.0
 
         private const val JOYSTICK_SERVICE_CLASS =
             "com.locationjoystick.feature.joystick.impl.JoystickOverlayService"
@@ -101,6 +102,8 @@ class MockLocationService : Service() {
     @Volatile private var currentBearing: Float = 0.0f
 
     private var providerAdded = false
+
+    @Volatile private var jitterEnabled: Boolean = true
 
     override fun onCreate() {
         super.onCreate()
@@ -157,6 +160,9 @@ class MockLocationService : Service() {
                     currentLon = position.longitude
                 }
             }
+        }
+        serviceScope.launch {
+            settingsRepository.getGpsJitterEnabled().collect { jitterEnabled = it }
         }
     }
 
@@ -454,12 +460,18 @@ class MockLocationService : Service() {
     private fun pushLocationUpdate() {
         if (!providerAdded) return
         try {
+            val (outLat, outLon, outAccuracy) =
+                if (jitterEnabled) {
+                    applyJitter(currentLat, currentLon)
+                } else {
+                    Triple(currentLat, currentLon, LOCATION_ACCURACY)
+                }
             val location =
                 Location(LocationManager.GPS_PROVIDER).apply {
-                    latitude = currentLat
-                    longitude = currentLon
+                    latitude = outLat
+                    longitude = outLon
                     altitude = 0.0
-                    accuracy = LOCATION_ACCURACY
+                    accuracy = outAccuracy
                     speed = currentSpeedMs
                     bearing = currentBearing
                     time = System.currentTimeMillis()
@@ -471,6 +483,20 @@ class MockLocationService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error pushing location update", e)
         }
+    }
+
+    private fun applyJitter(
+        lat: Double,
+        lon: Double,
+    ): Triple<Double, Double, Float> {
+        val u1 = Math.random().coerceAtLeast(Double.MIN_VALUE)
+        val u2 = Math.random()
+        val mag = JITTER_SIGMA_METERS * kotlin.math.sqrt(-2.0 * kotlin.math.ln(u1))
+        val angle = 2.0 * Math.PI * u2
+        val dlat = mag * kotlin.math.cos(angle) / 111_111.0
+        val dlon = mag * kotlin.math.sin(angle) / (111_111.0 * kotlin.math.cos(Math.toRadians(lat)))
+        val accuracy = (LOCATION_ACCURACY + (Math.random() * 3.0 - 1.5).toFloat()).coerceIn(2.0f, 5.0f)
+        return Triple(lat + dlat, lon + dlon, accuracy)
     }
 
     private fun createNotificationChannel() {

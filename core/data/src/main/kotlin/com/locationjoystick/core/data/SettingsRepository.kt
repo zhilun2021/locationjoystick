@@ -94,4 +94,8 @@ class SettingsRepository
         fun getLastLocation(): Flow<LatLng?> = dataSource.getLastLocation()
 
         suspend fun setLastLocation(location: LatLng) = dataSource.setLastLocation(location)
+
+        fun getGpsJitterEnabled(): Flow<Boolean> = dataSource.getGpsJitter()
+
+        suspend fun setGpsJitterEnabled(enabled: Boolean) = dataSource.setGpsJitter(enabled)
     }

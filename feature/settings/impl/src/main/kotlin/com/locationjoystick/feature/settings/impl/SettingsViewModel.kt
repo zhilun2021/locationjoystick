@@ -51,6 +51,7 @@ class SettingsViewModel
             val speedUnit: SpeedUnit,
             val widgetFeatures: Set<WidgetFeature>,
             val rememberLastLocation: Boolean,
+            val gpsJitterEnabled: Boolean,
         )
 
         private data class DraftState(
@@ -60,6 +61,7 @@ class SettingsViewModel
             val speedUnit: SpeedUnit? = null,
             val widgetFeatures: Set<WidgetFeature>? = null,
             val rememberLastLocation: Boolean? = null,
+            val gpsJitterEnabled: Boolean? = null,
         )
 
         private val _draftWalkSpeed = MutableStateFlow<Double?>(null)
@@ -68,6 +70,7 @@ class SettingsViewModel
         private val _draftSpeedUnit = MutableStateFlow<SpeedUnit?>(null)
         private val _draftWidgetFeatures = MutableStateFlow<Set<WidgetFeature>?>(null)
         private val _draftRememberLastLocation = MutableStateFlow<Boolean?>(null)
+        private val _draftGpsJitterEnabled = MutableStateFlow<Boolean?>(null)
 
         private val _repoState =
             combine(
@@ -85,7 +88,8 @@ class SettingsViewModel
                 ) { speedUnit, features, rememberLastLocation ->
                     Triple(speedUnit, features, rememberLastLocation)
                 },
-            ) { speeds, settings ->
+                settingsRepository.getGpsJitterEnabled(),
+            ) { speeds, settings, gpsJitter ->
                 RepoState(
                     walkSpeed = speeds.first,
                     runSpeed = speeds.second,
@@ -93,6 +97,7 @@ class SettingsViewModel
                     speedUnit = settings.first,
                     widgetFeatures = settings.second.toSet(),
                     rememberLastLocation = settings.third,
+                    gpsJitterEnabled = gpsJitter,
                 )
             }
 
@@ -112,7 +117,8 @@ class SettingsViewModel
                 ) { unit, features, remember ->
                     Triple(unit, features, remember)
                 },
-            ) { speeds, settings ->
+                _draftGpsJitterEnabled.asStateFlow(),
+            ) { speeds, settings, gpsJitter ->
                 DraftState(
                     walkSpeed = speeds.first,
                     runSpeed = speeds.second,
@@ -120,6 +126,7 @@ class SettingsViewModel
                     speedUnit = settings.first,
                     widgetFeatures = settings.second,
                     rememberLastLocation = settings.third,
+                    gpsJitterEnabled = gpsJitter,
                 )
             }
 
@@ -131,7 +138,8 @@ class SettingsViewModel
                 val isDirty =
                     draftState.walkSpeed != null || draftState.runSpeed != null ||
                         draftState.bikeSpeed != null || draftState.speedUnit != null ||
-                        draftState.widgetFeatures != null || draftState.rememberLastLocation != null
+                        draftState.widgetFeatures != null || draftState.rememberLastLocation != null ||
+                        draftState.gpsJitterEnabled != null
                 SettingsUiState(
                     isLoading = false,
                     walkSpeed = draftState.walkSpeed ?: repoState.walkSpeed,
@@ -140,6 +148,7 @@ class SettingsViewModel
                     speedUnit = draftState.speedUnit ?: repoState.speedUnit,
                     enabledWidgetFeatures = draftState.widgetFeatures ?: repoState.widgetFeatures,
                     rememberLastLocation = draftState.rememberLastLocation ?: repoState.rememberLastLocation,
+                    gpsJitterEnabled = draftState.gpsJitterEnabled ?: repoState.gpsJitterEnabled,
                     isDirty = isDirty,
                 )
             }.stateIn(
@@ -175,6 +184,10 @@ class SettingsViewModel
             _draftRememberLastLocation.value = enabled
         }
 
+        fun setGpsJitterEnabled(enabled: Boolean) {
+            _draftGpsJitterEnabled.value = enabled
+        }
+
         fun saveChanges() {
             viewModelScope.launch {
                 val draftWalk = _draftWalkSpeed.value
@@ -208,6 +221,11 @@ class SettingsViewModel
                     settingsRepository.setRememberLastLocation(draftRememberLastLocation)
                     _draftRememberLastLocation.value = null
                 }
+                val draftGpsJitter = _draftGpsJitterEnabled.value
+                if (draftGpsJitter != null) {
+                    settingsRepository.setGpsJitterEnabled(draftGpsJitter)
+                    _draftGpsJitterEnabled.value = null
+                }
             }
         }
 
@@ -218,6 +236,7 @@ class SettingsViewModel
             _draftSpeedUnit.value = null
             _draftWidgetFeatures.value = null
             _draftRememberLastLocation.value = null
+            _draftGpsJitterEnabled.value = null
         }
 
         fun convertMsToDisplay(
