@@ -5,6 +5,9 @@ plugins {
 
 android {
     namespace = "com.locationjoystick.core.routing"
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -17,4 +20,5 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
 }

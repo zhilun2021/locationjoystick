@@ -253,6 +253,19 @@ Key files: `:feature:settings:impl/ExportImportScreen.kt`, `:core:data/ExportRep
 
 ---
 
+### Last Remembered Location
+
+On app restart, automatically restores the last spoofed position so users don't need to re-enter coordinates manually.
+
+DataStore keys (in `:core:datastore`):
+- `REMEMBER_LAST_LOCATION` (`Boolean`) — feature toggle
+- `LAST_LATITUDE` (`Double`) — last spoofed latitude
+- `LAST_LONGITUDE` (`Double`) — last spoofed longitude
+
+On service start: if `REMEMBER_LAST_LOCATION` is true and valid coordinates exist, seed the initial position from `LAST_LATITUDE`/`LAST_LONGITUDE`. On each position update: persist coordinates to DataStore.
+
+---
+
 ### Setup / Onboarding
 
 First launch → multi-step onboarding. Track completion via `ONBOARDING_COMPLETE` DataStore key. Module: `:feature:setup` (not `:feature:onboarding`).
@@ -278,14 +291,14 @@ All in `:core:model`. Pure Kotlin — no Android imports, no Room annotations. R
 
 | Model | Fields |
 |-------|--------|
-| `LatLon` | `lat: Double`, `lon: Double` |
-| `Route` | `id`, `name`, `waypoints: List<LatLon>`, `isLooping: Boolean`, `routeType: RouteType`, `createdAt: Long`, `updatedAt: Long` |
+| `LatLng` | `lat: Double`, `lon: Double` |
+| `Route` | `id`, `name`, `waypoints: List<LatLng>`, `isLooping: Boolean`, `routeType: RouteType`, `createdAt: Long`, `updatedAt: Long` |
 | `FavoriteLocation` | `id`, `name`, `lat`, `lon`, `createdAt: Instant` |
 | `RouteType` | enum: `STRAIGHT`, `GUIDED` |
 | `SpeedProfileType` | enum: `WALK`, `RUN`, `BIKE` |
 | `SpeedProfile` | `type: SpeedProfileType`, `speedMs: Double` |
 | `RoamingConfig` | `centerLat`, `centerLon`, `radiusMeters`, `durationMinutes`, `roadFollowing` |
-| `ExportBundle` | `schemaVersion`, `exportedAt`, `speedProfiles`, `activeProfile`, `routes`, `favorites`, `widgetItems`, `roamingDefaults` |
+| `ExportData` | `schemaVersion`, `exportedAt`, `settings`, `speedProfiles`, `routes`, `favoriteLocations` |
 
 ---
 
@@ -381,7 +394,7 @@ Notes:
 - RDP simplification: known path → assert simplified output
 - Bearing calculation: known lat/lon pairs → expected bearing
 - `randomPointInRadius`: output always within specified radius
-- Export/import serialization: round-trip full `ExportBundle` through JSON
+- Export/import serialization: round-trip full `ExportData` through JSON
 
 Shared test utilities in `:core:testing`.
 

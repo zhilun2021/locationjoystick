@@ -25,12 +25,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.locationjoystick.core.common.util.advancePosition
+import com.locationjoystick.core.common.util.calculateBearing
+import com.locationjoystick.core.common.util.haversineDistance
 import javax.inject.Inject
-import kotlin.math.asin
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 private const val TAG = "MapViewModel"
 private const val ACTION_UPDATE_POSITION = "com.locationjoystick.core.location.ACTION_UPDATE_POSITION"
@@ -288,68 +286,6 @@ class MapViewModel
                         locationRepository.setWalkTarget(null)
                     }
                 }
-        }
-
-        private fun haversineDistance(
-            lat1: Double,
-            lon1: Double,
-            lat2: Double,
-            lon2: Double,
-        ): Double {
-            val R = 6371000.0 // Earth radius in meters
-            val dLat = Math.toRadians(lat2 - lat1)
-            val dLon = Math.toRadians(lon2 - lon1)
-            val a =
-                sin(dLat / 2) * sin(dLat / 2) +
-                    cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                    sin(dLon / 2) * sin(dLon / 2)
-            val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-            return R * c
-        }
-
-        private fun calculateBearing(
-            lat1: Double,
-            lon1: Double,
-            lat2: Double,
-            lon2: Double,
-        ): Double {
-            val dLon = Math.toRadians(lon2 - lon1)
-            val lat1Rad = Math.toRadians(lat1)
-            val lat2Rad = Math.toRadians(lat2)
-            val y = sin(dLon) * cos(lat2Rad)
-            val x =
-                cos(lat1Rad) * sin(lat2Rad) -
-                    sin(lat1Rad) * cos(lat2Rad) * cos(dLon)
-            var bearing = Math.toDegrees(atan2(y, x))
-            bearing = (bearing + 360) % 360
-            return bearing
-        }
-
-        private fun advancePosition(
-            lat: Double,
-            lon: Double,
-            bearingDeg: Double,
-            distanceM: Double,
-        ): Pair<Double, Double> {
-            val R = 6371000.0
-            val lat1 = Math.toRadians(lat)
-            val lon1 = Math.toRadians(lon)
-            val bearing = Math.toRadians(bearingDeg)
-            val angular = distanceM / R
-
-            val lat2 =
-                asin(
-                    sin(lat1) * cos(angular) +
-                        cos(lat1) * sin(angular) * cos(bearing),
-                )
-            val lon2 =
-                lon1 +
-                    atan2(
-                        sin(bearing) * sin(angular) * cos(lat1),
-                        cos(angular) - sin(lat1) * sin(lat2),
-                    )
-
-            return Math.toDegrees(lat2) to Math.toDegrees(lon2)
         }
 
         private fun startSpoofing() {

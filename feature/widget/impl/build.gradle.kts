@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "com.locationjoystick.feature.widget.impl"
+    lint {
+        disable += "MultipleAwaitPointerEventScopes"
+    }
 }
 
 dependencies {

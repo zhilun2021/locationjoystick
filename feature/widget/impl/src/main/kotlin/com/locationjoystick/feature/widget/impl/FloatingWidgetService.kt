@@ -1,17 +1,14 @@
 package com.locationjoystick.feature.widget.impl
 
-import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.graphics.drawable.ColorDrawable
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.PopupWindow
@@ -52,7 +49,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -62,6 +58,9 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.locationjoystick.core.common.util.advancePosition
+import com.locationjoystick.core.common.util.calculateBearing
+import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -72,6 +71,7 @@ import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.overlay.OverlayService
+import com.locationjoystick.core.overlay.OverlayServiceHelper
 import com.locationjoystick.feature.joystick.impl.JoystickOverlayService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -86,11 +86,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.min
-import kotlin.math.sin
-import kotlin.math.sqrt
 import android.graphics.Color as AndroidColor
 import android.view.WindowManager as AndroidWindowManager
 
@@ -101,12 +97,12 @@ class FloatingWidgetService :
     SavedStateRegistryOwner {
     companion object {
         private const val TAG = "FloatingWidgetService"
-        private const val EARTH_RADIUS_M = 6371000.0
     }
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val overlayHelper = OverlayServiceHelper(TAG)
 
     override val lifecycle: Lifecycle get() = lifecycleRegistry
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
@@ -162,19 +158,7 @@ class FloatingWidgetService :
         }
     private var joystickBound = false
 
-    private val overlayVisibilityReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(
-                context: Context,
-                intent: Intent,
-            ) {
-                when (intent.action) {
-                    ACTION_OVERLAY_HIDE -> hideOverlay()
-                    ACTION_OVERLAY_SHOW -> showOverlay()
-                }
-            }
-        }
-    private val serviceConnection =
+    private val mockLocationServiceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(
                 name: ComponentName,
@@ -195,17 +179,8 @@ class FloatingWidgetService :
         savedStateRegistryController.performRestore(null)
         super.onCreate()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
-        val filter =
-            IntentFilter().apply {
-                addAction(ACTION_OVERLAY_HIDE)
-                addAction(ACTION_OVERLAY_SHOW)
-            }
-        ContextCompat.registerReceiver(this, overlayVisibilityReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        bindService(
-            Intent(this, MockLocationService::class.java),
-            serviceConnection,
-            Context.BIND_AUTO_CREATE,
-        )
+        overlayHelper.registerOverlayVisibilityReceiver(this, this)
+        overlayHelper.bindTrackedService(this, Intent(this, MockLocationService::class.java), mockLocationServiceConnection)
         val joystickIntent =
             Intent().apply {
                 setClassName(packageName, "com.locationjoystick.feature.joystick.impl.JoystickOverlayService")
@@ -253,16 +228,7 @@ class FloatingWidgetService :
         serviceScope.cancel()
         composeView?.visibility = View.GONE
         composeView = null
-        try {
-            unregisterReceiver(overlayVisibilityReceiver)
-        } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "Overlay visibility receiver not registered", e)
-        }
-        try {
-            unbindService(serviceConnection)
-        } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "Service was not bound when attempting to unbind", e)
-        }
+        overlayHelper.cleanupOverlayBindings(this)
         if (joystickBound) {
             try {
                 unbindService(joystickConnection)
@@ -909,59 +875,6 @@ class FloatingWidgetService :
         val xOffset = (screenWidth - popup.width) / 2
         val yOffset = (screenHeight - popup.height) / 2
         popup.showAtLocation(anchor, Gravity.NO_GRAVITY, xOffset, yOffset)
-    }
-
-    private fun haversineDistance(
-        lat1: Double,
-        lon1: Double,
-        lat2: Double,
-        lon2: Double,
-    ): Double {
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a =
-            sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        return EARTH_RADIUS_M * 2 * atan2(sqrt(a), sqrt(1 - a))
-    }
-
-    private fun calculateBearing(
-        lat1: Double,
-        lon1: Double,
-        lat2: Double,
-        lon2: Double,
-    ): Double {
-        val dLon = Math.toRadians(lon2 - lon1)
-        val lat1Rad = Math.toRadians(lat1)
-        val lat2Rad = Math.toRadians(lat2)
-        return atan2(
-            sin(dLon) * cos(lat2Rad),
-            cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(dLon),
-        )
-    }
-
-    private fun advancePosition(
-        lat: Double,
-        lon: Double,
-        bearing: Double,
-        distanceM: Double,
-    ): Pair<Double, Double> {
-        val latRad = Math.toRadians(lat)
-        val lonRad = Math.toRadians(lon)
-        val angularDist = distanceM / EARTH_RADIUS_M
-        val newLatRad =
-            Math.asin(
-                sin(latRad) * cos(angularDist) +
-                    cos(latRad) * sin(angularDist) * cos(bearing),
-            )
-        val newLonRad =
-            lonRad +
-                atan2(
-                    sin(bearing) * sin(angularDist) * cos(latRad),
-                    cos(angularDist) - sin(latRad) * sin(newLatRad),
-                )
-        return Pair(Math.toDegrees(newLatRad), Math.toDegrees(newLonRad))
     }
 
     private fun cycleSpeedProfile() {
