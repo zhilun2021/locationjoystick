@@ -109,7 +109,7 @@ class MockLocationService : Service() {
 
     @Volatile private var jitterIdleRadiusMeters: Double = 0.0
 
-    @Volatile private var jitterMovingRadiusMeters: Double = 10.0
+    @Volatile private var jitterMovingRadiusMeters: Double = 1.0
 
     private var providerAdded = false
 
