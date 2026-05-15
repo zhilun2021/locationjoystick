@@ -509,10 +509,11 @@ class MockLocationService : Service() {
             val shouldApplyJitter = timeSinceLastJitter >= jitterIntervalMs
 
             val mode = locationRepository.currentMode.value
-            val jitterRadius = when (mode) {
-                MockMode.TELEPORT -> 0.0
-                MockMode.JOYSTICK, MockMode.ROUTE_REPLAY, MockMode.ROAMING -> jitterMovingRadiusMeters
-            }
+            val jitterRadius =
+                when (mode) {
+                    MockMode.TELEPORT -> 0.0
+                    MockMode.JOYSTICK, MockMode.ROUTE_REPLAY, MockMode.ROAMING -> jitterMovingRadiusMeters
+                }
 
             val (outLat, outLon, outAccuracy) =
                 if (jitterRadius > 0.0 && shouldApplyJitter) {

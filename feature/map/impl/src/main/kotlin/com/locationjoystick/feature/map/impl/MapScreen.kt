@@ -55,6 +55,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.locationjoystick.core.common.constants.MapConstants
+import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.FavoriteLocation
@@ -69,6 +70,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -80,6 +82,10 @@ private const val OSM_SOURCE_ID = "osm-source"
 private const val OSM_LAYER_ID = "osm-layer"
 private const val POSITION_SOURCE_ID = "position-source"
 private const val POSITION_LAYER_ID = "position-layer"
+private const val TRACED_SOURCE_ID = "traced-source"
+private const val TRACED_LAYER_ID = "traced-layer"
+private const val REMAINING_SOURCE_ID = "remaining-source"
+private const val REMAINING_LAYER_ID = "remaining-layer"
 
 fun NavGraphBuilder.mapScreen(onOpenDrawer: () -> Unit) {
     composable(route = MAP_ROUTE) {
@@ -114,6 +120,8 @@ internal fun MapScreen(
         }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val positionSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val tracedSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val remainingSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
 
@@ -244,6 +252,29 @@ internal fun MapScreen(
                                         ),
                                 )
                                 positionSource.value = src
+
+                                val tracedSrc = GeoJsonSource(TRACED_SOURCE_ID, emptyGeoJson())
+                                style.addSource(tracedSrc)
+                                style.addLayer(
+                                    LineLayer(TRACED_LAYER_ID, TRACED_SOURCE_ID)
+                                        .withProperties(
+                                            PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                            PropertyFactory.lineWidth(4f),
+                                        ),
+                                )
+                                tracedSource.value = tracedSrc
+
+                                val remainingSrc = GeoJsonSource(REMAINING_SOURCE_ID, emptyGeoJson())
+                                style.addSource(remainingSrc)
+                                style.addLayer(
+                                    LineLayer(REMAINING_LAYER_ID, REMAINING_SOURCE_ID)
+                                        .withProperties(
+                                            PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                            PropertyFactory.lineWidth(4f),
+                                            PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
+                                        ),
+                                )
+                                remainingSource.value = remainingSrc
                             }
 
                             map.addOnMapClickListener { latLng ->
@@ -282,9 +313,33 @@ internal fun MapScreen(
                 update = { _ ->
                     val src = positionSource.value ?: return@AndroidView
                     val map = mapRef.value ?: return@AndroidView
+                    val tracedSrc = tracedSource.value ?: return@AndroidView
+                    val remainingSrc = remainingSource.value ?: return@AndroidView
                     val position = uiState.currentPosition
 
                     src.setGeoJson(buildPositionGeoJson(position))
+
+                    if (uiState.routeTrace != null && position != null) {
+                        val (tracedGeoJson, remainingGeoJson) =
+                            buildRouteTraceGeoJson(
+                                uiState.routeTrace,
+                                position,
+                            )
+                        tracedSrc.setGeoJson(tracedGeoJson)
+                        remainingSrc.setGeoJson(remainingGeoJson)
+                    } else if (uiState.walkStart != null && uiState.walkTarget != null && position != null) {
+                        val walkPoints = listOf(uiState.walkStart, uiState.walkTarget)
+                        val (tracedGeoJson, remainingGeoJson) =
+                            buildRouteTraceGeoJson(
+                                walkPoints,
+                                position,
+                            )
+                        tracedSrc.setGeoJson(tracedGeoJson)
+                        remainingSrc.setGeoJson(remainingGeoJson)
+                    } else {
+                        tracedSrc.setGeoJson(emptyGeoJson())
+                        remainingSrc.setGeoJson(emptyGeoJson())
+                    }
 
                     if (isFollowingCamera.value && position != null) {
                         map.animateCamera(
@@ -593,6 +648,46 @@ private fun buildPositionGeoJson(position: com.locationjoystick.core.model.LatLn
     } else {
         emptyGeoJson()
     }
+
+private fun buildRouteTraceGeoJson(
+    waypoints: List<com.locationjoystick.core.model.LatLng>,
+    currentPosition: com.locationjoystick.core.model.LatLng?,
+): Pair<String, String> {
+    if (currentPosition == null || waypoints.isEmpty()) {
+        return emptyGeoJson() to emptyGeoJson()
+    }
+
+    var closestIdx = 0
+    var minDist = Double.MAX_VALUE
+    for (i in waypoints.indices) {
+        val dist =
+            haversineDistance(
+                currentPosition.latitude,
+                currentPosition.longitude,
+                waypoints[i].latitude,
+                waypoints[i].longitude,
+            )
+        if (dist < minDist) {
+            minDist = dist
+            closestIdx = i
+        }
+    }
+
+    val tracedPoints = (0..closestIdx).map { waypoints[it] } + currentPosition
+    val remainingPoints = listOf(currentPosition) + waypoints.drop(closestIdx + 1)
+
+    val tracedGeoJson = buildLineGeoJson(tracedPoints)
+    val remainingGeoJson = buildLineGeoJson(remainingPoints)
+
+    return tracedGeoJson to remainingGeoJson
+}
+
+private fun buildLineGeoJson(points: List<com.locationjoystick.core.model.LatLng>): String {
+    if (points.size < 2) return emptyGeoJson()
+    val coords = points.joinToString(",") { "[${it.longitude},${it.latitude}]" }
+    val feature = """{"type":"Feature","geometry":{"type":"LineString","coordinates":[$coords]},"properties":{}}"""
+    return """{"type":"FeatureCollection","features":[$feature]}"""
+}
 
 @Preview(showBackground = true)
 @Composable

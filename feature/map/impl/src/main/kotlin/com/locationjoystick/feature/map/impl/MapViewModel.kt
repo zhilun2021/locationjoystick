@@ -117,7 +117,14 @@ class MapViewModel
 
                 MapAction.StopSpoofing -> {
                     stopSpoofing()
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update {
+                        it.copy(
+                            pendingTapPosition = null,
+                            routeTrace = null,
+                            walkTarget = null,
+                            walkStart = null,
+                        )
+                    }
                 }
 
                 MapAction.RecenterCamera -> {
@@ -218,6 +225,13 @@ class MapViewModel
         private fun walkTo(position: LatLng) {
             walkToJob?.cancel()
             locationRepository.setWalkTarget(position)
+            _uiState.update {
+                it.copy(
+                    walkTarget = position,
+                    walkStart = it.currentPosition,
+                    routeTrace = null,
+                )
+            }
             walkToJob =
                 viewModelScope.launch {
                     try {
@@ -284,6 +298,7 @@ class MapViewModel
                         Log.e(TAG, "Walk interrupted", e)
                     } finally {
                         locationRepository.setWalkTarget(null)
+                        _uiState.update { it.copy(walkTarget = null, walkStart = null) }
                     }
                 }
         }

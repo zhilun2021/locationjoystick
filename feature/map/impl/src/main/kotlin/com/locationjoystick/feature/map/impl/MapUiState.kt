@@ -15,6 +15,9 @@ data class MapUiState(
     val favoriteTarget: FavoriteLocation? = null,
     val pendingCameraTarget: LatLng? = null,
     val pendingTapPosition: LatLng? = null,
+    val routeTrace: List<LatLng>? = null,
+    val walkTarget: LatLng? = null,
+    val walkStart: LatLng? = null,
 )
 
 val MapUiState.isSpoofing: Boolean
