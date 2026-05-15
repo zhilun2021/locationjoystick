@@ -269,6 +269,8 @@ internal fun SettingsScreen(
                             )
                         }
 
+                        Spacer(modifier = Modifier.height(24.dp))
+
                         Text("GPS Jitter", style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -292,8 +294,6 @@ internal fun SettingsScreen(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                         )
-
-                        Spacer(modifier = Modifier.height(24.dp))
 
                         Spacer(modifier = Modifier.height(24.dp))
 
