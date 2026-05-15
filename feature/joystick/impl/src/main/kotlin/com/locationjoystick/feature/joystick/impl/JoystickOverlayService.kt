@@ -27,6 +27,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -82,6 +84,7 @@ class JoystickOverlayService : OverlayService() {
 
     /** Cached active speed profile; updated reactively so ticks never hit DataStore. */
     private val _cachedProfile = MutableStateFlow<SpeedProfile?>(null)
+    val cachedProfile: StateFlow<SpeedProfile?> = _cachedProfile.asStateFlow()
 
     /** Single movement job used for both touch-active and locked-release motion. */
     private var movementJob: Job? = null

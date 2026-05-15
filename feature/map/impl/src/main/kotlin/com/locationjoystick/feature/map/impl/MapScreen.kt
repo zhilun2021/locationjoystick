@@ -1,5 +1,12 @@
 package com.locationjoystick.feature.map.impl
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,8 +94,28 @@ private const val TRACED_LAYER_ID = "traced-layer"
 private const val REMAINING_SOURCE_ID = "remaining-source"
 private const val REMAINING_LAYER_ID = "remaining-layer"
 
+private fun fadeInScale(): EnterTransition =
+    fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+        scaleIn(
+            initialScale = 0.95f,
+            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+        )
+
+private fun fadeOutScale(): ExitTransition =
+    fadeOut(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+        scaleOut(
+            targetScale = 0.95f,
+            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+        )
+
 fun NavGraphBuilder.mapScreen(onOpenDrawer: () -> Unit) {
-    composable(route = MAP_ROUTE) {
+    composable(
+        route = MAP_ROUTE,
+        enterTransition = { fadeInScale() },
+        exitTransition = { fadeOutScale() },
+        popEnterTransition = { fadeInScale() },
+        popExitTransition = { fadeOutScale() },
+    ) {
         MapRoute(onOpenDrawer = onOpenDrawer)
     }
 }

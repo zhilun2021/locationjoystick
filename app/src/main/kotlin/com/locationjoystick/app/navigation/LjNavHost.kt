@@ -3,6 +3,13 @@ package com.locationjoystick.app.navigation
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -11,7 +18,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.navigation
+import androidx.navigation.compose.navigation
 import com.locationjoystick.app.IDLE_ROUTE
 import com.locationjoystick.app.IdleScreen
 import com.locationjoystick.core.common.util.isMockLocationEnabled
@@ -39,6 +46,20 @@ import com.locationjoystick.feature.setup.impl.SetupRoute
 private const val ROUTES_GRAPH = "routes_graph"
 private const val FAVORITES_GRAPH = "favorites_graph"
 
+private fun fadeInScale(): EnterTransition =
+    fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+        scaleIn(
+            initialScale = 0.95f,
+            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+        )
+
+private fun fadeOutScale(): ExitTransition =
+    fadeOut(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+        scaleOut(
+            targetScale = 0.95f,
+            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+        )
+
 private fun allPermissionsGranted(context: Context): Boolean {
     val locationGranted =
         ContextCompat.checkSelfPermission(
@@ -63,7 +84,13 @@ fun LjNavHost(
         navController = navController,
         startDestination = startDestination,
     ) {
-        composable(SETUP_ROUTE) {
+        composable(
+            route = SETUP_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
             SetupRoute(
                 onSetupComplete = {
                     navController.navigate(IDLE_ROUTE) {
@@ -73,7 +100,13 @@ fun LjNavHost(
             )
         }
 
-        composable(IDLE_ROUTE) {
+        composable(
+            route = IDLE_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
             IdleScreen(
                 onNavigateToMap = {
                     navController.navigate(MAP_ROUTE) { launchSingleTop = true }
@@ -96,7 +129,13 @@ fun LjNavHost(
         mapScreen(onOpenDrawer = onOpenDrawer)
 
         navigation(startDestination = ROUTES_ROUTE, route = ROUTES_GRAPH) {
-            composable(ROUTES_ROUTE) {
+            composable(
+                route = ROUTES_ROUTE,
+                enterTransition = { fadeInScale() },
+                exitTransition = { fadeOutScale() },
+                popEnterTransition = { fadeInScale() },
+                popExitTransition = { fadeOutScale() },
+            ) {
                 RoutesRoute(
                     onNavigateToDetail = { routeId ->
                         navController.navigate("$ROUTE_DETAIL_ROUTE/$routeId")
@@ -110,14 +149,26 @@ fun LjNavHost(
                 )
             }
 
-            composable("$ROUTE_CREATOR_ROUTE/{routeType}") {
+            composable(
+                route = "$ROUTE_CREATOR_ROUTE/{routeType}",
+                enterTransition = { fadeInScale() },
+                exitTransition = { fadeOutScale() },
+                popEnterTransition = { fadeInScale() },
+                popExitTransition = { fadeOutScale() },
+            ) {
                 RouteCreatorRoute(
                     onRouteSaved = { navController.navigateUp() },
                     onBack = { navController.navigateUp() },
                 )
             }
 
-            composable("$ROUTE_DETAIL_ROUTE/{routeId}") { backStackEntry ->
+            composable(
+                route = "$ROUTE_DETAIL_ROUTE/{routeId}",
+                enterTransition = { fadeInScale() },
+                exitTransition = { fadeOutScale() },
+                popEnterTransition = { fadeInScale() },
+                popExitTransition = { fadeOutScale() },
+            ) { backStackEntry ->
                 val routeId = backStackEntry.arguments?.getString("routeId") ?: return@composable
                 RouteDetailScreen(
                     routeId = routeId,
@@ -128,7 +179,13 @@ fun LjNavHost(
         }
 
         navigation(startDestination = FAVORITES_ROUTE, route = FAVORITES_GRAPH) {
-            composable(FAVORITES_ROUTE) { backStackEntry ->
+            composable(
+                route = FAVORITES_ROUTE,
+                enterTransition = { fadeInScale() },
+                exitTransition = { fadeOutScale() },
+                popEnterTransition = { fadeInScale() },
+                popExitTransition = { fadeOutScale() },
+            ) { backStackEntry ->
                 val parentEntry =
                     remember(backStackEntry) {
                         navController.getBackStackEntry(FAVORITES_GRAPH)
@@ -141,7 +198,13 @@ fun LjNavHost(
                 )
             }
 
-            composable(MAP_PICKER_ROUTE) { backStackEntry ->
+            composable(
+                route = MAP_PICKER_ROUTE,
+                enterTransition = { fadeInScale() },
+                exitTransition = { fadeOutScale() },
+                popEnterTransition = { fadeInScale() },
+                popExitTransition = { fadeOutScale() },
+            ) { backStackEntry ->
                 val parentEntry =
                     remember(backStackEntry) {
                         navController.getBackStackEntry(FAVORITES_GRAPH)
@@ -158,14 +221,26 @@ fun LjNavHost(
             }
         }
 
-        composable(ROAMING_ROUTE) {
+        composable(
+            route = ROAMING_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
             RoamingRoute(
                 onOpenDrawer = onOpenDrawer,
                 viewModel = hiltViewModel(),
             )
         }
 
-        composable(SETTINGS_ROUTE) {
+        composable(
+            route = SETTINGS_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
             SettingsRoute(
                 onOpenDrawer = onOpenDrawer,
                 viewModel = hiltViewModel(),
