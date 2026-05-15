@@ -58,6 +58,7 @@ import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.LineLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -69,6 +70,10 @@ private const val MAP_PANEL_OSM_SOURCE = "panel-osm-source"
 private const val MAP_PANEL_OSM_LAYER = "panel-osm-layer"
 private const val MAP_PANEL_POS_SOURCE = "panel-pos-source"
 private const val MAP_PANEL_POS_LAYER = "panel-pos-layer"
+private const val MAP_PANEL_TRACED_SOURCE = "panel-traced-source"
+private const val MAP_PANEL_TRACED_LAYER = "panel-traced-layer"
+private const val MAP_PANEL_REMAINING_SOURCE = "panel-remaining-source"
+private const val MAP_PANEL_REMAINING_LAYER = "panel-remaining-layer"
 
 @Composable
 internal fun MapPanel(
@@ -80,6 +85,7 @@ internal fun MapPanel(
     context: Context,
 ) {
     val currentPosition by locationRepository.currentPosition.collectAsState()
+    val walkTarget by locationRepository.walkTarget.collectAsState()
     val favoritesFlow = remember { favoriteRepository.getFavorites() }
     val favorites by favoritesFlow.collectAsState(initial = emptyList())
 
@@ -97,6 +103,8 @@ internal fun MapPanel(
         }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val positionSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val tracedSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val remainingSource = remember { mutableStateOf<GeoJsonSource?>(null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -160,6 +168,30 @@ internal fun MapPanel(
                             )
                             style.addLayer(RasterLayer(MAP_PANEL_OSM_LAYER, MAP_PANEL_OSM_SOURCE))
 
+                            val tracedSrc =
+                                GeoJsonSource(MAP_PANEL_TRACED_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                            style.addSource(tracedSrc)
+                            style.addLayer(
+                                LineLayer(MAP_PANEL_TRACED_LAYER, MAP_PANEL_TRACED_SOURCE)
+                                    .withProperties(
+                                        PropertyFactory.lineColor(Color(0xFF1E88E5).toArgb()),
+                                        PropertyFactory.lineWidth(3f),
+                                    ),
+                            )
+                            tracedSource.value = tracedSrc
+
+                            val remainingSrc =
+                                GeoJsonSource(MAP_PANEL_REMAINING_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                            style.addSource(remainingSrc)
+                            style.addLayer(
+                                LineLayer(MAP_PANEL_REMAINING_LAYER, MAP_PANEL_REMAINING_SOURCE)
+                                    .withProperties(
+                                        PropertyFactory.lineColor(Color(0xFF1E88E5).copy(alpha = 0.5f).toArgb()),
+                                        PropertyFactory.lineWidth(3f),
+                                    ),
+                            )
+                            remainingSource.value = remainingSrc
+
                             val src =
                                 GeoJsonSource(MAP_PANEL_POS_SOURCE, """{"type":"FeatureCollection","features":[]}""")
                             style.addSource(src)
@@ -190,7 +222,10 @@ internal fun MapPanel(
             },
             update = { _ ->
                 val src = positionSource.value ?: return@AndroidView
+                val tracedSrc = tracedSource.value ?: return@AndroidView
+                val remainingSrc = remainingSource.value ?: return@AndroidView
                 val position = currentPosition
+
                 src.setGeoJson(
                     if (position != null) {
                         """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${position.longitude},${position.latitude}]},"properties":{}}]}"""
@@ -198,6 +233,18 @@ internal fun MapPanel(
                         """{"type":"FeatureCollection","features":[]}"""
                     },
                 )
+
+                val target = walkTarget
+                if (position != null && target != null) {
+                    val tracedGeoJson =
+                        """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"LineString","coordinates":[[${position.longitude},${position.latitude}],[${target.longitude},${target.latitude}]]},"properties":{}}]}"""
+                    tracedSrc.setGeoJson(tracedGeoJson)
+                    remainingSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
+                } else {
+                    tracedSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
+                    remainingSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
+                }
+
                 if (isFollowingCamera.value && position != null) {
                     mapRef.value?.animateCamera(
                         CameraUpdateFactory.newLatLng(MapLatLng(position.latitude, position.longitude)),

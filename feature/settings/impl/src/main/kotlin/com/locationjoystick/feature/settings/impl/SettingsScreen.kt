@@ -31,6 +31,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -281,28 +282,22 @@ internal fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = uiState.jitterIdleRadiusMeters.toInt().toString(),
-                            onValueChange = { v -> v.toDoubleOrNull()?.let { onSetJitterIdleRadius(it) } },
-                            label = { Text("Idle radius (m)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
+                        JitterInput(
+                            value = uiState.jitterIdleRadiusMeters.toInt(),
+                            onValueChange = { onSetJitterIdleRadius(it.toDouble()) },
+                            label = "Idle radius (m)",
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = uiState.jitterMovingRadiusMeters.toInt().toString(),
-                            onValueChange = { v -> v.toDoubleOrNull()?.let { onSetJitterMovingRadius(it) } },
-                            label = { Text("Moving radius (m)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
+                        JitterInput(
+                            value = uiState.jitterMovingRadiusMeters.toInt(),
+                            onValueChange = { onSetJitterMovingRadius(it.toDouble()) },
+                            label = "Moving radius (m)",
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = uiState.jitterIntervalSeconds.toString(),
-                            onValueChange = { v -> v.toIntOrNull()?.let { onSetJitterIntervalSeconds(it) } },
-                            label = { Text("Update interval (s)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
+                        JitterInput(
+                            value = uiState.jitterIntervalSeconds,
+                            onValueChange = { onSetJitterIntervalSeconds(it) },
+                            label = "Update interval (s)",
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -525,8 +520,14 @@ private fun SpeedProfileInput(
     onSpeedChange: (Double) -> Unit,
     unit: String,
 ) {
-    var localValue by remember(displaySpeed) {
-        mutableStateOf(String.format("%.1f", displaySpeed))
+    var localValue by remember { mutableStateOf(String.format("%.1f", displaySpeed)) }
+    var lastSentValue by remember { mutableStateOf(displaySpeed) }
+
+    LaunchedEffect(displaySpeed) {
+        if (displaySpeed != lastSentValue) {
+            localValue = String.format("%.1f", displaySpeed)
+            lastSentValue = displaySpeed
+        }
     }
 
     val parsedValue = localValue.toDoubleOrNull()
@@ -556,6 +557,7 @@ private fun SpeedProfileInput(
                     val parsed = newValue.toDoubleOrNull()
                     if (parsed != null && parsed in 0.1..15.0) {
                         onSpeedChange(parsed)
+                        lastSentValue = parsed
                     }
                 },
                 modifier = Modifier.weight(1f),
@@ -575,4 +577,35 @@ private fun SpeedProfileInput(
             )
         }
     }
+}
+
+@Composable
+private fun JitterInput(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    label: String,
+) {
+    var localValue by remember { mutableStateOf(value.toString()) }
+    var lastSentValue by remember { mutableStateOf(value) }
+
+    LaunchedEffect(value) {
+        if (value != lastSentValue) {
+            localValue = value.toString()
+            lastSentValue = value
+        }
+    }
+
+    OutlinedTextField(
+        value = localValue,
+        onValueChange = { v ->
+            localValue = v
+            v.toIntOrNull()?.let {
+                onValueChange(it)
+                lastSentValue = it
+            }
+        },
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
