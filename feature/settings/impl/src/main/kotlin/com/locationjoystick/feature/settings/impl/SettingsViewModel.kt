@@ -66,16 +66,16 @@ class SettingsViewModel
             val jitterMovingRadius: Double? = null,
         )
 
-        private val _draftWalkSpeed = MutableStateFlow<Double?>(null)
-        private val _draftRunSpeed = MutableStateFlow<Double?>(null)
-        private val _draftBikeSpeed = MutableStateFlow<Double?>(null)
-        private val _draftSpeedUnit = MutableStateFlow<SpeedUnit?>(null)
-        private val _draftWidgetFeatures = MutableStateFlow<Set<WidgetFeature>?>(null)
-        private val _draftRememberLastLocation = MutableStateFlow<Boolean?>(null)
-        private val _draftJitterIdleRadius = MutableStateFlow<Double?>(null)
-        private val _draftJitterMovingRadius = MutableStateFlow<Double?>(null)
+        private val draftWalkSpeedFlow = MutableStateFlow<Double?>(null)
+        private val draftRunSpeedFlow = MutableStateFlow<Double?>(null)
+        private val draftBikeSpeedFlow = MutableStateFlow<Double?>(null)
+        private val draftSpeedUnitFlow = MutableStateFlow<SpeedUnit?>(null)
+        private val draftWidgetFeaturesFlow = MutableStateFlow<Set<WidgetFeature>?>(null)
+        private val draftRememberLastLocationFlow = MutableStateFlow<Boolean?>(null)
+        private val draftJitterIdleRadiusFlow = MutableStateFlow<Double?>(null)
+        private val draftJitterMovingRadiusFlow = MutableStateFlow<Double?>(null)
 
-        private val _repoState =
+        private val repoStateFlow =
             combine(
                 combine(
                     settingsRepository.getWalkSpeed(),
@@ -108,25 +108,25 @@ class SettingsViewModel
                 )
             }
 
-        private val _draftState =
+        private val draftStateFlow =
             combine(
                 combine(
-                    _draftWalkSpeed.asStateFlow(),
-                    _draftRunSpeed.asStateFlow(),
-                    _draftBikeSpeed.asStateFlow(),
+                    draftWalkSpeedFlow.asStateFlow(),
+                    draftRunSpeedFlow.asStateFlow(),
+                    draftBikeSpeedFlow.asStateFlow(),
                 ) { walk, run, bike ->
                     Triple(walk, run, bike)
                 },
                 combine(
-                    _draftSpeedUnit.asStateFlow(),
-                    _draftWidgetFeatures.asStateFlow(),
-                    _draftRememberLastLocation.asStateFlow(),
+                    draftSpeedUnitFlow.asStateFlow(),
+                    draftWidgetFeaturesFlow.asStateFlow(),
+                    draftRememberLastLocationFlow.asStateFlow(),
                 ) { unit, features, remember ->
                     Triple(unit, features, remember)
                 },
                 combine(
-                    _draftJitterIdleRadius.asStateFlow(),
-                    _draftJitterMovingRadius.asStateFlow(),
+                    draftJitterIdleRadiusFlow.asStateFlow(),
+                    draftJitterMovingRadiusFlow.asStateFlow(),
                 ) { idle, moving -> idle to moving },
             ) { speeds, settings, jitter ->
                 DraftState(
@@ -143,8 +143,8 @@ class SettingsViewModel
 
         val uiState: StateFlow<SettingsUiState> =
             combine(
-                _repoState,
-                _draftState,
+                repoStateFlow,
+                draftStateFlow,
             ) { repoState, draftState ->
                 val isDirty =
                     draftState.walkSpeed != null || draftState.runSpeed != null ||
@@ -171,94 +171,94 @@ class SettingsViewModel
 
         fun setWalkSpeed(displaySpeed: Double) {
             val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-            _draftWalkSpeed.value = ms
+            draftWalkSpeedFlow.value = ms
         }
 
         fun setRunSpeed(displaySpeed: Double) {
             val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-            _draftRunSpeed.value = ms
+            draftRunSpeedFlow.value = ms
         }
 
         fun setBikeSpeed(displaySpeed: Double) {
             val ms = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
-            _draftBikeSpeed.value = ms
+            draftBikeSpeedFlow.value = ms
         }
 
         fun setSpeedUnit(unit: SpeedUnit) {
-            _draftSpeedUnit.value = unit
+            draftSpeedUnitFlow.value = unit
         }
 
         fun setWidgetFeatures(features: Set<WidgetFeature>) {
-            _draftWidgetFeatures.value = features
+            draftWidgetFeaturesFlow.value = features
         }
 
         fun setRememberLastLocation(enabled: Boolean) {
-            _draftRememberLastLocation.value = enabled
+            draftRememberLastLocationFlow.value = enabled
         }
 
         fun setJitterIdleRadius(meters: Double) {
-            _draftJitterIdleRadius.value = meters
+            draftJitterIdleRadiusFlow.value = meters
         }
 
         fun setJitterMovingRadius(meters: Double) {
-            _draftJitterMovingRadius.value = meters
+            draftJitterMovingRadiusFlow.value = meters
         }
 
         fun saveChanges() {
             viewModelScope.launch {
-                val draftWalk = _draftWalkSpeed.value
-                val draftRun = _draftRunSpeed.value
-                val draftBike = _draftBikeSpeed.value
-                val draftUnit = _draftSpeedUnit.value
-                val draftFeatures = _draftWidgetFeatures.value
-                val draftRememberLastLocation = _draftRememberLastLocation.value
+                val draftWalk = draftWalkSpeedFlow.value
+                val draftRun = draftRunSpeedFlow.value
+                val draftBike = draftBikeSpeedFlow.value
+                val draftUnit = draftSpeedUnitFlow.value
+                val draftFeatures = draftWidgetFeaturesFlow.value
+                val draftRememberLastLocation = draftRememberLastLocationFlow.value
 
                 if (draftWalk != null) {
                     settingsRepository.setWalkSpeed(draftWalk)
-                    _draftWalkSpeed.value = null
+                    draftWalkSpeedFlow.value = null
                 }
                 if (draftRun != null) {
                     settingsRepository.setRunSpeed(draftRun)
-                    _draftRunSpeed.value = null
+                    draftRunSpeedFlow.value = null
                 }
                 if (draftBike != null) {
                     settingsRepository.setBikeSpeed(draftBike)
-                    _draftBikeSpeed.value = null
+                    draftBikeSpeedFlow.value = null
                 }
                 if (draftUnit != null) {
                     settingsRepository.setSpeedUnit(draftUnit)
-                    _draftSpeedUnit.value = null
+                    draftSpeedUnitFlow.value = null
                 }
                 if (draftFeatures != null) {
                     settingsRepository.setWidgetFeatures(draftFeatures.toList())
-                    _draftWidgetFeatures.value = null
+                    draftWidgetFeaturesFlow.value = null
                 }
                 if (draftRememberLastLocation != null) {
                     settingsRepository.setRememberLastLocation(draftRememberLastLocation)
-                    _draftRememberLastLocation.value = null
+                    draftRememberLastLocationFlow.value = null
                 }
-                val draftJitterIdle = _draftJitterIdleRadius.value
+                val draftJitterIdle = draftJitterIdleRadiusFlow.value
                 if (draftJitterIdle != null) {
                     settingsRepository.setJitterIdleRadius(draftJitterIdle)
-                    _draftJitterIdleRadius.value = null
+                    draftJitterIdleRadiusFlow.value = null
                 }
-                val draftJitterMoving = _draftJitterMovingRadius.value
+                val draftJitterMoving = draftJitterMovingRadiusFlow.value
                 if (draftJitterMoving != null) {
                     settingsRepository.setJitterMovingRadius(draftJitterMoving)
-                    _draftJitterMovingRadius.value = null
+                    draftJitterMovingRadiusFlow.value = null
                 }
             }
         }
 
         fun discardChanges() {
-            _draftWalkSpeed.value = null
-            _draftRunSpeed.value = null
-            _draftBikeSpeed.value = null
-            _draftSpeedUnit.value = null
-            _draftWidgetFeatures.value = null
-            _draftRememberLastLocation.value = null
-            _draftJitterIdleRadius.value = null
-            _draftJitterMovingRadius.value = null
+            draftWalkSpeedFlow.value = null
+            draftRunSpeedFlow.value = null
+            draftBikeSpeedFlow.value = null
+            draftSpeedUnitFlow.value = null
+            draftWidgetFeaturesFlow.value = null
+            draftRememberLastLocationFlow.value = null
+            draftJitterIdleRadiusFlow.value = null
+            draftJitterMovingRadiusFlow.value = null
         }
 
         fun convertMsToDisplay(

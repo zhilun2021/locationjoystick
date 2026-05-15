@@ -174,12 +174,12 @@ class RouteCreatorViewModel
             a: LatLng,
             b: LatLng,
         ): Double {
-            val R = 6371000.0
+            val earthRadius = 6371000.0
             val dLat = Math.toRadians(b.latitude - a.latitude)
             val dLon = Math.toRadians(b.longitude - a.longitude)
             val sinDLat = sin(dLat / 2)
             val sinDLon = sin(dLon / 2)
             val h = sinDLat * sinDLat + cos(Math.toRadians(a.latitude)) * cos(Math.toRadians(b.latitude)) * sinDLon * sinDLon
-            return 2 * R * kotlin.math.asin(kotlin.math.sqrt(h))
+            return 2 * earthRadius * kotlin.math.asin(kotlin.math.sqrt(h))
         }
     }

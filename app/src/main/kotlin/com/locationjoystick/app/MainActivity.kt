@@ -19,8 +19,8 @@ class MainActivity : ComponentActivity() {
         const val ACTION_MOVE_TO_BACK = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
     }
 
-    private val _navigateToMapFlow = MutableSharedFlow<Unit>(replay = 1)
-    internal val navigateToMapFlow = _navigateToMapFlow.asSharedFlow()
+    private val navigateToMapMutableFlow = MutableSharedFlow<Unit>(replay = 1)
+    internal val navigateToMapFlow = navigateToMapMutableFlow.asSharedFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,7 +52,7 @@ class MainActivity : ComponentActivity() {
 
     internal fun handleIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_MAP, false) == true) {
-            _navigateToMapFlow.tryEmit(Unit)
+            navigateToMapMutableFlow.tryEmit(Unit)
         }
         if (intent?.action == ACTION_MOVE_TO_BACK) {
             moveTaskToBack(true)

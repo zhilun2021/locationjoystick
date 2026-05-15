@@ -27,14 +27,14 @@ class FavoritesViewModel
         private val favoriteRepository: FavoriteRepository,
         private val locationRepository: LocationRepository,
     ) : ViewModel() {
-        private val _pendingDeleteId = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
+        private val pendingDeleteIdFlow = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
 
         val uiState: StateFlow<FavoritesUiState> =
             kotlinx.coroutines
                 .flow
                 .combine(
                     favoriteRepository.getFavorites(),
-                    _pendingDeleteId,
+                    pendingDeleteIdFlow,
                 ) { favorites, pendingDeleteId ->
                     FavoritesUiState(
                         favorites = favorites,
@@ -117,12 +117,12 @@ class FavoritesViewModel
         }
 
         fun setPendingDeleteId(id: String?) {
-            _pendingDeleteId.value = id
+            pendingDeleteIdFlow.value = id
         }
 
         fun confirmDelete() {
-            val idToDelete = _pendingDeleteId.value ?: return
-            _pendingDeleteId.value = null
+            val idToDelete = pendingDeleteIdFlow.value ?: return
+            pendingDeleteIdFlow.value = null
             deleteFavorite(idToDelete)
         }
     }

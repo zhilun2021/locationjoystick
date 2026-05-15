@@ -143,21 +143,21 @@ class FloatingWidgetService :
     private var joystickPollJob: Job? = null
 
     // Joystick state
-    private val _joystickVisible = MutableStateFlow(false)
-    private val _joystickLocked = MutableStateFlow(false)
-    private val _activeProfileId = MutableStateFlow("walk")
+    private val joystickVisibleFlow = MutableStateFlow(false)
+    private val joystickLockedFlow = MutableStateFlow(false)
+    private val activeProfileIdFlow = MutableStateFlow("walk")
 
     // Route/walk-to active state
-    private val _isRouteActive = MutableStateFlow(false)
-    private val _isRoutePaused = MutableStateFlow(false)
-    private val _routeExpanded = MutableStateFlow(false)
+    private val isRouteActiveFlow = MutableStateFlow(false)
+    private val isRoutePausedFlow = MutableStateFlow(false)
+    private val routeExpandedFlow = MutableStateFlow(false)
 
     // Master panel expand/collapse
-    private val _isPanelExpanded = MutableStateFlow(false)
+    private val isPanelExpandedFlow = MutableStateFlow(false)
 
     // Floating panel data
-    private val _favoritesData = MutableStateFlow<List<FavoriteLocation>>(emptyList())
-    private val _routesData = MutableStateFlow<List<com.locationjoystick.core.model.Route>>(emptyList())
+    private val favoritesDataFlow = MutableStateFlow<List<FavoriteLocation>>(emptyList())
+    private val routesDataFlow = MutableStateFlow<List<com.locationjoystick.core.model.Route>>(emptyList())
 
     private var mockLocationService: MockLocationService? = null
 
@@ -177,8 +177,8 @@ class FloatingWidgetService :
             override fun onServiceDisconnected(name: ComponentName) {
                 joystickPollJob?.cancel()
                 joystickService = null
-                _joystickVisible.value = false
-                _joystickLocked.value = false
+                joystickVisibleFlow.value = false
+                joystickLockedFlow.value = false
                 Log.d(TAG, "Unbound from JoystickOverlayService")
             }
         }
@@ -214,7 +214,7 @@ class FloatingWidgetService :
         joystickBound = bindService(joystickIntent, joystickConnection, Context.BIND_AUTO_CREATE)
         lifecycleScope.launch {
             settingsRepository.getActiveSpeedProfile().collect { profile ->
-                _activeProfileId.value = profile.id
+                activeProfileIdFlow.value = profile.id
             }
         }
         lifecycleScope.launch {
@@ -231,9 +231,9 @@ class FloatingWidgetService :
                             (activeRouteId != null && state == com.locationjoystick.core.model.MockLocationState.PAUSED)
                     active to paused
                 }.collect { (active, paused) ->
-                    if (!active) _routeExpanded.value = false
-                    _isRouteActive.value = active
-                    _isRoutePaused.value = paused
+                    if (!active) routeExpandedFlow.value = false
+                    isRouteActiveFlow.value = active
+                    isRoutePausedFlow.value = paused
                 }
         }
     }
@@ -294,13 +294,13 @@ class FloatingWidgetService :
 
         view.setContent {
             val features by settingsRepository.getWidgetFeatures().collectAsState(initial = emptyList())
-            val joystickVisible by _joystickVisible.collectAsState()
-            val joystickLocked by _joystickLocked.collectAsState()
-            val activeProfileId by _activeProfileId.collectAsState()
-            val isRouteActive by _isRouteActive.collectAsState()
-            val isRoutePaused by _isRoutePaused.collectAsState()
-            val routeExpanded by _routeExpanded.collectAsState()
-            val isPanelExpanded by _isPanelExpanded.collectAsState()
+            val joystickVisible by joystickVisibleFlow.collectAsState()
+            val joystickLocked by joystickLockedFlow.collectAsState()
+            val activeProfileId by activeProfileIdFlow.collectAsState()
+            val isRouteActive by isRouteActiveFlow.collectAsState()
+            val isRoutePaused by isRoutePausedFlow.collectAsState()
+            val routeExpanded by routeExpandedFlow.collectAsState()
+            val isPanelExpanded by isPanelExpandedFlow.collectAsState()
 
             LjTheme {
                 WidgetPanel(
@@ -312,7 +312,7 @@ class FloatingWidgetService :
                     isRoutePaused = isRoutePaused,
                     routeExpanded = routeExpanded,
                     isPanelExpanded = isPanelExpanded,
-                    onToggleMaster = { _isPanelExpanded.value = !_isPanelExpanded.value },
+                    onToggleMaster = { isPanelExpandedFlow.value = !isPanelExpandedFlow.value },
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature) },
                     onRouteClicked = { onRouteIconClicked() },
                     onRoutePauseResume = { onRoutePauseResumeClicked() },
@@ -744,14 +744,14 @@ class FloatingWidgetService :
 
     private fun showFavoritesPanel() {
         serviceScope.launch {
-            _favoritesData.value = favoriteRepository.getFavorites().first()
+            favoritesDataFlow.value = favoriteRepository.getFavorites().first()
             val panel =
                 ComposeView(this@FloatingWidgetService).apply {
                     setViewTreeLifecycleOwner(this@FloatingWidgetService)
                     setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
                 }
             panel.setContent {
-                val favs by _favoritesData.collectAsState()
+                val favs by favoritesDataFlow.collectAsState()
                 LjTheme {
                     FavoritesPanel(
                         favorites = favs,
@@ -773,7 +773,7 @@ class FloatingWidgetService :
                                         name = name,
                                         position = pos,
                                     )
-                                    _favoritesData.value = favoriteRepository.getFavorites().first()
+                                    favoritesDataFlow.value = favoriteRepository.getFavorites().first()
                                 } else {
                                     Log.w(TAG, "Cannot add favorite: no current position")
                                 }
@@ -794,14 +794,14 @@ class FloatingWidgetService :
 
     private fun showRoutesPanel() {
         serviceScope.launch {
-            _routesData.value = routeRepository.getRoutes().first()
+            routesDataFlow.value = routeRepository.getRoutes().first()
             val panel =
                 ComposeView(this@FloatingWidgetService).apply {
                     setViewTreeLifecycleOwner(this@FloatingWidgetService)
                     setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
                 }
             panel.setContent {
-                val routes by _routesData.collectAsState()
+                val routes by routesDataFlow.collectAsState()
                 LjTheme {
                     RoutesPanel(
                         routes = routes,
@@ -872,8 +872,8 @@ class FloatingWidgetService :
 
     private fun syncJoystickState() {
         val svc = joystickService ?: return
-        _joystickVisible.value = svc.isOverlayVisible
-        _joystickLocked.value = svc.locked
+        joystickVisibleFlow.value = svc.isOverlayVisible
+        joystickLockedFlow.value = svc.locked
     }
 
     private fun startJoystickPolling() {
@@ -899,15 +899,15 @@ class FloatingWidgetService :
     }
 
     private fun onRouteIconClicked() {
-        if (_isRouteActive.value) {
-            _routeExpanded.value = !_routeExpanded.value
+        if (isRouteActiveFlow.value) {
+            routeExpandedFlow.value = !routeExpandedFlow.value
         } else {
             showRoutesPanel()
         }
     }
 
     private fun onRoutePauseResumeClicked() {
-        if (_isRoutePaused.value) {
+        if (isRoutePausedFlow.value) {
             if (locationRepository.walkTarget.value != null) {
                 locationRepository.setWalkPaused(false)
                 resumeWalkToJob()
@@ -934,7 +934,7 @@ class FloatingWidgetService :
     }
 
     private fun onRouteStopClicked() {
-        _routeExpanded.value = false
+        routeExpandedFlow.value = false
         if (locationRepository.walkTarget.value != null) {
             walkToJob?.cancel()
             walkToJob = null
@@ -1066,7 +1066,7 @@ class FloatingWidgetService :
             try {
                 val newLocked = !svc.locked
                 svc.setIsLocked(newLocked)
-                _joystickLocked.value = newLocked
+                joystickLockedFlow.value = newLocked
                 Log.d(TAG, "Toggled joystick lock to: $newLocked")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to toggle lock", e)
