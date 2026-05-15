@@ -57,13 +57,14 @@ class RdpSimplificationTest {
 
     @Test
     fun `small epsilon preserves more detail`() {
-        val points = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.5, 0.0),
-            LatLng(1.0, 0.1),
-            LatLng(1.5, 0.0),
-            LatLng(2.0, 0.0),
-        )
+        val points =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.5, 0.0),
+                LatLng(1.0, 0.1),
+                LatLng(1.5, 0.0),
+                LatLng(2.0, 0.0),
+            )
         val coarse = rdpSimplify(points, 100_000.0)
         val fine = rdpSimplify(points, 5.0)
         assertTrue("smaller epsilon preserves more points", fine.size >= coarse.size)
@@ -79,19 +80,22 @@ class RdpSimplificationTest {
 
     @Test
     fun `preserves point order`() {
-        val points = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.2, 0.0),
-            LatLng(0.4, 0.1),
-            LatLng(0.6, 0.0),
-            LatLng(0.8, 0.0),
-            LatLng(1.0, 0.0),
-        )
+        val points =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.2, 0.0),
+                LatLng(0.4, 0.1),
+                LatLng(0.6, 0.0),
+                LatLng(0.8, 0.0),
+                LatLng(1.0, 0.0),
+            )
         val result = rdpSimplify(points, 5.0)
         // Latitudes should be monotonically increasing
         for (i in 1 until result.size) {
-            assertTrue("lats should not decrease: ${result[i-1].latitude} <= ${result[i].latitude}",
-                result[i].latitude >= result[i-1].latitude - 0.0001)
+            assertTrue(
+                "lats should not decrease: ${result[i - 1].latitude} <= ${result[i].latitude}",
+                result[i].latitude >= result[i - 1].latitude - 0.0001,
+            )
         }
     }
 

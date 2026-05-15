@@ -127,8 +127,10 @@ class LatLngTest {
         val ab = a.distanceTo(b)
         val bc = b.distanceTo(c)
         val ac = a.distanceTo(c)
-        assertTrue("a→c should be less than a→b + b→c",
-            ac <= ab + bc + 1.0) // +1.0 for numerical error
+        assertTrue(
+            "a→c should be less than a→b + b→c",
+            ac <= ab + bc + 1.0,
+        ) // +1.0 for numerical error
     }
 
     @Test

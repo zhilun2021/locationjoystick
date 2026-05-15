@@ -295,7 +295,6 @@ internal fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text("Map", style = MaterialTheme.typography.headlineSmall)

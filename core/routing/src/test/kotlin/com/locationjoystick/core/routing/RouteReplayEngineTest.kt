@@ -141,8 +141,10 @@ class RouteReplayEngineTest {
         assertTrue("should have collected positions", positions.size >= 2)
         // Latitudes should increase monotonically towards target
         for (i in 1 until positions.size) {
-            assertTrue("lat should increase: ${positions[i-1].latitude} <= ${positions[i].latitude}",
-                positions[i].latitude >= positions[i-1].latitude)
+            assertTrue(
+                "lat should increase: ${positions[i - 1].latitude} <= ${positions[i].latitude}",
+                positions[i].latitude >= positions[i - 1].latitude,
+            )
         }
     }
 
