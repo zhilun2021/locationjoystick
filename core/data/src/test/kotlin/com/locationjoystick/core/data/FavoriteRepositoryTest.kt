@@ -101,4 +101,54 @@ class FavoriteRepositoryTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    @Test
+    fun `addFavorite preserves exact position`() =
+        runTest {
+            val position = LatLng(48.8584, 2.2945)
+            repository.addFavorite("fav-1", "Tower", position, createdAt = 1_000L)
+
+            repository.getFavorites().test {
+                val list = awaitItem()
+                assertEquals(position.latitude, list.first().position.latitude, 0.00001)
+                assertEquals(position.longitude, list.first().position.longitude, 0.00001)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `updateFavorite preserves position`() =
+        runTest {
+            val originalPos = LatLng(0.0, 0.0)
+            repository.addFavorite("fav-1", "A", originalPos, createdAt = 1_000L)
+
+            val newPos = LatLng(51.5, -0.1)
+            val updated = FavoriteLocation(id = "fav-1", name = "B", position = newPos, createdAt = 1_000L)
+            repository.updateFavorite(updated)
+
+            repository.getFavorites().test {
+                val list = awaitItem()
+                assertEquals(newPos.latitude, list.first().position.latitude, 0.00001)
+                assertEquals(newPos.longitude, list.first().position.longitude, 0.00001)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `multiple favorites maintain creation order`() =
+        runTest {
+            repository.addFavorite("a", "First", LatLng(0.0, 0.0), createdAt = 100L)
+            repository.addFavorite("b", "Second", LatLng(1.0, 0.0), createdAt = 200L)
+            repository.addFavorite("c", "Third", LatLng(2.0, 0.0), createdAt = 300L)
+
+            repository.getFavorites().test {
+                val list = awaitItem()
+                assertEquals(3, list.size)
+                // Descending order (newest first)
+                assertEquals("Third", list[0].name)
+                assertEquals("Second", list[1].name)
+                assertEquals("First", list[2].name)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }

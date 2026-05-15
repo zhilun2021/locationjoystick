@@ -1,6 +1,7 @@
 package com.locationjoystick.core.model
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SpeedProfileTest {
@@ -36,12 +37,44 @@ class SpeedProfileTest {
     @Test
     fun `defaultProfiles walk is slower than run`() {
         val profiles = SpeedProfile.defaultProfiles().associateBy { it.id }
-        assert(profiles["walk"]!!.speedMetersPerSecond < profiles["run"]!!.speedMetersPerSecond)
+        assertTrue("walk should be slower than run", profiles["walk"]!!.speedMetersPerSecond < profiles["run"]!!.speedMetersPerSecond)
     }
 
     @Test
     fun `defaultProfiles run is slower than bike`() {
         val profiles = SpeedProfile.defaultProfiles().associateBy { it.id }
-        assert(profiles["run"]!!.speedMetersPerSecond < profiles["bike"]!!.speedMetersPerSecond)
+        assertTrue("run should be slower than bike", profiles["run"]!!.speedMetersPerSecond < profiles["bike"]!!.speedMetersPerSecond)
+    }
+
+    @Test
+    fun `defaultProfiles all speeds are positive`() {
+        SpeedProfile.defaultProfiles().forEach { profile ->
+            assertTrue("${profile.id} speed should be positive", profile.speedMetersPerSecond > 0.0)
+        }
+    }
+
+    @Test
+    fun `defaultProfiles all names are non-empty`() {
+        SpeedProfile.defaultProfiles().forEach { profile ->
+            assertTrue("${profile.id} name should be non-empty", profile.name.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `defaultProfiles walk is exactly 2 kmh`() {
+        val walk = SpeedProfile.defaultProfiles().first { it.id == "walk" }
+        assertEquals(2.0 / 3.6, walk.speedMetersPerSecond, 0.001)
+    }
+
+    @Test
+    fun `defaultProfiles run is exactly 8 kmh`() {
+        val run = SpeedProfile.defaultProfiles().first { it.id == "run" }
+        assertEquals(8.0 / 3.6, run.speedMetersPerSecond, 0.001)
+    }
+
+    @Test
+    fun `defaultProfiles bike is exactly 15 kmh`() {
+        val bike = SpeedProfile.defaultProfiles().first { it.id == "bike" }
+        assertEquals(15.0 / 3.6, bike.speedMetersPerSecond, 0.001)
     }
 }

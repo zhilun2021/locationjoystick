@@ -54,4 +54,62 @@ class RdpSimplificationTest {
         val result = rdpSimplify(points, 100_000.0)
         assertEquals(2, result.size)
     }
+
+    @Test
+    fun `small epsilon preserves more detail`() {
+        val points = listOf(
+            LatLng(0.0, 0.0),
+            LatLng(0.5, 0.0),
+            LatLng(1.0, 0.1),
+            LatLng(1.5, 0.0),
+            LatLng(2.0, 0.0),
+        )
+        val coarse = rdpSimplify(points, 100_000.0)
+        val fine = rdpSimplify(points, 5.0)
+        assertTrue("smaller epsilon preserves more points", fine.size >= coarse.size)
+    }
+
+    @Test
+    fun `returns endpoints unchanged`() {
+        val points = listOf(LatLng(0.0, 0.0), LatLng(0.5, 0.5), LatLng(1.0, 1.0))
+        val result = rdpSimplify(points, 5.0)
+        assertEquals(LatLng(0.0, 0.0), result.first())
+        assertEquals(LatLng(1.0, 1.0), result.last())
+    }
+
+    @Test
+    fun `preserves point order`() {
+        val points = listOf(
+            LatLng(0.0, 0.0),
+            LatLng(0.2, 0.0),
+            LatLng(0.4, 0.1),
+            LatLng(0.6, 0.0),
+            LatLng(0.8, 0.0),
+            LatLng(1.0, 0.0),
+        )
+        val result = rdpSimplify(points, 5.0)
+        // Latitudes should be monotonically increasing
+        for (i in 1 until result.size) {
+            assertTrue("lats should not decrease: ${result[i-1].latitude} <= ${result[i].latitude}",
+                result[i].latitude >= result[i-1].latitude - 0.0001)
+        }
+    }
+
+    @Test
+    fun `three collinear points reduces to two`() {
+        val points = listOf(LatLng(0.0, 0.0), LatLng(0.3, 0.0), LatLng(0.6, 0.0))
+        val result = rdpSimplify(points, 1.0)
+        assertEquals(2, result.size)
+        assertEquals(LatLng(0.0, 0.0), result[0])
+        assertEquals(LatLng(0.6, 0.0), result[1])
+    }
+
+    @Test
+    fun `epsilon of 0 preserves endpoints`() {
+        val points = (0..5).map { i -> LatLng(i * 0.1, i * 0.05) }
+        val result = rdpSimplify(points, 0.0)
+        // Always includes endpoints
+        assertEquals(points.first(), result.first())
+        assertEquals(points.last(), result.last())
+    }
 }

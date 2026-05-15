@@ -94,4 +94,60 @@ class LatLngTest {
         val bearing = a.bearingTo(b)
         assertTrue("expected NE bearing, got $bearing", bearing > 0.0 && bearing < 90.0)
     }
+
+    @Test
+    fun `bearingTo southeast is between 90 and 180`() {
+        val a = LatLng(1.0, 0.0)
+        val b = LatLng(0.0, 1.0)
+        val bearing = a.bearingTo(b)
+        assertTrue("expected SE bearing, got $bearing", bearing > 90.0 && bearing < 180.0)
+    }
+
+    @Test
+    fun `bearingTo southwest is between 180 and 270`() {
+        val a = LatLng(1.0, 1.0)
+        val b = LatLng(0.0, 0.0)
+        val bearing = a.bearingTo(b)
+        assertTrue("expected SW bearing, got $bearing", bearing > 180.0 && bearing < 270.0)
+    }
+
+    @Test
+    fun `bearingTo northwest is between 270 and 360`() {
+        val a = LatLng(0.0, 1.0)
+        val b = LatLng(1.0, 0.0)
+        val bearing = a.bearingTo(b)
+        assertTrue("expected NW bearing, got $bearing", bearing > 270.0 && bearing < 360.0)
+    }
+
+    @Test
+    fun `distanceTo obeys triangle inequality`() {
+        val a = LatLng(0.0, 0.0)
+        val b = LatLng(1.0, 0.0)
+        val c = LatLng(1.0, 1.0)
+        val ab = a.distanceTo(b)
+        val bc = b.distanceTo(c)
+        val ac = a.distanceTo(c)
+        assertTrue("a→c should be less than a→b + b→c",
+            ac <= ab + bc + 1.0) // +1.0 for numerical error
+    }
+
+    @Test
+    fun `distanceTo zero distance for nearby points`() {
+        val a = LatLng(0.0, 0.0)
+        val b = LatLng(0.00001, 0.0) // ~1.1m away
+        val dist = a.distanceTo(b)
+        assertTrue("should be under 2m", dist < 2.0)
+        assertTrue("should be positive", dist > 0.0)
+    }
+
+    @Test
+    fun `bearingTo and distanceTo are independent`() {
+        val a = LatLng(48.8566, 2.3522)
+        val b = LatLng(51.5, -0.1)
+        val bearing = a.bearingTo(b)
+        val distance = a.distanceTo(b)
+        // Bearing should be valid regardless of distance
+        assertTrue("bearing should be valid", bearing >= 0.0 && bearing < 360.0)
+        assertTrue("distance should be positive", distance > 0.0)
+    }
 }

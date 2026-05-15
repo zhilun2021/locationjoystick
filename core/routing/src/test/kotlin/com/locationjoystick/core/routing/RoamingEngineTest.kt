@@ -45,4 +45,34 @@ class RoamingEngineTest {
     fun `stopRoaming does not throw when not started`() {
         kotlinx.coroutines.runBlocking { engine.stopRoaming() }
     }
+
+    @Test
+    fun `randomPointInRadius distribution is roughly uniform`() {
+        val center = LatLng(0.0, 0.0)
+        val radiusMeters = 1000.0
+        val points = (1..100).map { engine.randomPointInRadius(center, radiusMeters) }
+
+        // Check points spread across quadrants
+        val ne = points.count { it.latitude > 0.0 && it.longitude > 0.0 }
+        val nw = points.count { it.latitude > 0.0 && it.longitude < 0.0 }
+        val se = points.count { it.latitude < 0.0 && it.longitude > 0.0 }
+        val sw = points.count { it.latitude < 0.0 && it.longitude < 0.0 }
+
+        // Each quadrant should have ~25 points (±10 tolerance)
+        assertTrue("NE quadrant should have ~25 points, got $ne", ne in 15..35)
+        assertTrue("NW quadrant should have ~25 points, got $nw", nw in 15..35)
+        assertTrue("SE quadrant should have ~25 points, got $se", se in 15..35)
+        assertTrue("SW quadrant should have ~25 points, got $sw", sw in 15..35)
+    }
+
+    @Test
+    fun `randomPointInRadius respects maximum radius strictly`() {
+        val center = LatLng(51.5, 0.0)
+        val radius = 100.0
+        repeat(100) {
+            val point = engine.randomPointInRadius(center, radius)
+            val dist = center.distanceTo(point)
+            assertTrue("distance $dist must not exceed radius $radius", dist <= radius)
+        }
+    }
 }

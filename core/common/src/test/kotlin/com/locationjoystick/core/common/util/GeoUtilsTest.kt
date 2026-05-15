@@ -177,4 +177,82 @@ class GeoUtilsTest {
         assertEquals(center.latitude, point.latitude, 0.0001)
         assertEquals(center.longitude, point.longitude, 0.0001)
     }
+
+    @Test
+    fun `randomPointInRadius produces varied points`() {
+        val center = LatLng(0.0, 0.0)
+        val points = (1..50).map { randomPointInRadius(center, 1000.0) }
+        val uniqueLats = points.map { it.latitude }.toSet()
+        assertTrue("expected multiple distinct latitudes", uniqueLats.size > 10)
+    }
+
+    // addGpsJitter
+
+    @Test
+    fun `addGpsJitter returns point within jitter radius`() {
+        val original = LatLng(48.8566, 2.3522)
+        val maxJitter = 2.0
+        repeat(50) {
+            val jittered = addGpsJitter(original, maxJitter)
+            val dist = haversineDistance(original, jittered)
+            assertTrue("jitter $dist exceeds max $maxJitter", dist <= maxJitter + 0.5)
+        }
+    }
+
+    @Test
+    fun `addGpsJitter with zero max returns near center`() {
+        val original = LatLng(0.0, 0.0)
+        val jittered = addGpsJitter(original, 0.0)
+        assertEquals(original.latitude, jittered.latitude, 0.0001)
+        assertEquals(original.longitude, jittered.longitude, 0.0001)
+    }
+
+    @Test
+    fun `addGpsJitter default param uses 1_5 meters`() {
+        val original = LatLng(51.5, 0.0)
+        repeat(30) {
+            val jittered = addGpsJitter(original)
+            val dist = haversineDistance(original, jittered)
+            assertTrue("default jitter $dist exceeds 1.5m", dist <= 1.5 + 0.5)
+        }
+    }
+
+    // metersToLatDegrees
+
+    @Test
+    fun `metersToLatDegrees 111195m is approx 1 degree`() {
+        val degrees = metersToLatDegrees(111_195.0)
+        assertEquals(1.0, degrees, 0.01)
+    }
+
+    @Test
+    fun `metersToLatDegrees zero meters returns zero`() {
+        assertEquals(0.0, metersToLatDegrees(0.0), 0.0001)
+    }
+
+    @Test
+    fun `metersToLatDegrees 1000m is less than 0_01 degrees`() {
+        val degrees = metersToLatDegrees(1000.0)
+        assertTrue("1000m should be less than 0.01 degrees", degrees < 0.01)
+    }
+
+    // metersToLngDegrees
+
+    @Test
+    fun `metersToLngDegrees at equator approx 1 degree`() {
+        val degrees = metersToLngDegrees(111_195.0, 0.0)
+        assertEquals(1.0, degrees, 0.01)
+    }
+
+    @Test
+    fun `metersToLngDegrees increases with latitude distance`() {
+        val at0 = metersToLngDegrees(1000.0, 0.0)
+        val at45 = metersToLngDegrees(1000.0, 45.0)
+        assertTrue("same meters = more degrees at higher latitude", at45 > at0)
+    }
+
+    @Test
+    fun `metersToLngDegrees zero meters returns zero`() {
+        assertEquals(0.0, metersToLngDegrees(0.0, 45.0), 0.0001)
+    }
 }

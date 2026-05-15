@@ -133,4 +133,71 @@ class MapViewModelTest {
 
             assertNull(viewModel.uiState.value.pendingTapPosition)
         }
+
+    @Test
+    fun `tapToTeleport_preservesExactCoordinates`() =
+        runTest {
+            every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
+            every { locationRepository.observePosition() } returns MutableStateFlow(null)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+
+            val position = LatLng(51.5074, -0.1278)
+            viewModel.onAction(MapAction.TapToTeleport(position))
+
+            val pending = viewModel.uiState.value.pendingTapPosition
+            org.junit.Assert.assertNotNull(pending)
+            assertEquals(position.latitude, pending!!.latitude, 0.00001)
+            assertEquals(position.longitude, pending.longitude, 0.00001)
+        }
+
+    @Test
+    fun `confirmTeleport_preservesExactCoordinates`() =
+        runTest {
+            every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
+            every { locationRepository.observePosition() } returns MutableStateFlow(null)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+
+            val position = LatLng(48.8566, 2.3522)
+            viewModel.onAction(MapAction.TapToTeleport(position))
+            viewModel.onAction(MapAction.ConfirmTeleport(position))
+
+            // Position should be cleared after confirm
+            assertNull(viewModel.uiState.value.pendingTapPosition)
+        }
+
+    @Test
+    fun `multiple taps update pending position sequentially`() =
+        runTest {
+            every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
+            every { locationRepository.observePosition() } returns MutableStateFlow(null)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+
+            val pos1 = LatLng(0.0, 0.0)
+            val pos2 = LatLng(1.0, 1.0)
+            val pos3 = LatLng(2.0, 2.0)
+
+            viewModel.onAction(MapAction.TapToTeleport(pos1))
+            assertEquals(pos1, viewModel.uiState.value.pendingTapPosition)
+
+            viewModel.onAction(MapAction.TapToTeleport(pos2))
+            assertEquals(pos2, viewModel.uiState.value.pendingTapPosition)
+
+            viewModel.onAction(MapAction.TapToTeleport(pos3))
+            assertEquals(pos3, viewModel.uiState.value.pendingTapPosition)
+        }
+
+    @Test
+    fun `clearPendingTap_actuallyClears`() =
+        runTest {
+            every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
+            every { locationRepository.observePosition() } returns MutableStateFlow(null)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+
+            val position = LatLng(10.5, 20.5)
+            viewModel.onAction(MapAction.TapToTeleport(position))
+            assertEquals(position, viewModel.uiState.value.pendingTapPosition)
+
+            viewModel.onAction(MapAction.ClearPendingTap)
+            assertNull(viewModel.uiState.value.pendingTapPosition)
+        }
 }

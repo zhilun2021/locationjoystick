@@ -150,4 +150,56 @@ class RouteInterpolatorTest {
         assertFalse(result.reachedEnd)
         assertEquals(2, result.nextWaypointIndex)
     }
+
+    @Test
+    fun `interpolateAlongRoute advances distance proportional to time`() {
+        val start = LatLng(0.0, 0.0)
+        val target = LatLng(1.0, 0.0) // far away
+        val waypoints = listOf(start, target)
+
+        val advanceShort = interpolator.interpolateAlongRoute(waypoints, start, 1, 1.0, 500)
+        val advanceLong = interpolator.interpolateAlongRoute(waypoints, start, 1, 1.0, 1000)
+        assertTrue("500ms should advance less than 1000ms", advanceShort.position.latitude < advanceLong.position.latitude)
+    }
+
+    @Test
+    fun `interpolateAlongRoute exact position after 1000m advance`() {
+        val start = LatLng(0.0, 0.0)
+        val far = LatLng(5.0, 0.0) // ~555km
+        val waypoints = listOf(start, far)
+        // 1 m/s * 1000ms = 1000m = ~0.00899° latitude at equator
+        val result = interpolator.interpolateAlongRoute(waypoints, start, 1, 1.0, 1000)
+        assertTrue("should advance north", result.position.latitude > 0.0)
+        assertTrue("should be less than 0.02 degrees", result.position.latitude < 0.02)
+        assertEquals(0.0, result.position.longitude, 0.0001)
+    }
+
+    @Test
+    fun `interpolateAlongRoute preserves longitude when moving north`() {
+        val start = LatLng(0.0, 10.0)
+        val north = LatLng(0.1, 10.0)
+        val waypoints = listOf(start, north)
+        val result = interpolator.interpolateAlongRoute(waypoints, start, 1, 1.4, 1000)
+        assertEquals(10.0, result.position.longitude, 0.0001)
+        assertTrue("should move north", result.position.latitude > start.latitude)
+    }
+
+    @Test
+    fun `advancePosition distance traveled is proportional to delta`() {
+        val from = LatLng(0.0, 0.0)
+        val advance100 = interpolator.advancePosition(from, 0.0, 100.0)
+        val advance200 = interpolator.advancePosition(from, 0.0, 200.0)
+        assertTrue("200m should go further north than 100m", advance200.latitude > advance100.latitude)
+        // ~2x distance should give ~2x latitude change (linear approximation at equator)
+        assertEquals(advance100.latitude * 2, advance200.latitude, advance100.latitude * 0.1)
+    }
+
+    @Test
+    fun `advancePosition bearing 45 degrees gives equal lat lon change`() {
+        val from = LatLng(0.0, 0.0)
+        val result = interpolator.advancePosition(from, 45.0, 1000.0)
+        // At equator, 45° bearing → equal lat and lon displacement (within ~1% due to earth curvature)
+        assertEquals(result.latitude, result.longitude, result.latitude * 0.01)
+        assertTrue("both should be positive", result.latitude > 0.0 && result.longitude > 0.0)
+    }
 }

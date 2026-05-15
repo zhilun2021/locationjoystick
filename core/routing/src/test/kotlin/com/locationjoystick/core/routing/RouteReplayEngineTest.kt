@@ -112,4 +112,55 @@ class RouteReplayEngineTest {
         kotlinx.coroutines.runBlocking { engine.stop() }
         assertTrue("onComplete should have been called before throwing", completed)
     }
+
+    @Test
+    fun `position updates are called multiple times during replay`() {
+        val updateCount = AtomicInteger(0)
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(10.0, 10.0)),
+            speedMs = 1.0,
+            onPositionUpdate = { _ -> updateCount.incrementAndGet() },
+            onComplete = {},
+        )
+        Thread.sleep(3000) // 3 ticks at 1 Hz
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        assertTrue("should have multiple updates, got ${updateCount.get()}", updateCount.get() >= 3)
+    }
+
+    @Test
+    fun `position updates advance towards target`() {
+        val positions = mutableListOf<LatLng>()
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(0.01, 0.0)),
+            speedMs = 1.4,
+            onPositionUpdate = { pos -> positions.add(pos) },
+            onComplete = {},
+        )
+        Thread.sleep(2000)
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        assertTrue("should have collected positions", positions.size >= 2)
+        // Latitudes should increase monotonically towards target
+        for (i in 1 until positions.size) {
+            assertTrue("lat should increase: ${positions[i-1].latitude} <= ${positions[i].latitude}",
+                positions[i].latitude >= positions[i-1].latitude)
+        }
+    }
+
+    @Test
+    fun `stop after start halts position updates`() {
+        val updateCount = AtomicInteger(0)
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(10.0, 10.0)),
+            speedMs = 1.0,
+            onPositionUpdate = { _ -> updateCount.incrementAndGet() },
+            onComplete = {},
+        )
+        Thread.sleep(1500)
+        val countBefore = updateCount.get()
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        Thread.sleep(1500)
+        val countAfter = updateCount.get()
+        assertEquals("updates should not increase after stop()", countBefore, countAfter)
+        assertTrue("should have had some updates before stop", countBefore > 0)
+    }
 }
