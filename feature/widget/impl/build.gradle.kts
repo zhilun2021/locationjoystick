@@ -16,6 +16,7 @@ dependencies {
     implementation(project(":core:overlay"))
     implementation(project(":core:location"))
 
+    implementation(libs.maplibre.android.sdk)
     implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.compose.material.icons.extended)
 }

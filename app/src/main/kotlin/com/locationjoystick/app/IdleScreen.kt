@@ -77,15 +77,6 @@ internal fun IdleScreen(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Where would you like to go?",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
             IdleDestinationCard(
@@ -98,14 +89,14 @@ internal fun IdleScreen(
             IdleDestinationCard(
                 icon = LjIcons.Route,
                 title = "Routes",
-                description = "Create and replay paths automatically.",
+                description = "Replay saved routes.",
                 onClick = onNavigateToRoutes,
             )
             Spacer(modifier = Modifier.height(12.dp))
             IdleDestinationCard(
                 icon = LjIcons.Favorite,
                 title = "Favorites",
-                description = "Jump instantly to saved locations.",
+                description = "Teleport or walk to saved locations.",
                 onClick = onNavigateToFavorites,
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -119,7 +110,7 @@ internal fun IdleScreen(
             IdleDestinationCard(
                 icon = LjIcons.Settings,
                 title = "Settings",
-                description = "Configure speed profiles and widget options.",
+                description = "Configure locationjoystick and spoof preferences.",
                 onClick = onNavigateToSettings,
             )
 

@@ -4,5 +4,7 @@ This document references known issues for agents to pick them and iterate on
 
 ## List
 
-- Map floating widget: we can't navigate in the map, it stays fixed on the current location view, we should be able to move the map freely by dragging it.
-- Floating screen UI/UX consistency: The map floating screen isn't consistent with the Routes and Favorite one: it should have the same padding and the same "subset floating screen" feeling. The Map, Routes, and Favorites floating screen are missing a "close" icon (top right), a simple "X" in order to close the screen.
+- Use our app icon instead of the GPS icon in the Onboarding and Idled screen.
+- Coming from the Idle screen to the Settings screen, importing a settings file bring me back to the Idle page without doing the import nor opening the import validation modal
+
+- Codebase naming and consistency is bad. Filenames are confusing. We should drive naming from feature scope + android specific naming, our available screens are: onboarding (when app is installed or missing permissions), idle (the main app landing screen), map, favorites, routes, roaming, settings. then we have a subset of those screen available from the floating widget: map, routes favorites, plus some other features that are widget specific: joystick, lock joystick position, cycle through speed profiles. since those subset pages are linked to the floating widget, we should reference them as floating view, rather than a screen. Let's make sure the file and variable naming is consistent with those definitions, and update the README.md and AGENTS.md accordingly.

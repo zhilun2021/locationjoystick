@@ -34,6 +34,7 @@ import androidx.compose.material.icons.automirrored.rounded.DirectionsBike
 import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.automirrored.rounded.DirectionsWalk
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
@@ -45,6 +46,7 @@ import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -501,11 +503,20 @@ class FloatingWidgetService :
                             .fillMaxSize()
                             .padding(16.dp),
                 ) {
-                    Text(
-                        text = "Favorites",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = LjText,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Favorites",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = LjText,
+                        )
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Rounded.Close, contentDescription = "Close", tint = LjText)
+                        }
+                    }
                     Spacer(Modifier.height(12.dp))
                     Box(modifier = Modifier.weight(1f)) {
                         if (favorites.isEmpty()) {
@@ -637,11 +648,20 @@ class FloatingWidgetService :
                             .fillMaxSize()
                             .padding(16.dp),
                 ) {
-                    Text(
-                        text = "Routes",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = LjText,
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Routes",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = LjText,
+                        )
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Rounded.Close, contentDescription = "Close", tint = LjText)
+                        }
+                    }
                     Spacer(Modifier.height(12.dp))
                     Box(modifier = Modifier.weight(1f)) {
                         if (routes.isEmpty()) {
@@ -874,7 +894,7 @@ class FloatingWidgetService :
             WidgetFeature.ROUTES_PICKER -> showRoutesPanel()
             WidgetFeature.FAVORITES_PICKER -> showFavoritesPanel()
             WidgetFeature.SPEED_CYCLE -> cycleSpeedProfile()
-            WidgetFeature.MAP -> openMap()
+            WidgetFeature.MAP -> showMapPanel()
         }
     }
 
@@ -1067,17 +1087,43 @@ class FloatingWidgetService :
         }
     }
 
-    private fun openMap() {
+    private fun showMapPanel() {
+        val panel =
+            ComposeView(this@FloatingWidgetService).apply {
+                setViewTreeLifecycleOwner(this@FloatingWidgetService)
+                setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
+            }
+        panel.setContent {
+            LjTheme {
+                MapPanel(
+                    locationRepository = locationRepository,
+                    favoriteRepository = favoriteRepository,
+                    onTeleport = { pos ->
+                        val svc = mockLocationService
+                        if (svc != null) {
+                            svc.updatePosition(pos.latitude, pos.longitude)
+                        } else {
+                            serviceScope.launch { locationRepository.updatePosition(pos) }
+                        }
+                        moveAppToBack()
+                    },
+                    onWalkTo = { pos ->
+                        locationRepository.setWalkTarget(pos)
+                        startWalkToPosition(pos)
+                        moveAppToBack()
+                    },
+                    onDismiss = { hidePanelView() },
+                    context = this@FloatingWidgetService,
+                )
+            }
+        }
+        hidePanelView()
         try {
-            val intent =
-                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    putExtra("navigate_to_map", true)
-                }
-            startActivity(intent)
-            Log.d(TAG, "Opened map screen")
+            windowManager.addView(panel, panelLayoutParams())
+            panelComposeView = panel
+            Log.d(TAG, "Opened map panel")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to open map screen", e)
+            Log.e(TAG, "Failed to show map panel", e)
         }
     }
 
