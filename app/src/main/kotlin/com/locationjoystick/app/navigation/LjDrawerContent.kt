@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.locationjoystick.app.IDLE_ROUTE
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.roaming.api.ROAMING_ROUTE
@@ -54,7 +55,7 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(MAP_ROUTE) {
-                    popUpTo(MAP_ROUTE) { saveState = true }
+                    popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -67,7 +68,7 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(ROUTES_ROUTE) {
-                    popUpTo(MAP_ROUTE) { saveState = true }
+                    popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -80,7 +81,7 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(FAVORITES_ROUTE) {
-                    popUpTo(MAP_ROUTE) { saveState = true }
+                    popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -93,7 +94,7 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(ROAMING_ROUTE) {
-                    popUpTo(MAP_ROUTE) { saveState = true }
+                    popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
@@ -106,7 +107,7 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(SETTINGS_ROUTE) {
-                    popUpTo(MAP_ROUTE) { saveState = true }
+                    popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }

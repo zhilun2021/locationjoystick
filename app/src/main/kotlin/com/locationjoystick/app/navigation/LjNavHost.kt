@@ -12,6 +12,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.locationjoystick.app.IDLE_ROUTE
+import com.locationjoystick.app.IdleScreen
 import com.locationjoystick.core.common.util.isMockLocationEnabled
 import com.locationjoystick.core.common.util.isOverlayPermissionGranted
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
@@ -54,7 +56,7 @@ fun LjNavHost(
     val context = LocalContext.current
     val startDestination =
         remember {
-            if (allPermissionsGranted(context)) MAP_ROUTE else SETUP_ROUTE
+            if (allPermissionsGranted(context)) IDLE_ROUTE else SETUP_ROUTE
         }
 
     NavHost(
@@ -64,9 +66,29 @@ fun LjNavHost(
         composable(SETUP_ROUTE) {
             SetupRoute(
                 onSetupComplete = {
-                    navController.navigate(MAP_ROUTE) {
+                    navController.navigate(IDLE_ROUTE) {
                         popUpTo(SETUP_ROUTE) { inclusive = true }
                     }
+                },
+            )
+        }
+
+        composable(IDLE_ROUTE) {
+            IdleScreen(
+                onNavigateToMap = {
+                    navController.navigate(MAP_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToRoutes = {
+                    navController.navigate(ROUTES_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToFavorites = {
+                    navController.navigate(FAVORITES_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToRoaming = {
+                    navController.navigate(ROAMING_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToSettings = {
+                    navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
                 },
             )
         }
