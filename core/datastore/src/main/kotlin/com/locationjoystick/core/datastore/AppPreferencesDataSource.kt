@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.locationjoystick.core.model.LatLng
@@ -45,6 +46,7 @@ class AppPreferencesDataSource
             val LAST_LONGITUDE = doublePreferencesKey("last_longitude")
             val JITTER_IDLE_RADIUS_METERS = doublePreferencesKey("jitter_idle_radius_meters")
             val JITTER_MOVING_RADIUS_METERS = doublePreferencesKey("jitter_moving_radius_meters")
+            val JITTER_INTERVAL_SECONDS = intPreferencesKey("jitter_interval_seconds")
         }
 
         fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -231,6 +233,23 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.JITTER_MOVING_RADIUS_METERS] = meters.coerceIn(0.0, MAX_JITTER_RADIUS_METERS) }
         }
 
+        fun getJitterIntervalSeconds(): Flow<Int> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading jitter interval preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.JITTER_INTERVAL_SECONDS] ?: DEFAULT_JITTER_INTERVAL_SECONDS }
+
+        suspend fun setJitterIntervalSeconds(seconds: Int) {
+            dataStore.edit { prefs ->
+                prefs[Keys.JITTER_INTERVAL_SECONDS] = seconds.coerceIn(MIN_JITTER_INTERVAL_SECONDS, MAX_JITTER_INTERVAL_SECONDS)
+            }
+        }
+
         fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
             val speedMs =
                 when (activeProfileId) {
@@ -278,6 +297,9 @@ class AppPreferencesDataSource
             const val DEFAULT_JITTER_IDLE_RADIUS_METERS = 0.0
             const val DEFAULT_JITTER_MOVING_RADIUS_METERS = 10.0
             const val MAX_JITTER_RADIUS_METERS = 50.0
+            const val DEFAULT_JITTER_INTERVAL_SECONDS = 3
+            const val MIN_JITTER_INTERVAL_SECONDS = 1
+            const val MAX_JITTER_INTERVAL_SECONDS = 30
         }
     }
 

@@ -3,6 +3,7 @@ package com.locationjoystick.core.data
 import android.util.Log
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.MockMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +43,9 @@ class LocationRepository
         /** Whether walk-to movement is currently paused (walkTarget set but ticks suspended). */
         private val _isWalkPaused = MutableStateFlow(false)
         val isWalkPaused: StateFlow<Boolean> = _isWalkPaused.asStateFlow()
+
+        private val _currentMode = MutableStateFlow(MockMode.TELEPORT)
+        val currentMode: StateFlow<MockMode> = _currentMode.asStateFlow()
 
         fun observePosition(): Flow<LatLng?> = _currentPosition.asStateFlow()
 
@@ -100,5 +104,9 @@ class LocationRepository
 
         fun setWalkPaused(paused: Boolean) {
             _isWalkPaused.value = paused
+        }
+
+        fun setMockMode(mode: MockMode) {
+            _currentMode.value = mode
         }
     }

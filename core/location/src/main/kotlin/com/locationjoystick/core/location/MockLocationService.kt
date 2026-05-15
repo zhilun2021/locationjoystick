@@ -25,6 +25,7 @@ import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.BuildConfig
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -111,6 +112,10 @@ class MockLocationService : Service() {
 
     @Volatile private var jitterMovingRadiusMeters: Double = 1.0
 
+    @Volatile private var jitterIntervalSeconds: Int = 3
+
+    private var lastJitterTimestampMs: Long = 0L
+
     private var providerAdded = false
 
     override fun onCreate() {
@@ -184,6 +189,12 @@ class MockLocationService : Service() {
                 .getJitterMovingRadius()
                 .catch { e -> Log.e(TAG, "jitterMovingRadius flow error", e) }
                 .collect { jitterMovingRadiusMeters = it }
+        }
+        serviceScope.launch {
+            settingsRepository
+                .getJitterIntervalSeconds()
+                .catch { e -> Log.e(TAG, "jitterIntervalSeconds flow error", e) }
+                .collect { jitterIntervalSeconds = it }
         }
     }
 
@@ -299,6 +310,7 @@ class MockLocationService : Service() {
         currentSpeedMs = 0.0f
         currentBearing = 0.0f
         locationRepository.setPositionInternal(LatLng(lat, lon))
+        locationRepository.setMockMode(MockMode.TELEPORT)
 
         setupTestProvider()
         startUpdateLoop()
@@ -335,6 +347,7 @@ class MockLocationService : Service() {
         updateJob = null
         removeTestProvider()
         _state.value = MockLocationState.IDLE
+        locationRepository.setMockMode(MockMode.TELEPORT)
         serviceScope.launch {
             locationRepository.stopSpoofing()
             locationRepository.setActiveRouteId(null)
@@ -360,12 +373,13 @@ class MockLocationService : Service() {
 
             currentLat = startPos.latitude
             currentLon = startPos.longitude
-            currentSpeedMs = 0.0f
+            currentSpeedMs = speedMs.toFloat()
             currentBearing = 0.0f
 
             setupTestProvider()
             _state.value = MockLocationState.RUNNING
             locationRepository.startSpoofing()
+            locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
             locationRepository.setActiveRouteId(routeId)
             locationRepository.setIsReplayBackward(isBackward)
 
@@ -489,9 +503,20 @@ class MockLocationService : Service() {
     private fun pushLocationUpdate() {
         if (!providerAdded) return
         try {
-            val jitterRadius = if (currentSpeedMs > 0f) jitterMovingRadiusMeters else jitterIdleRadiusMeters
+            val nowMs = SystemClock.elapsedRealtimeNanos() / 1_000_000L
+            val timeSinceLastJitter = nowMs - lastJitterTimestampMs
+            val jitterIntervalMs = jitterIntervalSeconds * 1000L
+            val shouldApplyJitter = timeSinceLastJitter >= jitterIntervalMs
+
+            val mode = locationRepository.currentMode.value
+            val jitterRadius = when (mode) {
+                MockMode.TELEPORT -> 0.0
+                MockMode.JOYSTICK, MockMode.ROUTE_REPLAY, MockMode.ROAMING -> jitterMovingRadiusMeters
+            }
+
             val (outLat, outLon, outAccuracy) =
-                if (jitterRadius > 0.0) {
+                if (jitterRadius > 0.0 && shouldApplyJitter) {
+                    lastJitterTimestampMs = nowMs
                     applyJitter(currentLat, currentLon, jitterRadius)
                 } else {
                     Triple(currentLat, currentLon, LOCATION_ACCURACY)

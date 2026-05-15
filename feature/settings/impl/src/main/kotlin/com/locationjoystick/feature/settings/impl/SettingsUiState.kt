@@ -14,5 +14,6 @@ data class SettingsUiState(
     val rememberLastLocation: Boolean = true,
     val jitterIdleRadiusMeters: Double = 0.0,
     val jitterMovingRadiusMeters: Double = 1.0,
+    val jitterIntervalSeconds: Int = 3,
     val isDirty: Boolean = false,
 )

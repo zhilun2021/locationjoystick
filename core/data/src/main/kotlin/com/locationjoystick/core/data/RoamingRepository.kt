@@ -2,6 +2,7 @@ package com.locationjoystick.core.data
 
 import android.util.Log
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.routing.RoamingEngine
 import kotlinx.coroutines.Job
@@ -33,6 +34,7 @@ class RoamingRepository
             activeJob?.cancel()
             Log.d(TAG, "Starting roaming: radius=${config.radiusMeters}m, duration=${config.durationSeconds}s, transport=$transportMode")
             _isRoaming.value = true
+            locationRepository.setMockMode(MockMode.ROAMING)
             activeJob =
                 roamingEngine.startRoaming(
                     config = config,
@@ -44,6 +46,7 @@ class RoamingRepository
                 )
             activeJob?.invokeOnCompletion {
                 _isRoaming.value = false
+                locationRepository.setMockMode(MockMode.TELEPORT)
                 Log.d(TAG, "Roaming completed or cancelled")
             }
         }
@@ -52,5 +55,6 @@ class RoamingRepository
             roamingEngine.stopRoaming()
             activeJob = null
             _isRoaming.value = false
+            locationRepository.setMockMode(MockMode.TELEPORT)
         }
     }

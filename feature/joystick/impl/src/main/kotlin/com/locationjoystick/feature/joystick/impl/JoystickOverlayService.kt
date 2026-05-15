@@ -14,6 +14,7 @@ import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.overlay.OverlayServiceHelper
@@ -172,6 +173,7 @@ class JoystickOverlayService : OverlayService() {
             } else {
                 movementJob?.cancel()
                 movementJob = null
+                locationRepository.setMockMode(MockMode.TELEPORT)
                 Log.d(TAG, "Joystick released — movement stopped")
             }
         }
@@ -233,6 +235,7 @@ class JoystickOverlayService : OverlayService() {
     private suspend fun applyJoystickInput(input: JoystickInput) {
         val currentPos = locationRepository.currentPosition.value ?: return
         val speedMs = _cachedProfile.value?.speedMetersPerSecond ?: return
+        locationRepository.setMockMode(MockMode.JOYSTICK)
 
         val angleRad = Math.toRadians(input.angleDegrees.toDouble())
         val bearingRad = Math.atan2(cos(angleRad), -sin(angleRad))

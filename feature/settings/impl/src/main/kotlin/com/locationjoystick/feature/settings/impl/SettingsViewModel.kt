@@ -53,6 +53,7 @@ class SettingsViewModel
             val rememberLastLocation: Boolean,
             val jitterIdleRadius: Double,
             val jitterMovingRadius: Double,
+            val jitterIntervalSeconds: Int,
         )
 
         private data class DraftState(
@@ -64,6 +65,7 @@ class SettingsViewModel
             val rememberLastLocation: Boolean? = null,
             val jitterIdleRadius: Double? = null,
             val jitterMovingRadius: Double? = null,
+            val jitterIntervalSeconds: Int? = null,
         )
 
         private val draftWalkSpeedFlow = MutableStateFlow<Double?>(null)
@@ -74,6 +76,7 @@ class SettingsViewModel
         private val draftRememberLastLocationFlow = MutableStateFlow<Boolean?>(null)
         private val draftJitterIdleRadiusFlow = MutableStateFlow<Double?>(null)
         private val draftJitterMovingRadiusFlow = MutableStateFlow<Double?>(null)
+        private val draftJitterIntervalSecondsFlow = MutableStateFlow<Int?>(null)
 
         private val repoStateFlow =
             combine(
@@ -94,7 +97,8 @@ class SettingsViewModel
                 combine(
                     settingsRepository.getJitterIdleRadius(),
                     settingsRepository.getJitterMovingRadius(),
-                ) { idle, moving -> idle to moving },
+                    settingsRepository.getJitterIntervalSeconds(),
+                ) { idle, moving, interval -> Triple(idle, moving, interval) },
             ) { speeds, settings, jitter ->
                 RepoState(
                     walkSpeed = speeds.first,
@@ -105,6 +109,7 @@ class SettingsViewModel
                     rememberLastLocation = settings.third,
                     jitterIdleRadius = jitter.first,
                     jitterMovingRadius = jitter.second,
+                    jitterIntervalSeconds = jitter.third,
                 )
             }
 
@@ -127,7 +132,8 @@ class SettingsViewModel
                 combine(
                     draftJitterIdleRadiusFlow.asStateFlow(),
                     draftJitterMovingRadiusFlow.asStateFlow(),
-                ) { idle, moving -> idle to moving },
+                    draftJitterIntervalSecondsFlow.asStateFlow(),
+                ) { idle, moving, interval -> Triple(idle, moving, interval) },
             ) { speeds, settings, jitter ->
                 DraftState(
                     walkSpeed = speeds.first,
@@ -138,6 +144,7 @@ class SettingsViewModel
                     rememberLastLocation = settings.third,
                     jitterIdleRadius = jitter.first,
                     jitterMovingRadius = jitter.second,
+                    jitterIntervalSeconds = jitter.third,
                 )
             }
 
@@ -150,7 +157,8 @@ class SettingsViewModel
                     draftState.walkSpeed != null || draftState.runSpeed != null ||
                         draftState.bikeSpeed != null || draftState.speedUnit != null ||
                         draftState.widgetFeatures != null || draftState.rememberLastLocation != null ||
-                        draftState.jitterIdleRadius != null || draftState.jitterMovingRadius != null
+                        draftState.jitterIdleRadius != null || draftState.jitterMovingRadius != null ||
+                        draftState.jitterIntervalSeconds != null
                 SettingsUiState(
                     isLoading = false,
                     walkSpeed = draftState.walkSpeed ?: repoState.walkSpeed,
@@ -161,6 +169,7 @@ class SettingsViewModel
                     rememberLastLocation = draftState.rememberLastLocation ?: repoState.rememberLastLocation,
                     jitterIdleRadiusMeters = draftState.jitterIdleRadius ?: repoState.jitterIdleRadius,
                     jitterMovingRadiusMeters = draftState.jitterMovingRadius ?: repoState.jitterMovingRadius,
+                    jitterIntervalSeconds = draftState.jitterIntervalSeconds ?: repoState.jitterIntervalSeconds,
                     isDirty = isDirty,
                 )
             }.stateIn(
@@ -202,6 +211,10 @@ class SettingsViewModel
 
         fun setJitterMovingRadius(meters: Double) {
             draftJitterMovingRadiusFlow.value = meters
+        }
+
+        fun setJitterIntervalSeconds(seconds: Int) {
+            draftJitterIntervalSecondsFlow.value = seconds
         }
 
         fun saveChanges() {
@@ -247,6 +260,11 @@ class SettingsViewModel
                     settingsRepository.setJitterMovingRadius(draftJitterMoving)
                     draftJitterMovingRadiusFlow.value = null
                 }
+                val draftJitterInterval = draftJitterIntervalSecondsFlow.value
+                if (draftJitterInterval != null) {
+                    settingsRepository.setJitterIntervalSeconds(draftJitterInterval)
+                    draftJitterIntervalSecondsFlow.value = null
+                }
             }
         }
 
@@ -259,6 +277,7 @@ class SettingsViewModel
             draftRememberLastLocationFlow.value = null
             draftJitterIdleRadiusFlow.value = null
             draftJitterMovingRadiusFlow.value = null
+            draftJitterIntervalSecondsFlow.value = null
         }
 
         fun convertMsToDisplay(

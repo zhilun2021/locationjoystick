@@ -97,6 +97,7 @@ fun SettingsRoute(
         onSetRememberLastLocation = viewModel::setRememberLastLocation,
         onSetJitterIdleRadius = viewModel::setJitterIdleRadius,
         onSetJitterMovingRadius = viewModel::setJitterMovingRadius,
+        onSetJitterIntervalSeconds = viewModel::setJitterIntervalSeconds,
         convertMsToDisplay = viewModel::convertMsToDisplay,
         onExport = { exportLauncher.launch("locationjoystick-export-${System.currentTimeMillis()}.json") },
         onImport = { importLauncher.launch(arrayOf("application/json")) },
@@ -117,6 +118,7 @@ internal fun SettingsScreen(
     onSetRememberLastLocation: (Boolean) -> Unit,
     onSetJitterIdleRadius: (Double) -> Unit,
     onSetJitterMovingRadius: (Double) -> Unit,
+    onSetJitterIntervalSeconds: (Int) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -291,6 +293,14 @@ internal fun SettingsScreen(
                             value = uiState.jitterMovingRadiusMeters.toInt().toString(),
                             onValueChange = { v -> v.toDoubleOrNull()?.let { onSetJitterMovingRadius(it) } },
                             label = { Text("Moving radius (m)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = uiState.jitterIntervalSeconds.toString(),
+                            onValueChange = { v -> v.toIntOrNull()?.let { onSetJitterIntervalSeconds(it) } },
+                            label = { Text("Update interval (s)") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                         )

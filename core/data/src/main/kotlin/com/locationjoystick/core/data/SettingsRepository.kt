@@ -99,7 +99,11 @@ class SettingsRepository
 
         fun getJitterMovingRadius(): Flow<Double> = dataSource.getJitterMovingRadius()
 
+        fun getJitterIntervalSeconds(): Flow<Int> = dataSource.getJitterIntervalSeconds()
+
         suspend fun setJitterIdleRadius(meters: Double) = dataSource.setJitterIdleRadius(meters)
 
         suspend fun setJitterMovingRadius(meters: Double) = dataSource.setJitterMovingRadius(meters)
+
+        suspend fun setJitterIntervalSeconds(seconds: Int) = dataSource.setJitterIntervalSeconds(seconds)
     }
