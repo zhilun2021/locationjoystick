@@ -1,3 +1,6 @@
+clean:
+	./gradlew clean
+
 build:
 	./gradlew assembleRelease
 
