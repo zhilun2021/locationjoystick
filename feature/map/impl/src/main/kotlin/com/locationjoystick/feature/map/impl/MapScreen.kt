@@ -115,6 +115,11 @@ internal fun MapScreen(
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val positionSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
+    val isFollowingCamera = remember { mutableStateOf(true) }
+
+    LaunchedEffect(uiState.isUserPanning) {
+        if (!uiState.isUserPanning) isFollowingCamera.value = true
+    }
 
     DisposableEffect(lifecycleOwner) {
         mapView.onCreate(null)
@@ -161,6 +166,18 @@ internal fun MapScreen(
         },
         floatingActionButton = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!isFollowingCamera.value) {
+                    FloatingActionButton(
+                        onClick = { onAction(MapAction.RecenterCamera) },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    ) {
+                        Icon(
+                            imageVector = LjIcons.MyLocation,
+                            contentDescription = "Re-center on location",
+                        )
+                    }
+                }
                 FloatingActionButton(
                     onClick = { onAction(MapAction.OpenFavoritesPicker) },
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -255,6 +272,7 @@ internal fun MapScreen(
 
                             map.addOnCameraMoveStartedListener { reason ->
                                 if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) {
+                                    isFollowingCamera.value = false
                                     onAction(MapAction.UserStartedPanning)
                                 }
                             }
@@ -268,7 +286,7 @@ internal fun MapScreen(
 
                     src.setGeoJson(buildPositionGeoJson(position))
 
-                    if (!uiState.isUserPanning && position != null) {
+                    if (isFollowingCamera.value && position != null) {
                         map.animateCamera(
                             CameraUpdateFactory.newLatLng(
                                 MapLatLng(position.latitude, position.longitude),
