@@ -1,41 +1,124 @@
 # locationjoystick — Agent Reference
 
-> Primary reference for all AI coding agents. Read before touching any file.
+> Primary reference for AI coding agents. Read before touching any file.
 
 ---
 
-## Table of Contents
+## Project
 
-1. [Project Overview](#project-overview)
-2. [Architecture](#architecture)
-3. [Module Map](#module-map)
-4. [Feature Specifications](#feature-specifications)
-5. [Domain Models Reference](#domain-models-reference)
-6. [Key Services](#key-services)
-7. [Permissions Matrix](#permissions-matrix)
-8. [Technical Constraints](#technical-constraints)
-9. [Code Style Rules](#code-style-rules)
-10. [Testing Strategy](#testing-strategy)
-11. [Common Patterns](#common-patterns)
-12. [Pre-Commit Validation Policy](#pre-commit-validation-policy)
+Android-only mock GPS app. Background operation, minimal battery.
 
----
-
-## Project Overview
-
-**locationjoystick** — Android-only fake GPS / mock location spoofer. Spoofs location in games like Pokémon GO while phone in pocket. Runs in background, minimal battery, produces updates games accept as real GPS.
-
-| Property | Value |
+| Field | Value |
 |---|---|
-| Platform | Android only |
-| Min SDK | API 31 (Android 12) |
 | Package | `com.locationjoystick.app` |
 | Language | Kotlin |
 | UI | Jetpack Compose |
-| Distribution | APK via GitHub Releases (not Play Store) |
+| Min SDK | API 31 |
+| Distribution | GitHub Releases APK |
+| Storage | Room + DataStore |
+| Backend | None |
 | Open source | Yes |
 
-Offline-first. No backend. No accounts. All data on-device in Room + DataStore.
+Constraints:
+
+- Offline-first
+- No accounts
+- All data on-device in Room + DataStore
+
+---
+
+## Pre-Commit Validation Policy
+
+Work is NOT complete until lint and test passes.
+
+```bash
+make format
+make lint
+make test
+```
+
+Rules:
+- Fix every lint error before declaring done. Warnings acceptable; errors not.
+- Run after every set of edits, not just end of session.
+- If check fails, fix root cause. Don't suppress unless genuine false positive + inline comment explaining why.
+- Never suppress `Errors` category rules. Never batch-suppress with `@file:Suppress`.
+
+---
+
+## Code Exploration Policy
+
+Always use jCodemunch-MCP tools for code navigation. Never fall back to Read, Grep, Glob, or Bash for code exploration.
+**Exception:** Use `Read` when editing — harness requires `Read` before `Edit`/`Write` succeeds. Use jCodemunch tools to find/understand code, then `Read` only file you're about to modify.
+
+**Start any session:**
+1. `resolve_repo { "path": "." }` — confirm project indexed. If not: `index_folder { "path": "." }`
+2. `suggest_queries` — when repo unfamiliar
+
+**Finding code:**
+- symbol by name → `search_symbols` (add `kind=`, `language=`, `file_pattern=`, `decorator=` to narrow)
+- decorator-aware queries → `search_symbols(decorator="X")` to find symbols with specific decorator (e.g. `@property`, `@route`); combine with set-difference to find symbols *lacking* decorator
+- string, comment, config value → `search_text` (supports regex, `context_lines`)
+- database columns (dbt/SQLMesh) → `search_columns`
+
+**Reading code:**
+- before opening any file → `get_file_outline` first
+- one or more symbols → `get_symbol_source` (single ID → flat object; array → batch)
+- symbol + imports → `get_context_bundle`
+- specific line range only → `get_file_content` (last resort)
+
+**Repo structure:**
+- `get_repo_outline` → dirs, languages, symbol counts
+- `get_file_tree` → file layout, filter with `path_prefix`
+
+**Relationships & impact:**
+- what imports this file → `find_importers`
+- where name used → `find_references`
+- identifier used anywhere → `check_references`
+- file dependency graph → `get_dependency_graph`
+- what breaks if change X → `get_blast_radius`
+- symbols changed since last commit → `get_changed_symbols`
+- dead code → `find_dead_code`
+- class hierarchy → `get_class_hierarchy`
+
+## Session-Aware Routing
+
+**Opening move:**
+1. `plan_turn { "repo": "...", "query": "your task description", "model": "<your-model-id>" }` — get confidence + recommended files; `model` narrows exposed tool list at zero extra requests.
+2. Obey confidence level:
+   - `high` → go directly to recommended symbols, max 2 supplementary reads
+   - `medium` → explore recommended files, max 5 supplementary reads
+   - `low` → feature likely doesn't exist. Report gap. Do NOT search further.
+
+**Interpreting search results:**
+- `search_symbols` returns `negative_evidence` with `verdict: "no_implementation_found"`:
+  - Do NOT re-search with different terms
+  - Do NOT assume related file implements missing feature
+  - DO report: "No existing implementation found for X. This would need to be created."
+  - DO check `related_existing` files
+- `verdict: "low_confidence_matches"`: examine matches critically before assuming they implement feature
+
+**After editing files:**
+- PostToolUse hooks installed (Claude Code only): edited files auto-reindexed
+- Otherwise: call `register_edit` with edited file paths to invalidate caches
+- Bulk edits (5+ files): always use `register_edit` with all paths
+
+**Token efficiency:**
+- `_meta` contains `budget_warning`: stop exploring, work with what you have
+- `auto_compacted: true`: results auto-compressed due to turn budget
+- Use `get_session_context` to check what you've already read — avoid re-reading
+
+## Model-Driven Tool Tiering
+
+jcodemunch-mcp narrows exposed tool list based on model. Always include `model="<your-model-id>"` in opening `plan_turn`.
+
+Replace `<your-model-id>` with active model:
+- Claude Opus variants → `claude-opus-4-7` (or any `claude-opus-*`)
+- Claude Sonnet variants → `claude-sonnet-4-6`
+- Claude Haiku variants → `claude-haiku-4-5`
+- GPT-4o / GPT-5 / o1 / Llama → use model id as printed by runner
+
+`model=` rides on existing `plan_turn` call — does **not** add separate invocation. If `plan_turn` not appropriate for non-code task, call `announce_model(model="...")` once instead.
+
 
 ---
 
@@ -45,7 +128,7 @@ Multi-module, NowInAndroid-style. Each feature = two Gradle modules (`api` + `im
 
 MVVM + Repository pattern. ViewModel → Repository → DataSource (Room / DataStore / LocationManager). ViewModels expose `StateFlow`/`SharedFlow`. Compose UI collects via `collectAsStateWithLifecycle()`.
 
-`LjNavHost` uses nested `navigation {}` graphs for back-isolation: `routes_graph` (Routes + RouteCreator + RouteDetail) and `favorites_graph` (Favorites + MapPicker). Drawer navigation uses `popUpTo(MAP_ROUTE) { saveState = true }` + `launchSingleTop + restoreState`. `FavoritesViewModel` is shared across the favorites graph via `hiltViewModel(navController.getBackStackEntry("favorites_graph"))`.
+`LjNavHost` uses nested `navigation {}` graphs for back-isolation: `routes_graph` (Routes + RouteCreator + RouteDetail) and `favorites_graph` (Favorites + MapPicker). Drawer navigation uses `popUpTo(IDLE_ROUTE) { saveState = true }` + `launchSingleTop + restoreState`. `FavoritesViewModel` shared across favorites graph via `hiltViewModel(navController.getBackStackEntry("favorites_graph"))`.
 
 DI: Hilt throughout. Every ViewModel `@HiltViewModel`. Every repository `@Singleton`.
 
@@ -55,54 +138,13 @@ Coroutines: `viewModelScope` for UI-bound work. `ServiceScope` (tied to service 
 
 ---
 
-## Module Map
-
-Each feature is split into `:api` (public contracts/interfaces) and `:impl` (implementation). App module wires them via Hilt.
-
-```
-:app                          — Application entry, Hilt setup, NavGraph
-
-:core:common                  — Utilities, extensions, constants
-:core:data                    — Repositories, DataStore preferences
-:core:database                — Room database, DAOs, entities
-:core:datastore               — DataStore preferences source
-:core:designsystem            — Design tokens, theme, typography
-:core:location                — MockLocationService (ForegroundService) + movement engine
-:core:model                   — Domain models (pure Kotlin, no Android deps)
-:core:overlay                 — Shared WindowManager overlay utilities
-:core:routing                 — OSRM client + route interpolation
-:core:testing                 — Shared test utilities, fakes
-:core:ui                      — Shared Compose components
-
-:feature:favorites:api        — Favorites public API
-:feature:favorites:impl       — Favorites list, MapPicker, teleport
-:feature:joystick:api         — Joystick public API
-:feature:joystick:impl        — Floating joystick overlay service
-:feature:map:api              — Map public API
-:feature:map:impl             — MapLibre screen, map interactions
-:feature:roaming:api          — Roaming public API
-:feature:roaming:impl         — Roaming config, RoamingEngine
-:feature:routes:api           — Routes public API
-:feature:routes:impl          — Route list, editor, replay
-:feature:settings:api         — Settings public API
-:feature:settings:impl        — Speed profiles, widget config, export/import
-:feature:setup:api            — Setup/onboarding public API
-:feature:setup:impl           — Multi-step onboarding flow
-:feature:widget:api           — Widget public API
-:feature:widget:impl          — Floating widget overlay service
-```
-
----
-
 ## Feature Specifications
 
 ### Mock Location Engine
 
-Injects fake GPS into Android location system. All apps (incl. Pokémon GO) receive spoofed coords as real GPS.
+Injects fake GPS into Android location system. All apps receive spoofed coords as real GPS.
 
-Update rate: 1 Hz (every 1000 ms). Matches real GPS cadence. Pokémon GO accepts it.
-
-User must enable "Mock location app" in Developer Options and select locationjoystick. Check at runtime via `AppOpsManager.OPSTR_MOCK_LOCATION`.
+Update rate: 1 Hz (every 1000 ms). Matches real GPS cadence.
 
 Cleanup: on service stop call `locationManager.removeTestProvider`. Failure leaves ghost provider breaking real GPS until reboot.
 
@@ -143,7 +185,7 @@ Key files: `:feature:joystick:impl/JoystickOverlayService.kt`, `:feature:joystic
 
 ### Map (MapLibre)
 
-Main screen shows OpenStreetMap centered on Paris (48.8566, 2.3522) at zoom 12 on first load. Scroll gestures enabled by default. TopAppBar with hamburger icon opens the nav drawer via `onOpenDrawer: () -> Unit` lambda (drawer owned by `LjApp`, not `LjNavHost`). Spoofed location shown as marker. Map follows marker during spoofing.
+Main screen shows OpenStreetMap centered on Paris (48.8566, 2.3522) on first load. Scroll gestures enabled by default. TopAppBar with hamburger icon opens nav drawer via `onOpenDrawer: () -> Unit` lambda (drawer owned by `LjApp`, not `LjNavHost`). Spoofed location shown as marker. Map follows marker during spoofing.
 
 Library: MapLibre Android SDK 12.x (not osmdroid, not Google Maps). OSM tile source via `RasterSource`. Location marker: `SymbolLayer` backed by GeoJSON — update coords, don't remove/re-add layer. Route polylines: `LineLayer` backed by GeoJSON `FeatureCollection`. Offline tiles via `OfflineManager.downloadRegion()`.
 
@@ -163,7 +205,7 @@ Create waypoints on map → polyline in order. Two route types:
 
 Save named route to Room. Edit (drag/add/delete waypoints). Delete via swipe or detail screen. Replay at current speed with progress indicator. Optional looping.
 
-Storage: `RouteEntity` + `WaypointEntity` one-to-many. Waypoints store `routeId`, `lat`, `lon`, `orderIndex`. DB version: **2** (migration 1→2 adds `routeType TEXT NOT NULL DEFAULT 'STRAIGHT'`).
+Storage: `RouteEntity` + `WaypointEntity` one-to-many. Waypoints store `routeId`, `lat`, `lon`, `orderIndex`.
 
 Replay: interpolate between waypoints at speed (m/s), compute bearing via `atan2`, advance by `speed * deltaTime`, snap within 1 m of waypoint. Loops: interpolate smoothly from last to first waypoint.
 
@@ -171,7 +213,7 @@ Recording: collect real location at 1 Hz, simplify via Ramer-Douglas-Peucker (ep
 
 Edge cases: <2 waypoints → disable replay. Resume replay after service restart (persist waypoint index in DataStore).
 
-Key files: `:feature:routes:impl/RouteListScreen.kt`, `:feature:routes:impl/RouteEditorScreen.kt`, `:feature:routes:impl/RouteViewModel.kt`, `:core:database/RouteDao.kt`, `:core:location/RouteReplayEngine.kt`
+Key files: `:feature:routes:impl/RoutesScreen.kt`, `:feature:routes:impl/RouteCreatorScreen.kt`, `:feature:routes:impl/RoutesViewModel.kt`, `:core:database/RouteDao.kt`, `:core:routing/RouteReplayEngine.kt`
 
 ---
 
@@ -179,7 +221,7 @@ Key files: `:feature:routes:impl/RouteListScreen.kt`, `:feature:routes:impl/Rout
 
 Save named locations. Tap from list → instantly teleport spoofed position. Rename and delete supported.
 
-Two add flows: **+ coordinates** (inline dialog with name/lat/lon fields) and **+ map** (navigates to `MapPickerScreen` where user taps map or uses Nominatim search, enters a name, then confirms). MapPickerScreen calls back with `(name, lat, lon)`.
+Two add flows: from coordinates (inline dialog with name/lat/lon fields) and from map (navigates to `MapPickerScreen` where user taps map or uses Nominatim search, enters name, then confirms). MapPickerScreen calls back with `(name, lat, lon)`.
 
 Storage: `FavoriteEntity` flat table (no relations). Teleport: set position directly, push one update, camera jumps. Sort by `createdAt` desc default; optional alpha sort.
 
@@ -189,13 +231,13 @@ Key files: `:feature:favorites:impl/FavoritesScreen.kt`, `:feature:favorites:imp
 
 ### Speed Profiles
 
-Three presets: Walk (0.556 m/s / 2 km/h), Run (2.778 m/s / 10 km/h), Bike (5.556 m/s / 20 km/h). All user-editable. Applies to joystick, route replay, roaming.
+Three presets: Walk (2 km/h), Run (8 km/h), Bike (15 km/h). All user-editable. Applies to joystick, route replay, roaming.
 
 Stored in DataStore. UI: three chips or segmented button in widget + Settings. Change takes effect immediately on next tick.
 
-Edge cases: clamp 0.1–15.0 m/s. Warn inline below speed input when >8 m/s (anti-cheat risk). Warning uses `MaterialTheme.colorScheme.error`, generic language — no game names.
+Edge cases: clamp 0.1–15.0 m/s. Warn inline below speed input when >8 m/s (anti-cheat risk). Warns in generic language — no game names.
 
-Key files: `:feature:settings:impl/SpeedSettingsScreen.kt`, `:core:data/SpeedProfileRepository.kt`
+Key files: `:feature:settings:impl/SettingsScreen.kt`, `:core:data/SettingsRepository.kt`
 
 ---
 
@@ -207,7 +249,7 @@ Same overlay mechanism as joystick (via `:core:overlay`). Separate service, togg
 
 Edge cases: no items configured → show placeholder. Clamp panel to screen bounds. Re-clamp on `onConfigurationChanged`.
 
-Key files: `:feature:widget:impl/FloatingWidgetService.kt`, `:feature:widget:impl/WidgetPanel.kt`, `:feature:settings:impl/WidgetConfigScreen.kt`
+Key files: `:feature:widget:impl/FloatingWidgetService.kt`, `:feature:settings:impl/SettingsScreen.kt`
 
 ---
 
@@ -233,7 +275,7 @@ OSRM endpoint: `https://router.project-osrm.org/route/v1/{profile}/{lon1},{lat1}
 
 Edge cases: cache last OSRM route (don't re-fetch while walking it). Radius/duration changes apply on next waypoint pick. Persist start time in DataStore (survives restarts).
 
-Key files: `:feature:roaming:impl/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:feature:settings:impl/RoamingConfigScreen.kt`
+Key files: `:core:routing/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:feature:settings:impl/SettingsScreen.kt`
 
 ---
 
@@ -249,20 +291,20 @@ Import: file picker (`OpenDocument`, MIME `application/json`) → parse + valida
 
 Edge cases: malformed JSON → show "Invalid file". Missing fields → use `@SerialName` defaults. Skip confirmation on fresh install (empty DB).
 
-Key files: `:feature:settings:impl/ExportImportScreen.kt`, `:core:data/ExportRepository.kt`
+Key files: `:feature:settings:impl/SettingsScreen.kt`, `:core:data/SettingsRepository.kt`
 
 ---
 
 ### Last Remembered Location
 
-On app restart, automatically restores the last spoofed position so users don't need to re-enter coordinates manually.
+On app restart, restores last spoofed position. No manual re-entry needed.
 
 DataStore keys (in `:core:datastore`):
 - `REMEMBER_LAST_LOCATION` (`Boolean`) — feature toggle
 - `LAST_LATITUDE` (`Double`) — last spoofed latitude
 - `LAST_LONGITUDE` (`Double`) — last spoofed longitude
 
-On service start: if `REMEMBER_LAST_LOCATION` is true and valid coordinates exist, seed the initial position from `LAST_LATITUDE`/`LAST_LONGITUDE`. On each position update: persist coordinates to DataStore.
+On service start: if `REMEMBER_LAST_LOCATION` is true and valid coordinates exist, seed initial position from `LAST_LATITUDE`/`LAST_LONGITUDE`. On each position update: persist coordinates to DataStore.
 
 ---
 
@@ -291,14 +333,20 @@ All in `:core:model`. Pure Kotlin — no Android imports, no Room annotations. R
 
 | Model | Fields |
 |-------|--------|
-| `LatLng` | `lat: Double`, `lon: Double` |
-| `Route` | `id`, `name`, `waypoints: List<LatLng>`, `isLooping: Boolean`, `routeType: RouteType`, `createdAt: Long`, `updatedAt: Long` |
-| `FavoriteLocation` | `id`, `name`, `lat`, `lon`, `createdAt: Instant` |
+| `LatLng` | `latitude: Double`, `longitude: Double` |
+| `Waypoint` | `id: String`, `position: LatLng`, `orderIndex: Int` |
+| `Route` | `id: String`, `name: String`, `waypoints: List<Waypoint>`, `isLooping: Boolean`, `routeType: RouteType`, `createdAt: Long`, `updatedAt: Long` |
+| `FavoriteLocation` | `id: String`, `name: String`, `position: LatLng`, `createdAt: Long` |
 | `RouteType` | enum: `STRAIGHT`, `GUIDED` |
-| `SpeedProfileType` | enum: `WALK`, `RUN`, `BIKE` |
-| `SpeedProfile` | `type: SpeedProfileType`, `speedMs: Double` |
-| `RoamingConfig` | `centerLat`, `centerLon`, `radiusMeters`, `durationMinutes`, `roadFollowing` |
-| `ExportData` | `schemaVersion`, `exportedAt`, `settings`, `speedProfiles`, `routes`, `favoriteLocations` |
+| `SpeedProfile` | `id: String`, `name: String`, `speedMetersPerSecond: Double` |
+| `RoamingConfig` | `centerPosition: LatLng`, `radiusMeters: Double`, `durationSeconds: Long`, `useRoadSnapping: Boolean` |
+| `AppSettings` | `activeSpeedProfileId: String`, `joystickStyle: JoystickStyle`, `enabledWidgetFeatures: List<WidgetFeature>`, `mapFollowsLocation: Boolean`, `useRoadSnappingByDefault: Boolean`, `speedUnit: SpeedUnit` |
+| `ExportData` | `schemaVersion: Int`, `exportedAt: Long`, `settings: AppSettings`, `speedProfiles: List<SpeedProfile>`, `routes: List<Route>`, `favoriteLocations: List<FavoriteLocation>` |
+| `MockMode` | enum: `JOYSTICK`, `ROUTE_REPLAY`, `ROAMING`, `TELEPORT` |
+| `MockLocationState` | enum: `IDLE`, `RUNNING`, `PAUSED`, `ERROR` |
+| `WidgetFeature` | enum: `JOYSTICK_TOGGLE`, `JOYSTICK_LOCK`, `ROUTES_PICKER`, `FAVORITES_PICKER`, `SPEED_CYCLE`, `MAP` |
+| `JoystickStyle` | enum: `FLOATING`, `FIXED` |
+| `SpeedUnit` | enum: `KMH`, `MPH` |
 
 ---
 
@@ -307,9 +355,9 @@ All in `:core:model`. Pure Kotlin — no Android imports, no Room annotations. R
 | Service | Module | Type | Purpose |
 |---------|--------|------|---------|
 | `MockLocationService` | `:core:location` | ForegroundService | Owns `LocationManager` test provider. Exposes `StateFlow<SpoofState>`. Commands: `startSpoofing`, `updatePosition`, `stopSpoofing`. |
-| `JoystickOverlayService` | `:feature:joystick:impl` | Service | Manages `WindowManager` overlay. Reads joystick input → `LocationRepository.updatePosition()`. |
+| `JoystickOverlayService` | `:feature:joystick:impl` | Service | Extends `OverlayService`. Manages `WindowManager` overlay. Reads joystick input → `LocationRepository.updatePosition()`. |
 | `FloatingWidgetService` | `:feature:widget:impl` | Service | Manages widget overlay. Binds to `MockLocationService`. |
-| `RoamingEngine` | `:feature:roaming:impl` | Class (not service) | Instantiated by `MockLocationService`. Owns OSRM client + random waypoint picker. Runs on service scope. |
+| `RoamingEngine` | `:core:routing` | Class (not service) | Instantiated by `MockLocationService`. Owns OSRM client + random waypoint picker. Runs on service scope. |
 
 ---
 
@@ -390,7 +438,7 @@ Notes:
 
 ### Coverage
 
-Coverage tracked via [kotlinx-kover](https://github.com/Kotlin/kotlinx-kover) (v0.8.3). Applied in every module via convention plugins. Root project aggregates all modules into a single merged report.
+Coverage tracked via [kotlinx-kover](https://github.com/Kotlin/kotlinx-kover) (v0.8.3). Applied in every module via convention plugins. Root project aggregates all modules into single merged report.
 
 ```bash
 make coverage        # generate HTML + XML reports
@@ -440,101 +488,6 @@ Shared test utilities in `:core:testing`.
 - **Advance position**: spherical law of cosines from `LatLon` + bearing + distance
 
 ---
-
-## Pre-Commit Validation Policy
-
-Work is NOT complete until lint and test passes.
-
-```bash
-make format
-make lint
-make test
-```
-
-Rules:
-- Fix every lint error before declaring done. Warnings acceptable; errors not.
-- Run both after every set of edits, not just end of session.
-- If check fails, fix root cause. Don't suppress unless genuine false positive + inline comment explaining why.
-- Never suppress `Errors` category rules. Never batch-suppress with `@file:Suppress`.
-
----
-
-*Last updated: May 2026. Export/import schemaVersion: 1.*
-
-## Code Exploration Policy
-
-Always use jCodemunch-MCP tools for code navigation. Never fall back to Read, Grep, Glob, or Bash for code exploration.
-**Exception:** Use `Read` when editing — harness requires `Read` before `Edit`/`Write` succeeds. Use jCodemunch tools to find/understand code, then `Read` only file you're about to modify.
-
-**Start any session:**
-1. `resolve_repo { "path": "." }` — confirm project indexed. If not: `index_folder { "path": "." }`
-2. `suggest_queries` — when repo unfamiliar
-
-**Finding code:**
-- symbol by name → `search_symbols` (add `kind=`, `language=`, `file_pattern=`, `decorator=` to narrow)
-- decorator-aware queries → `search_symbols(decorator="X")` to find symbols with specific decorator (e.g. `@property`, `@route`); combine with set-difference to find symbols *lacking* decorator
-- string, comment, config value → `search_text` (supports regex, `context_lines`)
-- database columns (dbt/SQLMesh) → `search_columns`
-
-**Reading code:**
-- before opening any file → `get_file_outline` first
-- one or more symbols → `get_symbol_source` (single ID → flat object; array → batch)
-- symbol + imports → `get_context_bundle`
-- specific line range only → `get_file_content` (last resort)
-
-**Repo structure:**
-- `get_repo_outline` → dirs, languages, symbol counts
-- `get_file_tree` → file layout, filter with `path_prefix`
-
-**Relationships & impact:**
-- what imports this file → `find_importers`
-- where name used → `find_references`
-- identifier used anywhere → `check_references`
-- file dependency graph → `get_dependency_graph`
-- what breaks if change X → `get_blast_radius`
-- symbols changed since last commit → `get_changed_symbols`
-- dead code → `find_dead_code`
-- class hierarchy → `get_class_hierarchy`
-
-## Session-Aware Routing
-
-**Opening move:**
-1. `plan_turn { "repo": "...", "query": "your task description", "model": "<your-model-id>" }` — get confidence + recommended files; `model` narrows exposed tool list at zero extra requests.
-2. Obey confidence level:
-   - `high` → go directly to recommended symbols, max 2 supplementary reads
-   - `medium` → explore recommended files, max 5 supplementary reads
-   - `low` → feature likely doesn't exist. Report gap. Do NOT search further.
-
-**Interpreting search results:**
-- `search_symbols` returns `negative_evidence` with `verdict: "no_implementation_found"`:
-  - Do NOT re-search with different terms
-  - Do NOT assume related file implements missing feature
-  - DO report: "No existing implementation found for X. This would need to be created."
-  - DO check `related_existing` files
-- `verdict: "low_confidence_matches"`: examine matches critically before assuming they implement feature
-
-**After editing files:**
-- PostToolUse hooks installed (Claude Code only): edited files auto-reindexed
-- Otherwise: call `register_edit` with edited file paths to invalidate caches
-- Bulk edits (5+ files): always use `register_edit` with all paths
-
-**Token efficiency:**
-- `_meta` contains `budget_warning`: stop exploring, work with what you have
-- `auto_compacted: true`: results auto-compressed due to turn budget
-- Use `get_session_context` to check what you've already read — avoid re-reading
-
-## Model-Driven Tool Tiering
-
-jcodemunch-mcp narrows exposed tool list based on model. Always include `model="<your-model-id>"` in opening `plan_turn`.
-
-Replace `<your-model-id>` with active model:
-- Claude Opus variants → `claude-opus-4-7` (or any `claude-opus-*`)
-- Claude Sonnet variants → `claude-sonnet-4-6`
-- Claude Haiku variants → `claude-haiku-4-5`
-- GPT-4o / GPT-5 / o1 / Llama → use model id as printed by runner
-
-`model=` rides on existing `plan_turn` call — does **not** add separate invocation. If `plan_turn` not appropriate for non-code task, call `announce_model(model="...")` once instead.
-
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
