@@ -45,9 +45,10 @@ class JoystickOverlayService : OverlayService() {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "JoystickOverlayService coroutine crashed", throwable)
-    }
+    private val exceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "JoystickOverlayService coroutine crashed", throwable)
+        }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
     private val overlayHelper = OverlayServiceHelper(TAG)
 

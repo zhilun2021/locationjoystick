@@ -88,10 +88,11 @@ class MockLocationService : Service() {
 
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "MockLocationService coroutine crashed", throwable)
-        _state.value = MockLocationState.ERROR
-    }
+    private val exceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "MockLocationService coroutine crashed", throwable)
+            _state.value = MockLocationState.ERROR
+        }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
     private var updateJob: Job? = null
 
@@ -171,12 +172,14 @@ class MockLocationService : Service() {
                 }
         }
         serviceScope.launch {
-            settingsRepository.getJitterIdleRadius()
+            settingsRepository
+                .getJitterIdleRadius()
                 .catch { e -> Log.e(TAG, "jitterIdleRadius flow error", e) }
                 .collect { jitterIdleRadiusMeters = it }
         }
         serviceScope.launch {
-            settingsRepository.getJitterMovingRadius()
+            settingsRepository
+                .getJitterMovingRadius()
                 .catch { e -> Log.e(TAG, "jitterMovingRadius flow error", e) }
                 .collect { jitterMovingRadiusMeters = it }
         }

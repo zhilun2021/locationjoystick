@@ -117,9 +117,10 @@ class FloatingWidgetService :
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
-    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e(TAG, "FloatingWidgetService coroutine crashed", throwable)
-    }
+    private val exceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e(TAG, "FloatingWidgetService coroutine crashed", throwable)
+        }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main + exceptionHandler)
     private val overlayHelper = OverlayServiceHelper(TAG)
 
@@ -127,8 +128,11 @@ class FloatingWidgetService :
     override val savedStateRegistry: SavedStateRegistry get() = savedStateRegistryController.savedStateRegistry
 
     @Inject lateinit var routeRepository: RouteRepository
+
     @Inject lateinit var locationRepository: LocationRepository
+
     @Inject lateinit var favoriteRepository: FavoriteRepository
+
     @Inject lateinit var settingsRepository: SettingsRepository
 
     private var composeView: ComposeView? = null
@@ -527,11 +531,17 @@ class FloatingWidgetService :
                                             color = LjText,
                                             modifier = Modifier.weight(1f),
                                         )
-                                        Button(onClick = { onTeleport(fav); onDismiss() }) {
+                                        Button(onClick = {
+                                            onTeleport(fav)
+                                            onDismiss()
+                                        }) {
                                             Text("Teleport")
                                         }
                                         Spacer(Modifier.width(8.dp))
-                                        Button(onClick = { onWalk(fav); onDismiss() }) {
+                                        Button(onClick = {
+                                            onWalk(fav)
+                                            onDismiss()
+                                        }) {
                                             Text("Walk")
                                         }
                                     }
@@ -564,7 +574,10 @@ class FloatingWidgetService :
                             horizontalArrangement = Arrangement.End,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            TextButton(onClick = { showAddForm = false; newFavName = "" }) {
+                            TextButton(onClick = {
+                                showAddForm = false
+                                newFavName = ""
+                            }) {
                                 Text("Cancel", color = LjText)
                             }
                             Spacer(Modifier.width(8.dp))
@@ -654,11 +667,17 @@ class FloatingWidgetService :
                                             color = LjText,
                                             modifier = Modifier.weight(1f),
                                         )
-                                        Button(onClick = { onStart(route.id); onDismiss() }) {
+                                        Button(onClick = {
+                                            onStart(route.id)
+                                            onDismiss()
+                                        }) {
                                             Text("Play")
                                         }
                                         Spacer(Modifier.width(8.dp))
-                                        Button(onClick = { onStartReverse(route.id); onDismiss() }) {
+                                        Button(onClick = {
+                                            onStartReverse(route.id)
+                                            onDismiss()
+                                        }) {
                                             Text("Reverse")
                                         }
                                     }
@@ -668,7 +687,10 @@ class FloatingWidgetService :
                     }
                     Spacer(Modifier.height(12.dp))
                     Button(
-                        onClick = { onCreateFromMap(); onDismiss() },
+                        onClick = {
+                            onCreateFromMap()
+                            onDismiss()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = null)

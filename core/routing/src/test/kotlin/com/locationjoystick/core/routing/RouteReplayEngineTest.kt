@@ -5,6 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.atomic.AtomicInteger
 
 class RouteReplayEngineTest {
     private val engine = RouteReplayEngine(RouteInterpolator())
@@ -76,5 +77,39 @@ class RouteReplayEngineTest {
         )
         assertFalse("two-waypoint replay should not complete synchronously", completed)
         kotlinx.coroutines.runBlocking { engine.stop() }
+    }
+
+    @Test
+    fun `onPositionUpdate exception does not stop replay loop`() {
+        val callCount = AtomicInteger(0)
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(10.0, 10.0)), // ~1500 km apart — won't complete
+            speedMs = 1.4,
+            onPositionUpdate = { _ ->
+                callCount.incrementAndGet()
+                throw RuntimeException("simulated failure")
+            },
+            onComplete = {},
+        )
+        Thread.sleep(2500) // wait for 2 ticks (1 Hz)
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        assertTrue("loop should continue after onPositionUpdate throws", callCount.get() >= 2)
+    }
+
+    @Test
+    fun `onComplete exception does not propagate to test thread`() {
+        var completed = false
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(0.0000001, 0.0)), // < 1 cm — snaps in first tick
+            speedMs = 999.0,
+            onPositionUpdate = {},
+            onComplete = {
+                completed = true
+                throw RuntimeException("simulated failure")
+            },
+        )
+        Thread.sleep(1500)
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        assertTrue("onComplete should have been called before throwing", completed)
     }
 }

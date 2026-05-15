@@ -23,9 +23,10 @@ class RouteReplayEngine
     constructor(
         private val routeInterpolator: RouteInterpolator,
     ) {
-        private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
-            Log.e(TAG, "Replay coroutine crashed", throwable)
-        }
+        private val exceptionHandler =
+            CoroutineExceptionHandler { _, throwable ->
+                Log.e(TAG, "Replay coroutine crashed", throwable)
+            }
         private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
         private var activeJob: Job? = null
 
@@ -103,7 +104,11 @@ class RouteReplayEngine
                         index = result.nextWaypointIndex
                         resumePosition = position
                         resumeWaypointIndex = index
-                        try { onPositionUpdate(position) } catch (e: Exception) { Log.e(TAG, "onPositionUpdate failed", e) }
+                        try {
+                            onPositionUpdate(position)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "onPositionUpdate failed", e)
+                        }
                         if (result.reachedEnd) {
                             if (isLooping) {
                                 position = savedWaypoints.first()
@@ -111,7 +116,11 @@ class RouteReplayEngine
                                 resumePosition = position
                                 resumeWaypointIndex = index
                             } else {
-                                try { onComplete() } catch (e: Exception) { Log.e(TAG, "onComplete failed", e) }
+                                try {
+                                    onComplete()
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "onComplete failed", e)
+                                }
                                 break
                             }
                         }

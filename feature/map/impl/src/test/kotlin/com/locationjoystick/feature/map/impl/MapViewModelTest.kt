@@ -4,6 +4,7 @@ import android.content.Context
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
@@ -33,6 +34,7 @@ class MapViewModelTest {
     private lateinit var locationRepository: LocationRepository
     private lateinit var routeRepository: RouteRepository
     private lateinit var favoriteRepository: FavoriteRepository
+    private lateinit var settingsRepository: SettingsRepository
     private lateinit var viewModel: MapViewModel
 
     @Before
@@ -43,13 +45,14 @@ class MapViewModelTest {
         locationRepository = mockk(relaxed = true)
         routeRepository = mockk()
         favoriteRepository = mockk()
+        settingsRepository = mockk(relaxed = true)
 
         every { locationRepository.observePosition() } returns MutableStateFlow(null)
         every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.IDLE)
         every { routeRepository.getRoutes() } returns flowOf(emptyList<Route>())
         every { favoriteRepository.getFavorites() } returns flowOf(emptyList<FavoriteLocation>())
 
-        viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository)
+        viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
     }
 
     @After
@@ -74,7 +77,7 @@ class MapViewModelTest {
             // Set state to RUNNING so isSpoofing == true
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
 
             val position = LatLng(48.8566, 2.3522)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -88,7 +91,7 @@ class MapViewModelTest {
             // Start spoofing so TapToTeleport sets pending
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
 
             val position = LatLng(48.8566, 2.3522)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -105,7 +108,7 @@ class MapViewModelTest {
             // Set pending position directly via spoofing tap
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(1.0, 2.0)))
             assertEquals(LatLng(1.0, 2.0), viewModel.uiState.value.pendingTapPosition)
@@ -121,7 +124,7 @@ class MapViewModelTest {
             // Start spoofing and set a pending tap
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository)
+            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(3.0, 4.0)))
             assertEquals(LatLng(3.0, 4.0), viewModel.uiState.value.pendingTapPosition)
