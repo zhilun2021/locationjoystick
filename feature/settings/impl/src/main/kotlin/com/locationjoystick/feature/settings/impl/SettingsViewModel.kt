@@ -371,9 +371,9 @@ class SettingsViewModel
                     setSpeedUnit(exportData.settings.speedUnit)
                     exportData.speedProfiles.forEach { profile ->
                         when (profile.id) {
-                            "walk" -> setWalkSpeed(profile.speedMetersPerSecond)
-                            "run" -> setRunSpeed(profile.speedMetersPerSecond)
-                            "bike" -> setBikeSpeed(profile.speedMetersPerSecond)
+                            "walk" -> settingsRepository.setWalkSpeed(profile.speedMetersPerSecond)
+                            "run" -> settingsRepository.setRunSpeed(profile.speedMetersPerSecond)
+                            "bike" -> settingsRepository.setBikeSpeed(profile.speedMetersPerSecond)
                         }
                     }
                     setWidgetFeatures(exportData.settings.enabledWidgetFeatures.toSet())
