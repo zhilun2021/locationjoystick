@@ -41,14 +41,16 @@ class RouteRepositoryTest {
     @Test
     fun `getRoutes emits added route`() =
         runTest {
-            val route = createRoute(
-                id = "route-1",
-                name = "Morning Walk",
-                waypoints = listOf(
-                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                    Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
-                ),
-            )
+            val route =
+                createRoute(
+                    id = "route-1",
+                    name = "Morning Walk",
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                            Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
+                        ),
+                )
 
             repository.getRoutes().test {
                 awaitItem() // empty
@@ -86,10 +88,11 @@ class RouteRepositoryTest {
     @Test
     fun `getRouteWithWaypoints returns route with waypoints`() =
         runTest {
-            val waypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(48.8566, 2.3522), orderIndex = 0),
-                Waypoint(id = "wp-2", position = LatLng(48.8570, 2.3530), orderIndex = 1),
-            )
+            val waypoints =
+                listOf(
+                    Waypoint(id = "wp-1", position = LatLng(48.8566, 2.3522), orderIndex = 0),
+                    Waypoint(id = "wp-2", position = LatLng(48.8570, 2.3530), orderIndex = 1),
+                )
             val route = createRoute("route-1", "Paris Walk", waypoints = waypoints)
             repository.insertRoute(route)
 
@@ -125,11 +128,12 @@ class RouteRepositoryTest {
     @Test
     fun `insertRoute stores waypoints`() =
         runTest {
-            val waypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                Waypoint(id = "wp-2", position = LatLng(1.0, 1.0), orderIndex = 1),
-                Waypoint(id = "wp-3", position = LatLng(2.0, 2.0), orderIndex = 2),
-            )
+            val waypoints =
+                listOf(
+                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                    Waypoint(id = "wp-2", position = LatLng(1.0, 1.0), orderIndex = 1),
+                    Waypoint(id = "wp-3", position = LatLng(2.0, 2.0), orderIndex = 2),
+                )
             val route = createRoute("route-1", "Test", waypoints = waypoints)
             repository.insertRoute(route)
 
@@ -157,9 +161,15 @@ class RouteRepositoryTest {
     @Test
     fun `updateRoute changes route name`() =
         runTest {
-            val route = createRoute("route-1", "Original", waypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-            ))
+            val route =
+                createRoute(
+                    "route-1",
+                    "Original",
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                        ),
+                )
             repository.insertRoute(route)
 
             val updated = route.copy(name = "Updated")
@@ -175,16 +185,18 @@ class RouteRepositoryTest {
     @Test
     fun `updateRoute replaces waypoints`() =
         runTest {
-            val originalWaypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
-            )
+            val originalWaypoints =
+                listOf(
+                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                    Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
+                )
             val route = createRoute("route-1", "Test", waypoints = originalWaypoints)
             repository.insertRoute(route)
 
-            val newWaypoints = listOf(
-                Waypoint(id = "wp-3", position = LatLng(5.0, 5.0), orderIndex = 0),
-            )
+            val newWaypoints =
+                listOf(
+                    Waypoint(id = "wp-3", position = LatLng(5.0, 5.0), orderIndex = 0),
+                )
             val updated = route.copy(waypoints = newWaypoints)
             repository.updateRoute(updated)
 
@@ -238,9 +250,15 @@ class RouteRepositoryTest {
     @Test
     fun `removeWaypoint returns success`() =
         runTest {
-            val route = createRoute("route-1", "Test", waypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-            ))
+            val route =
+                createRoute(
+                    "route-1",
+                    "Test",
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                        ),
+                )
             repository.insertRoute(route)
 
             val result = repository.removeWaypoint("wp-1")
@@ -250,10 +268,11 @@ class RouteRepositoryTest {
     @Test
     fun `removeWaypoint removes waypoint from route`() =
         runTest {
-            val waypoints = listOf(
-                Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
-            )
+            val waypoints =
+                listOf(
+                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                    Waypoint(id = "wp-2", position = LatLng(1.0, 0.0), orderIndex = 1),
+                )
             val route = createRoute("route-1", "Test", waypoints = waypoints)
             repository.insertRoute(route)
 
@@ -321,14 +340,16 @@ class RouteRepositoryTest {
     @Test
     fun `insertRoute preserves GUIDED route type`() =
         runTest {
-            val route = createRoute(
-                id = "guided-1",
-                name = "Guided Route",
-                routeType = RouteType.GUIDED,
-                waypoints = listOf(
-                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                ),
-            )
+            val route =
+                createRoute(
+                    id = "guided-1",
+                    name = "Guided Route",
+                    routeType = RouteType.GUIDED,
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                        ),
+                )
             repository.insertRoute(route)
 
             repository.getRouteWithWaypoints("guided-1").test {
@@ -343,14 +364,16 @@ class RouteRepositoryTest {
     @Test
     fun `insertRoute preserves isLooping flag`() =
         runTest {
-            val route = createRoute(
-                id = "loop-1",
-                name = "Loop Route",
-                isLooping = true,
-                waypoints = listOf(
-                    Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
-                ),
-            )
+            val route =
+                createRoute(
+                    id = "loop-1",
+                    name = "Loop Route",
+                    isLooping = true,
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp-1", position = LatLng(0.0, 0.0), orderIndex = 0),
+                        ),
+                )
             repository.insertRoute(route)
 
             repository.getRouteWithWaypoints("loop-1").test {
@@ -369,12 +392,13 @@ private fun createRoute(
     routeType: RouteType = RouteType.STRAIGHT,
     createdAt: Long = System.currentTimeMillis(),
     updatedAt: Long = System.currentTimeMillis(),
-): Route = Route(
-    id = id,
-    name = name,
-    waypoints = waypoints,
-    isLooping = isLooping,
-    routeType = routeType,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-)
+): Route =
+    Route(
+        id = id,
+        name = name,
+        waypoints = waypoints,
+        isLooping = isLooping,
+        routeType = routeType,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+    )

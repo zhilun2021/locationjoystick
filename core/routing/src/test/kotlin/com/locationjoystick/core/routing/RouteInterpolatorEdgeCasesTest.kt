@@ -64,21 +64,23 @@ class RouteInterpolatorEdgeCasesTest {
 
     @Test
     fun `interpolateAlongRoute handles three-segment route`() {
-        val waypoints = listOf(
-            LatLng(0.0, 0.0),
-            LatLng(0.001, 0.0),
-            LatLng(0.002, 0.0),
-            LatLng(0.003, 0.0),
-        )
+        val waypoints =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.001, 0.0),
+                LatLng(0.002, 0.0),
+                LatLng(0.003, 0.0),
+            )
 
         // Start at index 1, should advance toward waypoint at index 1
-        val result = interpolator.interpolateAlongRoute(
-            waypoints = waypoints,
-            currentPosition = LatLng(0.0, 0.0),
-            currentWaypointIndex = 1,
-            speedMs = 1.4,
-            deltaTimeMs = 1000,
-        )
+        val result =
+            interpolator.interpolateAlongRoute(
+                waypoints = waypoints,
+                currentPosition = LatLng(0.0, 0.0),
+                currentWaypointIndex = 1,
+                speedMs = 1.4,
+                deltaTimeMs = 1000,
+            )
         assertFalse(result.reachedEnd)
         assertTrue(result.position.latitude >= 0.0)
     }
@@ -223,13 +225,14 @@ class RouteInterpolatorEdgeCasesTest {
         val target = LatLng(1.0, 0.0)
         val waypoints = listOf(start, target)
 
-        val result = interpolator.interpolateAlongRoute(
-            waypoints = waypoints,
-            currentPosition = start,
-            currentWaypointIndex = 1,
-            speedMs = 1.4,
-            deltaTimeMs = AppConstants.LocationConstants.UPDATE_INTERVAL_MS,
-        )
+        val result =
+            interpolator.interpolateAlongRoute(
+                waypoints = waypoints,
+                currentPosition = start,
+                currentWaypointIndex = 1,
+                speedMs = 1.4,
+                deltaTimeMs = AppConstants.LocationConstants.UPDATE_INTERVAL_MS,
+            )
         assertFalse(result.reachedEnd)
         assertTrue(result.position.latitude > start.latitude)
     }

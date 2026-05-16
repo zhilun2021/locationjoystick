@@ -33,11 +33,12 @@ class FlowUtilsTest {
     fun `throttleLatest with zero period emits all values`() =
         runTest(testDispatcher) {
             val results = mutableListOf<Int>()
-            val flow = flow {
-                for (i in 1..5) {
-                    emit(i)
-                }
-            }.throttleLatest(0L)
+            val flow =
+                flow {
+                    for (i in 1..5) {
+                        emit(i)
+                    }
+                }.throttleLatest(0L)
 
             flow.toList(results)
 
@@ -48,9 +49,10 @@ class FlowUtilsTest {
     fun `throttleLatest with single emission works`() =
         runTest(testDispatcher) {
             val results = mutableListOf<String>()
-            val flow = flow {
-                emit("only")
-            }.throttleLatest(50L)
+            val flow =
+                flow {
+                    emit("only")
+                }.throttleLatest(50L)
 
             flow.toList(results)
 
@@ -73,16 +75,18 @@ class FlowUtilsTest {
     fun `throttleLatest delays each emission by periodMs`() =
         runTest(testDispatcher) {
             val results = mutableListOf<Int>()
-            val flow = flow {
-                emit(1)
-                emit(2)
-                emit(3)
-            }.throttleLatest(100L)
+            val flow =
+                flow {
+                    emit(1)
+                    emit(2)
+                    emit(3)
+                }.throttleLatest(100L)
 
             // Start collecting
-            val collectJob = kotlinx.coroutines.launch {
-                flow.toList(results)
-            }
+            val collectJob =
+                kotlinx.coroutines.launch {
+                    flow.toList(results)
+                }
 
             // After 50ms, nothing should be emitted yet (delay is 100ms per item)
             advanceTimeBy(50)
@@ -107,12 +111,13 @@ class FlowUtilsTest {
     fun `throttleLatest conflation drops intermediate values`() =
         runTest(testDispatcher) {
             val results = mutableListOf<Int>()
-            val flow = flow {
-                // Emit many values quickly - conflate should drop all but last
-                for (i in 1..100) {
-                    emit(i)
-                }
-            }.throttleLatest(50L)
+            val flow =
+                flow {
+                    // Emit many values quickly - conflate should drop all but last
+                    for (i in 1..100) {
+                        emit(i)
+                    }
+                }.throttleLatest(50L)
 
             flow.toList(results)
 
@@ -125,11 +130,12 @@ class FlowUtilsTest {
     fun `throttleLatest preserves last value through conflation`() =
         runTest(testDispatcher) {
             val results = mutableListOf<Int>()
-            val flow = flow {
-                emit(1)
-                emit(2)
-                emit(3)
-            }.throttleLatest(10L)
+            val flow =
+                flow {
+                    emit(1)
+                    emit(2)
+                    emit(3)
+                }.throttleLatest(10L)
 
             flow.toList(results)
 

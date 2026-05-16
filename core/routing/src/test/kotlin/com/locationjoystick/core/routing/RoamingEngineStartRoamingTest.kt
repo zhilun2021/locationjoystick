@@ -20,14 +20,15 @@ class RoamingEngineStartRoamingTest {
 
     @Test
     fun `startRoaming returns a non-null Job`() {
-        val config = RoamingConfig(
-            centerPosition = LatLng(48.8566, 2.3522),
-            radiusMeters = 500.0,
-            distanceMeters = 100.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(48.8566, 2.3522),
+                radiusMeters = 500.0,
+                distanceMeters = 100.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         val job = engine.startRoaming(config, 1.4) {}
         assertNotNull(job)
         kotlinx.coroutines.runBlocking { engine.stopRoaming() }
@@ -37,14 +38,15 @@ class RoamingEngineStartRoamingTest {
     fun `startRoaming emits position updates via callback`() {
         val latch = CountDownLatch(1)
         val updateCount = AtomicInteger(0)
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 100.0,
-            distanceMeters = 50.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 100.0,
+                distanceMeters = 50.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         engine.startRoaming(config, 1.4) { _ ->
             updateCount.incrementAndGet()
             if (updateCount.get() >= 2) latch.countDown()
@@ -60,14 +62,15 @@ class RoamingEngineStartRoamingTest {
     fun `startRoaming positions stay near center for small distance`() {
         val center = LatLng(48.8566, 2.3522)
         val lastPosition = AtomicReference<LatLng>(center)
-        val config = RoamingConfig(
-            centerPosition = center,
-            radiusMeters = 100.0,
-            distanceMeters = 50.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = center,
+                radiusMeters = 100.0,
+                distanceMeters = 50.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         engine.startRoaming(config, 1.4) { pos ->
             lastPosition.set(pos)
         }
@@ -86,14 +89,15 @@ class RoamingEngineStartRoamingTest {
     fun `startRoaming with returnToInitialLocation walks back to center`() {
         val center = LatLng(0.0, 0.0)
         val lastPosition = AtomicReference<LatLng>(center)
-        val config = RoamingConfig(
-            centerPosition = center,
-            radiusMeters = 50.0,
-            distanceMeters = 10.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = true,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = center,
+                radiusMeters = 50.0,
+                distanceMeters = 10.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = true,
+            )
         engine.startRoaming(config, 5.0) { pos ->
             lastPosition.set(pos)
         }
@@ -110,14 +114,15 @@ class RoamingEngineStartRoamingTest {
 
     @Test
     fun `stopRoaming cancels the active job`() {
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 100.0,
-            distanceMeters = 1000.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 100.0,
+                distanceMeters = 1000.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         val job = engine.startRoaming(config, 1.4) {}
 
         Thread.sleep(1000)
@@ -128,14 +133,15 @@ class RoamingEngineStartRoamingTest {
 
     @Test
     fun `startRoaming cancels previous job when called again`() {
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 100.0,
-            distanceMeters = 1000.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 100.0,
+                distanceMeters = 1000.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         val firstJob = engine.startRoaming(config, 1.4) {}
 
         Thread.sleep(500)
@@ -153,14 +159,15 @@ class RoamingEngineStartRoamingTest {
     @Test
     fun `startRoaming with useRoadSnapping false uses straight-line route`() {
         val updateCount = AtomicInteger(0)
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 200.0,
-            distanceMeters = 100.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 200.0,
+                distanceMeters = 100.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         engine.startRoaming(config, 1.4) { _ ->
             updateCount.incrementAndGet()
         }
@@ -179,14 +186,15 @@ class RoamingEngineStartRoamingTest {
         val bikePositions = mutableListOf<LatLng>()
         val center = LatLng(0.0, 0.0)
 
-        val config = RoamingConfig(
-            centerPosition = center,
-            radiusMeters = 500.0,
-            distanceMeters = 1000.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = center,
+                radiusMeters = 500.0,
+                distanceMeters = 1000.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
 
         engine.startRoaming(config, 1.4) { pos ->
             walkPositions.add(pos)
@@ -211,14 +219,15 @@ class RoamingEngineStartRoamingTest {
 
     @Test
     fun `startRoaming with zero distance completes quickly`() {
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 100.0,
-            distanceMeters = 0.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 100.0,
+                distanceMeters = 0.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         val job = engine.startRoaming(config, 1.4) { _ -> }
 
         Thread.sleep(500)
@@ -231,14 +240,15 @@ class RoamingEngineStartRoamingTest {
     @Test
     fun `startRoaming position callback receives non-null coordinates`() {
         val receivedValidCoords = AtomicReference<LatLng?>(null)
-        val config = RoamingConfig(
-            centerPosition = LatLng(48.8566, 2.3522),
-            radiusMeters = 100.0,
-            distanceMeters = 50.0,
-            useRoadSnapping = false,
-            speedProfileId = "walk",
-            returnToInitialLocation = false,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(48.8566, 2.3522),
+                radiusMeters = 100.0,
+                distanceMeters = 50.0,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = false,
+            )
         engine.startRoaming(config, 1.4) { pos ->
             if (receivedValidCoords.get() == null) {
                 receivedValidCoords.set(pos)

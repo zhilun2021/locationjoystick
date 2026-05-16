@@ -78,19 +78,21 @@ class ModelDomainTest {
 
     @Test
     fun `Route data class works`() {
-        val waypoints = listOf(
-            Waypoint("wp-1", LatLng(0.0, 0.0), 0),
-            Waypoint("wp-2", LatLng(1.0, 0.0), 1),
-        )
-        val route = Route(
-            id = "route-1",
-            name = "Test Route",
-            waypoints = waypoints,
-            isLooping = true,
-            routeType = RouteType.GUIDED,
-            createdAt = 1000L,
-            updatedAt = 2000L,
-        )
+        val waypoints =
+            listOf(
+                Waypoint("wp-1", LatLng(0.0, 0.0), 0),
+                Waypoint("wp-2", LatLng(1.0, 0.0), 1),
+            )
+        val route =
+            Route(
+                id = "route-1",
+                name = "Test Route",
+                waypoints = waypoints,
+                isLooping = true,
+                routeType = RouteType.GUIDED,
+                createdAt = 1000L,
+                updatedAt = 2000L,
+            )
 
         assertEquals("route-1", route.id)
         assertEquals("Test Route", route.name)
@@ -104,7 +106,16 @@ class ModelDomainTest {
     @Test
     fun `Route copy preserves waypoints`() {
         val waypoints = listOf(Waypoint("wp-1", LatLng(0.0, 0.0), 0))
-        val route = Route(id = "r1", name = "A", waypoints = waypoints, isLooping = false, routeType = RouteType.STRAIGHT, createdAt = 0, updatedAt = 0)
+        val route =
+            Route(
+                id = "r1",
+                name = "A",
+                waypoints = waypoints,
+                isLooping = false,
+                routeType = RouteType.STRAIGHT,
+                createdAt = 0,
+                updatedAt = 0,
+            )
         val updated = route.copy(name = "B")
 
         assertEquals("B", updated.name)
@@ -116,12 +127,13 @@ class ModelDomainTest {
 
     @Test
     fun `FavoriteLocation data class works`() {
-        val fav = FavoriteLocation(
-            id = "fav-1",
-            name = "Home",
-            position = LatLng(48.8566, 2.3522),
-            createdAt = 1000L,
-        )
+        val fav =
+            FavoriteLocation(
+                id = "fav-1",
+                name = "Home",
+                position = LatLng(48.8566, 2.3522),
+                createdAt = 1000L,
+            )
 
         assertEquals("fav-1", fav.id)
         assertEquals("Home", fav.name)
@@ -133,14 +145,15 @@ class ModelDomainTest {
 
     @Test
     fun `RoamingConfig data class works`() {
-        val config = RoamingConfig(
-            centerPosition = LatLng(0.0, 0.0),
-            radiusMeters = 500.0,
-            distanceMeters = 1000.0,
-            useRoadSnapping = true,
-            speedProfileId = "walk",
-            returnToInitialLocation = true,
-        )
+        val config =
+            RoamingConfig(
+                centerPosition = LatLng(0.0, 0.0),
+                radiusMeters = 500.0,
+                distanceMeters = 1000.0,
+                useRoadSnapping = true,
+                speedProfileId = "walk",
+                returnToInitialLocation = true,
+            )
 
         assertEquals(0.0, config.centerPosition.latitude, 0.0001)
         assertEquals(500.0, config.radiusMeters, 0.001)
@@ -154,13 +167,14 @@ class ModelDomainTest {
 
     @Test
     fun `RoamingDefaults data class works`() {
-        val defaults = RoamingDefaults(
-            radiusMeters = 500.0,
-            distanceMeters = 1000.0,
-            speedProfileId = "walk",
-            followRoads = true,
-            returnToInitialLocation = false,
-        )
+        val defaults =
+            RoamingDefaults(
+                radiusMeters = 500.0,
+                distanceMeters = 1000.0,
+                speedProfileId = "walk",
+                followRoads = true,
+                returnToInitialLocation = false,
+            )
 
         assertEquals(500.0, defaults.radiusMeters, 0.001)
         assertEquals(1000.0, defaults.distanceMeters, 0.001)
@@ -173,14 +187,15 @@ class ModelDomainTest {
 
     @Test
     fun `AppSettings data class works`() {
-        val settings = AppSettings(
-            activeSpeedProfileId = "walk",
-            joystickStyle = JoystickStyle.FLOATING,
-            enabledWidgetFeatures = listOf(WidgetFeature.MAP_FLOATING, WidgetFeature.JOYSTICK_TOGGLE),
-            mapFollowsLocation = true,
-            useRoadSnappingByDefault = false,
-            speedUnit = SpeedUnit.KMH,
-        )
+        val settings =
+            AppSettings(
+                activeSpeedProfileId = "walk",
+                joystickStyle = JoystickStyle.FLOATING,
+                enabledWidgetFeatures = listOf(WidgetFeature.MAP_FLOATING, WidgetFeature.JOYSTICK_TOGGLE),
+                mapFollowsLocation = true,
+                useRoadSnappingByDefault = false,
+                speedUnit = SpeedUnit.KMH,
+            )
 
         assertEquals("walk", settings.activeSpeedProfileId)
         assertEquals(JoystickStyle.FLOATING, settings.joystickStyle)
@@ -194,21 +209,23 @@ class ModelDomainTest {
 
     @Test
     fun `ExportData data class works`() {
-        val export = ExportData(
-            schemaVersion = 1,
-            exportedAt = 1000L,
-            settings = AppSettings(
-                activeSpeedProfileId = "walk",
-                joystickStyle = JoystickStyle.FLOATING,
-                enabledWidgetFeatures = emptyList(),
-                mapFollowsLocation = false,
-                useRoadSnappingByDefault = false,
-                speedUnit = SpeedUnit.KMH,
-            ),
-            speedProfiles = SpeedProfile.defaultProfiles(),
-            routes = emptyList(),
-            favoriteLocations = emptyList(),
-        )
+        val export =
+            ExportData(
+                schemaVersion = 1,
+                exportedAt = 1000L,
+                settings =
+                    AppSettings(
+                        activeSpeedProfileId = "walk",
+                        joystickStyle = JoystickStyle.FLOATING,
+                        enabledWidgetFeatures = emptyList(),
+                        mapFollowsLocation = false,
+                        useRoadSnappingByDefault = false,
+                        speedUnit = SpeedUnit.KMH,
+                    ),
+                speedProfiles = SpeedProfile.defaultProfiles(),
+                routes = emptyList(),
+                favoriteLocations = emptyList(),
+            )
 
         assertEquals(1, export.schemaVersion)
         assertEquals(1000L, export.exportedAt)

@@ -37,12 +37,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getSpeedProfiles returns walk, run, bike from preferences`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "walk",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "walk",
+                )
 
             repository.getSpeedProfiles().test {
                 val profiles = awaitItem()
@@ -63,12 +64,13 @@ class SettingsRepositoryTest {
             repository.getSpeedProfiles().test {
                 awaitItem() // initial
 
-                fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                    walkSpeedMs = 2.0,
-                    runSpeedMs = 4.0,
-                    bikeSpeedMs = 6.0,
-                    activeProfileId = "run",
-                )
+                fakeDataSource.speedProfilesFlow.value =
+                    SpeedProfilePreferences(
+                        walkSpeedMs = 2.0,
+                        runSpeedMs = 4.0,
+                        bikeSpeedMs = 6.0,
+                        activeProfileId = "run",
+                    )
 
                 val profiles = awaitItem()
                 assertEquals(2.0, profiles[0].speedMetersPerSecond, 0.001)
@@ -81,12 +83,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getWalkSpeed returns walk speed from preferences`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.5,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "walk",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.5,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "walk",
+                )
 
             repository.getWalkSpeed().test {
                 assertEquals(1.5, awaitItem(), 0.001)
@@ -97,12 +100,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getRunSpeed returns run speed from preferences`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.5,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "walk",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.5,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "walk",
+                )
 
             repository.getRunSpeed().test {
                 assertEquals(3.5, awaitItem(), 0.001)
@@ -113,12 +117,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getBikeSpeed returns bike speed from preferences`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.5,
-                activeProfileId = "walk",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.5,
+                    activeProfileId = "walk",
+                )
 
             repository.getBikeSpeed().test {
                 assertEquals(5.5, awaitItem(), 0.001)
@@ -131,12 +136,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getActiveSpeedProfile returns walk profile when active`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "walk",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "walk",
+                )
 
             repository.getActiveSpeedProfile().test {
                 val profile = awaitItem()
@@ -150,12 +156,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getActiveSpeedProfile returns run profile when active`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "run",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "run",
+                )
 
             repository.getActiveSpeedProfile().test {
                 val profile = awaitItem()
@@ -169,12 +176,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getActiveSpeedProfile returns bike profile when active`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "bike",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "bike",
+                )
 
             repository.getActiveSpeedProfile().test {
                 val profile = awaitItem()
@@ -188,12 +196,13 @@ class SettingsRepositoryTest {
     @Test
     fun `getActiveSpeedProfile defaults to walk for unknown profile id`() =
         runTest {
-            fakeDataSource.speedProfilesFlow.value = SpeedProfilePreferences(
-                walkSpeedMs = 1.4,
-                runSpeedMs = 3.0,
-                bikeSpeedMs = 5.0,
-                activeProfileId = "unknown",
-            )
+            fakeDataSource.speedProfilesFlow.value =
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.4,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 5.0,
+                    activeProfileId = "unknown",
+                )
 
             repository.getActiveSpeedProfile().test {
                 val profile = awaitItem()
@@ -271,13 +280,14 @@ class SettingsRepositoryTest {
     @Test
     fun `getRoamingDefaults returns defaults from data source`() =
         runTest {
-            val expected = RoamingDefaults(
-                radiusMeters = 500.0,
-                distanceMeters = 1000.0,
-                speedProfileId = "walk",
-                followRoads = true,
-                returnToInitialLocation = true,
-            )
+            val expected =
+                RoamingDefaults(
+                    radiusMeters = 500.0,
+                    distanceMeters = 1000.0,
+                    speedProfileId = "walk",
+                    followRoads = true,
+                    returnToInitialLocation = true,
+                )
             fakeDataSource.roamingDefaultsFlow.value = expected
 
             repository.getRoamingDefaults().test {
@@ -505,13 +515,14 @@ class SettingsRepositoryTest {
     @Test
     fun `updateRoamingDefaults updates roaming defaults flow`() =
         runTest {
-            val newDefaults = RoamingDefaults(
-                radiusMeters = 750.0,
-                distanceMeters = 2000.0,
-                speedProfileId = "bike",
-                followRoads = false,
-                returnToInitialLocation = false,
-            )
+            val newDefaults =
+                RoamingDefaults(
+                    radiusMeters = 750.0,
+                    distanceMeters = 2000.0,
+                    speedProfileId = "bike",
+                    followRoads = false,
+                    returnToInitialLocation = false,
+                )
             repository.updateRoamingDefaults(newDefaults)
 
             repository.getRoamingDefaults().test {
@@ -527,26 +538,28 @@ class SettingsRepositoryTest {
 }
 
 class FakeAppPreferencesDataSource {
-    val speedProfilesFlow = MutableStateFlow(
-        SpeedProfilePreferences(
-            walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
-            runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
-            bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
-            activeProfileId = AppPreferencesDataSource.DEFAULT_ACTIVE_PROFILE_ID,
-        ),
-    )
+    val speedProfilesFlow =
+        MutableStateFlow(
+            SpeedProfilePreferences(
+                walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
+                runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
+                bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
+                activeProfileId = AppPreferencesDataSource.DEFAULT_ACTIVE_PROFILE_ID,
+            ),
+        )
 
     val widgetItemsFlow = MutableStateFlow(AppPreferencesDataSource.DEFAULT_WIDGET_ITEMS)
 
-    val roamingDefaultsFlow = MutableStateFlow(
-        RoamingDefaults(
-            radiusMeters = AppPreferencesDataSource.DEFAULT_ROAMING_RADIUS_METERS,
-            distanceMeters = AppPreferencesDataSource.DEFAULT_ROAMING_DISTANCE_METERS,
-            speedProfileId = AppPreferencesDataSource.DEFAULT_ROAMING_SPEED_PROFILE_ID,
-            followRoads = AppPreferencesDataSource.DEFAULT_ROAMING_FOLLOW_ROADS,
-            returnToInitialLocation = AppPreferencesDataSource.DEFAULT_ROAMING_RETURN_TO_START,
-        ),
-    )
+    val roamingDefaultsFlow =
+        MutableStateFlow(
+            RoamingDefaults(
+                radiusMeters = AppPreferencesDataSource.DEFAULT_ROAMING_RADIUS_METERS,
+                distanceMeters = AppPreferencesDataSource.DEFAULT_ROAMING_DISTANCE_METERS,
+                speedProfileId = AppPreferencesDataSource.DEFAULT_ROAMING_SPEED_PROFILE_ID,
+                followRoads = AppPreferencesDataSource.DEFAULT_ROAMING_FOLLOW_ROADS,
+                returnToInitialLocation = AppPreferencesDataSource.DEFAULT_ROAMING_RETURN_TO_START,
+            ),
+        )
 
     val onboardingCompleteFlow = MutableStateFlow(false)
 
@@ -565,15 +578,24 @@ class FakeAppPreferencesDataSource {
     fun getSpeedProfiles(): Flow<SpeedProfilePreferences> = speedProfilesFlow
 
     suspend fun setWalkSpeed(ms: Double) {
-        speedProfilesFlow.value = speedProfilesFlow.value.copy(walkSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS))
+        speedProfilesFlow.value =
+            speedProfilesFlow.value.copy(
+                walkSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS),
+            )
     }
 
     suspend fun setRunSpeed(ms: Double) {
-        speedProfilesFlow.value = speedProfilesFlow.value.copy(runSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS))
+        speedProfilesFlow.value =
+            speedProfilesFlow.value.copy(
+                runSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS),
+            )
     }
 
     suspend fun setBikeSpeed(ms: Double) {
-        speedProfilesFlow.value = speedProfilesFlow.value.copy(bikeSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS))
+        speedProfilesFlow.value =
+            speedProfilesFlow.value.copy(
+                bikeSpeedMs = ms.coerceIn(AppPreferencesDataSource.MIN_SPEED_MS, AppPreferencesDataSource.MAX_SPEED_MS),
+            )
     }
 
     suspend fun setActiveProfileId(profileId: String) {
@@ -631,7 +653,8 @@ class FakeAppPreferencesDataSource {
     }
 
     suspend fun setJitterIntervalSeconds(seconds: Int) {
-        jitterIntervalSecondsFlow.value = seconds.coerceIn(AppPreferencesDataSource.MIN_JITTER_INTERVAL_SECONDS, AppPreferencesDataSource.MAX_JITTER_INTERVAL_SECONDS)
+        jitterIntervalSecondsFlow.value =
+            seconds.coerceIn(AppPreferencesDataSource.MIN_JITTER_INTERVAL_SECONDS, AppPreferencesDataSource.MAX_JITTER_INTERVAL_SECONDS)
     }
 
     fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
