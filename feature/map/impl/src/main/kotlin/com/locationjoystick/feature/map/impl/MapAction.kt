@@ -67,4 +67,32 @@ sealed interface MapAction {
     data class FinishRouteAndWalkTo(
         val position: LatLng,
     ) : MapAction
+
+    data object OpenRoamingSheet : MapAction
+
+    data object DismissRoamingSheet : MapAction
+
+    data class UpdateRoamingRadius(
+        val meters: Double,
+    ) : MapAction
+
+    data class UpdateRoamingDistance(
+        val meters: Double,
+    ) : MapAction
+
+    data class SelectRoamingSpeedProfile(
+        val id: String,
+    ) : MapAction
+
+    data class ToggleRoamingFollowRoads(
+        val enabled: Boolean,
+    ) : MapAction
+
+    data class ToggleRoamingReturnToStart(
+        val enabled: Boolean,
+    ) : MapAction
+
+    data object StartRoaming : MapAction
+
+    data object StopRoaming : MapAction
 }

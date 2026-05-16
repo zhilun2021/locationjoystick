@@ -22,12 +22,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.designsystem.component.LjTopBar
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 
@@ -52,6 +55,7 @@ fun SettingsRoute(
     onOpenDrawer: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val roamingDefaults by viewModel.roamingDefaults.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
 
@@ -89,6 +93,7 @@ fun SettingsRoute(
 
     SettingsScreen(
         uiState = uiState,
+        roamingDefaults = roamingDefaults,
         onOpenDrawer = onOpenDrawer,
         onSetWalkSpeed = viewModel::setWalkSpeed,
         onSetRunSpeed = viewModel::setRunSpeed,
@@ -100,6 +105,7 @@ fun SettingsRoute(
         onSetJitterMovingRadius = viewModel::setJitterMovingRadius,
         onSetJitterIntervalSeconds = viewModel::setJitterIntervalSeconds,
         convertMsToDisplay = viewModel::convertMsToDisplay,
+        onUpdateRoamingDefaults = viewModel::updateRoamingDefaults,
         onExport = { exportLauncher.launch("locationjoystick-export-${System.currentTimeMillis()}.json") },
         onImport = { importLauncher.launch(arrayOf("application/json")) },
         onSaveChanges = viewModel::saveChanges,
@@ -110,6 +116,7 @@ fun SettingsRoute(
 @Composable
 internal fun SettingsScreen(
     uiState: SettingsUiState,
+    roamingDefaults: RoamingDefaults = RoamingDefaults(),
     onOpenDrawer: () -> Unit = {},
     onSetWalkSpeed: (Double) -> Unit,
     onSetRunSpeed: (Double) -> Unit,
@@ -121,6 +128,7 @@ internal fun SettingsScreen(
     onSetJitterMovingRadius: (Double) -> Unit,
     onSetJitterIntervalSeconds: (Int) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
+    onUpdateRoamingDefaults: (RoamingDefaults) -> Unit = {},
     onExport: () -> Unit,
     onImport: () -> Unit,
     onSaveChanges: () -> Unit = {},
@@ -483,6 +491,74 @@ internal fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        Text("Default Roaming", style = MaterialTheme.typography.headlineSmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            "Radius: ${formatRoamingDistance(roamingDefaults.radiusMeters)}",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Slider(
+                            value = roamingDefaults.radiusMeters.toFloat().coerceIn(1_000f, 100_000f),
+                            onValueChange = { onUpdateRoamingDefaults(roamingDefaults.copy(radiusMeters = it.toDouble())) },
+                            valueRange = 1_000f..100_000f,
+                            steps = 197,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            "Distance: ${formatRoamingDistance(roamingDefaults.distanceMeters)}",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Slider(
+                            value = roamingDefaults.distanceMeters.toFloat().coerceIn(50f, 50_000f),
+                            onValueChange = { onUpdateRoamingDefaults(roamingDefaults.copy(distanceMeters = it.toDouble())) },
+                            valueRange = 50f..50_000f,
+                            steps = 998,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text("Speed profile", style = MaterialTheme.typography.labelLarge)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            listOf("walk" to "Walk", "run" to "Run", "bike" to "Bike").forEach { (id, label) ->
+                                FilterChip(
+                                    selected = roamingDefaults.speedProfileId == id,
+                                    onClick = { onUpdateRoamingDefaults(roamingDefaults.copy(speedProfileId = id)) },
+                                    label = { Text(label) },
+                                    modifier = Modifier.padding(end = 8.dp),
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Checkbox(
+                                checked = roamingDefaults.followRoads,
+                                onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(followRoads = it)) },
+                            )
+                            Text("Follow roads", style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Checkbox(
+                                checked = roamingDefaults.returnToInitialLocation,
+                                onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(returnToInitialLocation = it)) },
+                            )
+                            Text("Return to start", style = MaterialTheme.typography.bodyMedium)
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
                         Text("Data Management", style = MaterialTheme.typography.headlineSmall)
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -510,6 +586,16 @@ internal fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+private fun formatRoamingDistance(meters: Double): String {
+    val rounded = meters.toInt()
+    return if (rounded >= 1_000) {
+        val km = rounded / 1_000.0
+        if (km == km.toLong().toDouble()) "${km.toLong()} km" else "${String.format("%.1f", km)} km"
+    } else {
+        "$rounded m"
     }
 }
 

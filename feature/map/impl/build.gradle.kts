@@ -12,6 +12,7 @@ android {
 dependencies {
     implementation(project(":feature:map:api"))
     implementation(project(":core:data"))
+    implementation(project(":core:datastore"))
     implementation(project(":core:location"))
     implementation(project(":core:designsystem"))
 

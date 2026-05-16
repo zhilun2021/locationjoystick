@@ -40,7 +40,6 @@ internal fun IdleScreen(
     onNavigateToMap: () -> Unit,
     onNavigateToRoutes: () -> Unit,
     onNavigateToFavorites: () -> Unit,
-    onNavigateToRoaming: () -> Unit,
     onNavigateToSettings: () -> Unit,
 ) {
     Scaffold(
@@ -92,13 +91,6 @@ internal fun IdleScreen(
                 title = "Favorites",
                 description = "Teleport or walk to saved locations.",
                 onClick = onNavigateToFavorites,
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            IdleDestinationCard(
-                icon = LjIcons.Explore,
-                title = "Roaming",
-                description = "Wander randomly within a set area.",
-                onClick = onNavigateToRoaming,
             )
             Spacer(modifier = Modifier.height(12.dp))
             IdleDestinationCard(

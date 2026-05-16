@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedProfile.Companion.BIKE_SPEED_MPS
 import com.locationjoystick.core.model.SpeedProfile.Companion.RUN_SPEED_MPS
@@ -36,9 +37,11 @@ class AppPreferencesDataSource
             val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
             val WIDGET_ITEMS = stringSetPreferencesKey("widget_items")
             val ROAMING_RADIUS_METERS = doublePreferencesKey("roaming_radius_meters")
-            val ROAMING_DURATION_SECONDS = doublePreferencesKey("roaming_duration_seconds")
+            val ROAMING_DISTANCE_METERS = doublePreferencesKey("roaming_distance_meters")
             val ROAMING_ROAD_FOLLOWING = booleanPreferencesKey("roaming_road_following")
             val ROAMING_TRANSPORT_MODE = stringPreferencesKey("roaming_transport_mode")
+            val ROAMING_RETURN_TO_START = booleanPreferencesKey("roaming_return_to_start")
+            val ROAMING_SPEED_PROFILE_ID = stringPreferencesKey("roaming_speed_profile_id")
             val ONBOARDING_COMPLETE = booleanPreferencesKey("onboarding_complete")
             val SPEED_UNIT = stringPreferencesKey("speed_unit")
             val REMEMBER_LAST_LOCATION = booleanPreferencesKey("remember_last_location")
@@ -98,7 +101,7 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.WIDGET_ITEMS] = items }
         }
 
-        fun getRoamingConfig(): Flow<RoamingPreferences> =
+        fun getRoamingDefaults(): Flow<RoamingDefaults> =
             dataStore.data
                 .catch { e ->
                     if (e is IOException) {
@@ -108,31 +111,22 @@ class AppPreferencesDataSource
                         throw e
                     }
                 }.map { prefs ->
-                    RoamingPreferences(
+                    RoamingDefaults(
                         radiusMeters = prefs[Keys.ROAMING_RADIUS_METERS] ?: DEFAULT_ROAMING_RADIUS_METERS,
-                        durationSeconds = (prefs[Keys.ROAMING_DURATION_SECONDS] ?: DEFAULT_ROAMING_DURATION_SECONDS).toLong(),
-                        roadFollowing = prefs[Keys.ROAMING_ROAD_FOLLOWING] ?: false,
-                        transportMode = prefs[Keys.ROAMING_TRANSPORT_MODE] ?: DEFAULT_ROAMING_TRANSPORT_MODE,
+                        distanceMeters = prefs[Keys.ROAMING_DISTANCE_METERS] ?: DEFAULT_ROAMING_DISTANCE_METERS,
+                        speedProfileId = prefs[Keys.ROAMING_SPEED_PROFILE_ID] ?: DEFAULT_ROAMING_SPEED_PROFILE_ID,
+                        followRoads = prefs[Keys.ROAMING_ROAD_FOLLOWING] ?: DEFAULT_ROAMING_FOLLOW_ROADS,
+                        returnToInitialLocation = prefs[Keys.ROAMING_RETURN_TO_START] ?: DEFAULT_ROAMING_RETURN_TO_START,
                     )
                 }
 
-        suspend fun setRoamingTransportMode(mode: String) {
+        suspend fun updateRoamingDefaults(defaults: RoamingDefaults) {
             dataStore.edit { prefs ->
-                prefs[Keys.ROAMING_TRANSPORT_MODE] = mode
-            }
-        }
-
-        suspend fun setRoamingConfig(
-            radiusMeters: Double,
-            durationSeconds: Long,
-            roadFollowing: Boolean,
-            transportMode: String,
-        ) {
-            dataStore.edit { prefs ->
-                prefs[Keys.ROAMING_RADIUS_METERS] = radiusMeters
-                prefs[Keys.ROAMING_DURATION_SECONDS] = durationSeconds.toDouble()
-                prefs[Keys.ROAMING_ROAD_FOLLOWING] = roadFollowing
-                prefs[Keys.ROAMING_TRANSPORT_MODE] = transportMode
+                prefs[Keys.ROAMING_RADIUS_METERS] = defaults.radiusMeters
+                prefs[Keys.ROAMING_DISTANCE_METERS] = defaults.distanceMeters
+                prefs[Keys.ROAMING_SPEED_PROFILE_ID] = defaults.speedProfileId
+                prefs[Keys.ROAMING_ROAD_FOLLOWING] = defaults.followRoads
+                prefs[Keys.ROAMING_RETURN_TO_START] = defaults.returnToInitialLocation
             }
         }
 
@@ -290,9 +284,11 @@ class AppPreferencesDataSource
                     WidgetFeature.SPEED_CYCLE.name.lowercase(),
                 )
 
-            const val DEFAULT_ROAMING_RADIUS_METERS = 2000.0
-            const val DEFAULT_ROAMING_DURATION_SECONDS = 1800.0
-            const val DEFAULT_ROAMING_TRANSPORT_MODE = "walk"
+            const val DEFAULT_ROAMING_RADIUS_METERS = 5_000.0
+            const val DEFAULT_ROAMING_DISTANCE_METERS = 1_000.0
+            const val DEFAULT_ROAMING_SPEED_PROFILE_ID = "walk"
+            const val DEFAULT_ROAMING_FOLLOW_ROADS = true
+            const val DEFAULT_ROAMING_RETURN_TO_START = true
 
             const val DEFAULT_JITTER_IDLE_RADIUS_METERS = 0.0
             const val DEFAULT_JITTER_MOVING_RADIUS_METERS = 1.0
@@ -310,11 +306,4 @@ data class SpeedProfilePreferences(
     val runSpeedMs: Double,
     val bikeSpeedMs: Double,
     val activeProfileId: String,
-)
-
-data class RoamingPreferences(
-    val radiusMeters: Double,
-    val durationSeconds: Long,
-    val roadFollowing: Boolean,
-    val transportMode: String,
 )

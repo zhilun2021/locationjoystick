@@ -11,6 +11,7 @@ import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.model.AppSettings
 import com.locationjoystick.core.model.ExportData
 import com.locationjoystick.core.model.FavoriteLocation
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
@@ -148,6 +149,15 @@ class SettingsViewModel
                 )
             }
 
+        val roamingDefaults: StateFlow<RoamingDefaults> =
+            settingsRepository
+                .getRoamingDefaults()
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5_000),
+                    initialValue = RoamingDefaults(),
+                )
+
         val uiState: StateFlow<SettingsUiState> =
             combine(
                 repoStateFlow,
@@ -215,6 +225,16 @@ class SettingsViewModel
 
         fun setJitterIntervalSeconds(seconds: Int) {
             draftJitterIntervalSecondsFlow.value = seconds
+        }
+
+        fun updateRoamingDefaults(defaults: RoamingDefaults) {
+            viewModelScope.launch {
+                try {
+                    settingsRepository.updateRoamingDefaults(defaults)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to update roaming defaults", e)
+                }
+            }
         }
 
         fun saveChanges() {

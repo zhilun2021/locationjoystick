@@ -28,8 +28,6 @@ dependencies {
     kover(project(":feature:joystick:impl"))
     kover(project(":feature:map:api"))
     kover(project(":feature:map:impl"))
-    kover(project(":feature:roaming:api"))
-    kover(project(":feature:roaming:impl"))
     kover(project(":feature:routes:api"))
     kover(project(":feature:routes:impl"))
     kover(project(":feature:settings:api"))

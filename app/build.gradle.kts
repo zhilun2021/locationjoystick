@@ -35,8 +35,6 @@ dependencies {
     implementation(project(":feature:routes:impl"))
     implementation(project(":feature:favorites:api"))
     implementation(project(":feature:favorites:impl"))
-    implementation(project(":feature:roaming:api"))
-    implementation(project(":feature:roaming:impl"))
     implementation(project(":feature:settings:api"))
     implementation(project(":feature:settings:impl"))
     implementation(project(":feature:widget:api"))

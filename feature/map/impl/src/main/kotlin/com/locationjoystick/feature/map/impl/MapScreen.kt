@@ -247,6 +247,32 @@ internal fun MapScreen(
                     )
                 }
                 FloatingActionButton(
+                    onClick = {
+                        if (uiState.isRoaming) {
+                            onAction(MapAction.StopRoaming)
+                        } else {
+                            onAction(MapAction.OpenRoamingSheet)
+                        }
+                    },
+                    containerColor =
+                        if (uiState.isRoaming) {
+                            MaterialTheme.colorScheme.errorContainer
+                        } else {
+                            MaterialTheme.colorScheme.tertiaryContainer
+                        },
+                    contentColor =
+                        if (uiState.isRoaming) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onTertiaryContainer
+                        },
+                ) {
+                    Icon(
+                        imageVector = if (uiState.isRoaming) LjIcons.Stop else LjIcons.Explore,
+                        contentDescription = if (uiState.isRoaming) "Stop roaming" else "Start roaming",
+                    )
+                }
+                FloatingActionButton(
                     onClick = { showSearch.value = !showSearch.value },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -465,6 +491,16 @@ internal fun MapScreen(
             position = pending,
             isRouteReplay = uiState.isRouteReplay,
             onAction = onAction,
+        )
+    }
+
+    val roamingDraft = uiState.roamingDraft
+    if (uiState.showRoamingSheet && roamingDraft != null) {
+        RoamingSheet(
+            draft = roamingDraft,
+            hasCurrentPosition = uiState.currentPosition != null,
+            onAction = onAction,
+            onDismiss = { onAction(MapAction.DismissRoamingSheet) },
         )
     }
 }

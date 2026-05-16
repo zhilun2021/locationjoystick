@@ -29,17 +29,18 @@ class RoamingRepository
         fun startRoaming(
             config: RoamingConfig,
             speedMs: Double,
-            transportMode: String,
         ) {
             activeJob?.cancel()
-            Log.d(TAG, "Starting roaming: radius=${config.radiusMeters}m, duration=${config.durationSeconds}s, transport=$transportMode")
+            Log.d(
+                TAG,
+                "Starting roaming: radius=${config.radiusMeters}m, distance=${config.distanceMeters}m, profile=${config.speedProfileId}",
+            )
             _isRoaming.value = true
             locationRepository.setMockMode(MockMode.ROAMING)
             activeJob =
                 roamingEngine.startRoaming(
                     config = config,
                     speedMs = speedMs,
-                    transportMode = transportMode,
                     onPositionUpdate = { position ->
                         locationRepository.setPositionInternal(position)
                     },

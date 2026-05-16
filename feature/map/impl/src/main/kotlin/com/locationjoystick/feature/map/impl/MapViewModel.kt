@@ -12,11 +12,16 @@ import com.locationjoystick.core.common.util.calculateBearing
 import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.datastore.AppPreferencesDataSource
+import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.RoamingConfig
+import com.locationjoystick.core.model.RoamingDefaults
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -43,11 +48,21 @@ class MapViewModel
         private val routeRepository: RouteRepository,
         private val favoriteRepository: FavoriteRepository,
         private val settingsRepository: SettingsRepository,
+        private val roamingRepository: RoamingRepository,
+        private val preferencesDataSource: AppPreferencesDataSource,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
         private var walkToJob: Job? = null
+        private var latestRoamingDefaults: RoamingDefaults = RoamingDefaults()
+        private var latestSpeedProfiles: SpeedProfilePreferences =
+            SpeedProfilePreferences(
+                walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
+                runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
+                bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
+                activeProfileId = AppPreferencesDataSource.DEFAULT_ACTIVE_PROFILE_ID,
+            )
 
         init {
             observeLocationState()
@@ -55,6 +70,9 @@ class MapViewModel
             observeRoutes()
             observeFavorites()
             observeRouteWaypoints()
+            observeRoaming()
+            observeRoamingDefaults()
+            observeSpeedProfiles()
         }
 
         private fun observeLocationState() {
@@ -105,6 +123,30 @@ class MapViewModel
             viewModelScope.launch {
                 locationRepository.routeWaypoints.collect { waypoints ->
                     _uiState.update { current -> current.copy(routeTrace = waypoints) }
+                }
+            }
+        }
+
+        private fun observeRoaming() {
+            viewModelScope.launch {
+                roamingRepository.isRoaming.collect { roaming ->
+                    _uiState.update { it.copy(isRoaming = roaming) }
+                }
+            }
+        }
+
+        private fun observeRoamingDefaults() {
+            viewModelScope.launch {
+                preferencesDataSource.getRoamingDefaults().collect { defaults ->
+                    latestRoamingDefaults = defaults
+                }
+            }
+        }
+
+        private fun observeSpeedProfiles() {
+            viewModelScope.launch {
+                preferencesDataSource.getSpeedProfiles().collect { profiles ->
+                    latestSpeedProfiles = profiles
                 }
             }
         }
@@ -250,6 +292,84 @@ class MapViewModel
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to save current location", e)
                         }
+                    }
+                }
+
+                MapAction.OpenRoamingSheet -> {
+                    val draft =
+                        RoamingDraft(
+                            radiusMeters = latestRoamingDefaults.radiusMeters,
+                            distanceMeters = latestRoamingDefaults.distanceMeters,
+                            speedProfileId = latestRoamingDefaults.speedProfileId,
+                            followRoads = latestRoamingDefaults.followRoads,
+                            returnToInitialLocation = latestRoamingDefaults.returnToInitialLocation,
+                        )
+                    _uiState.update { it.copy(showRoamingSheet = true, roamingDraft = draft) }
+                }
+
+                MapAction.DismissRoamingSheet -> {
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }
+                }
+
+                is MapAction.UpdateRoamingRadius -> {
+                    _uiState.update { s ->
+                        s.copy(roamingDraft = s.roamingDraft?.copy(radiusMeters = action.meters))
+                    }
+                }
+
+                is MapAction.UpdateRoamingDistance -> {
+                    _uiState.update { s ->
+                        s.copy(roamingDraft = s.roamingDraft?.copy(distanceMeters = action.meters))
+                    }
+                }
+
+                is MapAction.SelectRoamingSpeedProfile -> {
+                    _uiState.update { s ->
+                        s.copy(roamingDraft = s.roamingDraft?.copy(speedProfileId = action.id))
+                    }
+                }
+
+                is MapAction.ToggleRoamingFollowRoads -> {
+                    _uiState.update { s ->
+                        s.copy(roamingDraft = s.roamingDraft?.copy(followRoads = action.enabled))
+                    }
+                }
+
+                is MapAction.ToggleRoamingReturnToStart -> {
+                    _uiState.update { s ->
+                        s.copy(roamingDraft = s.roamingDraft?.copy(returnToInitialLocation = action.enabled))
+                    }
+                }
+
+                MapAction.StartRoaming -> {
+                    val draft = _uiState.value.roamingDraft ?: return
+                    val position = _uiState.value.currentPosition
+                    if (position == null) {
+                        Log.w(TAG, "Cannot start roaming: no current position")
+                        return
+                    }
+                    val speedMs =
+                        when (draft.speedProfileId) {
+                            "run" -> latestSpeedProfiles.runSpeedMs
+                            "bike" -> latestSpeedProfiles.bikeSpeedMs
+                            else -> latestSpeedProfiles.walkSpeedMs
+                        }
+                    val config =
+                        RoamingConfig(
+                            centerPosition = position,
+                            radiusMeters = draft.radiusMeters,
+                            distanceMeters = draft.distanceMeters,
+                            speedProfileId = draft.speedProfileId,
+                            useRoadSnapping = draft.followRoads,
+                            returnToInitialLocation = draft.returnToInitialLocation,
+                        )
+                    roamingRepository.startRoaming(config, speedMs)
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }
+                }
+
+                MapAction.StopRoaming -> {
+                    viewModelScope.launch {
+                        roamingRepository.stopRoaming()
                     }
                 }
             }

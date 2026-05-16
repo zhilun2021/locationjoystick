@@ -3,7 +3,6 @@ package com.locationjoystick.core.routing
 import android.util.Log
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RoamingConfig
-import com.locationjoystick.core.model.bearingTo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -12,7 +11,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.PI
@@ -24,7 +22,6 @@ private const val TAG = "RoamingEngine"
 private const val TICK_INTERVAL_MS = 1000L
 private const val OSRM_PROFILE_FOOT = "foot"
 private const val OSRM_PROFILE_CYCLING = "cycling"
-private const val WAYPOINT_ARRIVAL_THRESHOLD_METERS = 5.0
 
 @Singleton
 class RoamingEngine
@@ -50,22 +47,21 @@ class RoamingEngine
         fun startRoaming(
             config: RoamingConfig,
             speedMs: Double,
-            transportMode: String,
             onPositionUpdate: (LatLng) -> Unit,
         ): Job {
             activeJob?.cancel()
             val job =
                 engineScope.launch {
-                    val startTime = System.currentTimeMillis()
-                    val durationMs = config.durationSeconds * 1000L
+                    val initialLocation = config.centerPosition
                     var currentPosition = config.centerPosition
+                    var remainingMeters = config.distanceMeters
                     var currentRoute: List<LatLng> = emptyList()
                     var waypointIndex = 0
 
-                    while (isActive && (System.currentTimeMillis() - startTime) < durationMs) {
+                    while (isActive && remainingMeters > 0) {
                         if (currentRoute.isEmpty() || waypointIndex >= currentRoute.size) {
                             val destination = randomPointInRadius(config.centerPosition, config.radiusMeters)
-                            currentRoute = fetchRoute(config, currentPosition, destination, transportMode)
+                            currentRoute = fetchRoute(config, currentPosition, destination)
                             waypointIndex = 0
                         }
 
@@ -80,6 +76,7 @@ class RoamingEngine
 
                         currentPosition = result.position
                         waypointIndex = result.nextWaypointIndex
+                        remainingMeters -= speedMs
 
                         if (result.reachedEnd) {
                             currentRoute = emptyList()
@@ -87,6 +84,26 @@ class RoamingEngine
 
                         onPositionUpdate(currentPosition)
                         delay(TICK_INTERVAL_MS)
+                    }
+
+                    if (config.returnToInitialLocation && isActive) {
+                        val returnRoute = fetchRoute(config, currentPosition, initialLocation)
+                        var returnIndex = 0
+                        while (isActive && !returnRoute.isEmpty()) {
+                            val result =
+                                routeInterpolator.interpolateAlongRoute(
+                                    waypoints = returnRoute,
+                                    currentPosition = currentPosition,
+                                    currentWaypointIndex = returnIndex,
+                                    speedMs = speedMs,
+                                    deltaTimeMs = TICK_INTERVAL_MS,
+                                )
+                            currentPosition = result.position
+                            returnIndex = result.nextWaypointIndex
+                            onPositionUpdate(currentPosition)
+                            if (result.reachedEnd) break
+                            delay(TICK_INTERVAL_MS)
+                        }
                     }
                 }
             activeJob = job
@@ -102,16 +119,14 @@ class RoamingEngine
             config: RoamingConfig,
             from: LatLng,
             to: LatLng,
-            transportMode: String,
         ): List<LatLng> {
             if (!config.useRoadSnapping) {
                 return osrmClient.straightLineRoute(from, to)
             }
-
             val profile =
-                when (transportMode) {
+                when (config.speedProfileId) {
                     "bike" -> OSRM_PROFILE_CYCLING
-                    else -> OSRM_PROFILE_FOOT // "walk", "run", or unknown default to foot
+                    else -> OSRM_PROFILE_FOOT
                 }
             return osrmClient
                 .getRoute(profile, listOf(from, to))

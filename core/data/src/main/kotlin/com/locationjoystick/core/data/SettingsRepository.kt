@@ -1,11 +1,9 @@
 package com.locationjoystick.core.data
 
 import com.locationjoystick.core.datastore.AppPreferencesDataSource
-import com.locationjoystick.core.datastore.RoamingPreferences
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
-import com.locationjoystick.core.model.AppSettings
-import com.locationjoystick.core.model.JoystickStyle
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
@@ -50,7 +48,9 @@ class SettingsRepository
 
         fun getOnboardingComplete(): Flow<Boolean> = dataSource.getOnboardingComplete()
 
-        fun getRoamingDefaults(): Flow<RoamingPreferences> = dataSource.getRoamingConfig()
+        fun getRoamingDefaults(): Flow<RoamingDefaults> = dataSource.getRoamingDefaults()
+
+        suspend fun updateRoamingDefaults(defaults: RoamingDefaults) = dataSource.updateRoamingDefaults(defaults)
 
         suspend fun setWalkSpeed(ms: Double) = dataSource.setWalkSpeed(ms)
 
@@ -66,13 +66,6 @@ class SettingsRepository
         }
 
         suspend fun setOnboardingComplete(complete: Boolean) = dataSource.setOnboardingComplete(complete)
-
-        suspend fun setRoamingDefaults(
-            radiusMeters: Double,
-            durationSeconds: Long,
-            roadFollowing: Boolean,
-            transportMode: String,
-        ) = dataSource.setRoamingConfig(radiusMeters, durationSeconds, roadFollowing, transportMode)
 
         suspend fun setSpeedUnit(unit: SpeedUnit) {
             dataSource.setSpeedUnit(unit.name)

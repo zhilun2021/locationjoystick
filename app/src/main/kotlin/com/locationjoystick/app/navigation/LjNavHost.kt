@@ -32,8 +32,6 @@ import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.map.impl.mapScreen
 import com.locationjoystick.feature.onboarding.api.ONBOARDING_ROUTE
 import com.locationjoystick.feature.onboarding.impl.OnboardingRoute
-import com.locationjoystick.feature.roaming.api.ROAMING_ROUTE
-import com.locationjoystick.feature.roaming.impl.RoamingRoute
 import com.locationjoystick.feature.routes.api.ROUTES_ROUTE
 import com.locationjoystick.feature.routes.api.ROUTE_CREATOR_ROUTE
 import com.locationjoystick.feature.routes.api.ROUTE_DETAIL_ROUTE
@@ -117,9 +115,6 @@ fun LjNavHost(
                 },
                 onNavigateToFavorites = {
                     navController.navigate(FAVORITES_ROUTE) { launchSingleTop = true }
-                },
-                onNavigateToRoaming = {
-                    navController.navigate(ROAMING_ROUTE) { launchSingleTop = true }
                 },
                 onNavigateToSettings = {
                     navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
@@ -220,19 +215,6 @@ fun LjNavHost(
                     onBack = { navController.navigateUp() },
                 )
             }
-        }
-
-        composable(
-            route = ROAMING_ROUTE,
-            enterTransition = { fadeInScale() },
-            exitTransition = { fadeOutScale() },
-            popEnterTransition = { fadeInScale() },
-            popExitTransition = { fadeOutScale() },
-        ) {
-            RoamingRoute(
-                onOpenDrawer = onOpenDrawer,
-                viewModel = hiltViewModel(),
-            )
         }
 
         composable(

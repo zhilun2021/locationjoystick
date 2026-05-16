@@ -5,6 +5,14 @@ import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.Route
 
+data class RoamingDraft(
+    val radiusMeters: Double,
+    val distanceMeters: Double,
+    val speedProfileId: String,
+    val followRoads: Boolean,
+    val returnToInitialLocation: Boolean,
+)
+
 data class MapUiState(
     val currentPosition: LatLng? = null,
     val mockLocationState: MockLocationState = MockLocationState.IDLE,
@@ -20,6 +28,9 @@ data class MapUiState(
     val walkStart: LatLng? = null,
     val isWalkPaused: Boolean = false,
     val isRouteReplay: Boolean = false,
+    val showRoamingSheet: Boolean = false,
+    val roamingDraft: RoamingDraft? = null,
+    val isRoaming: Boolean = false,
 )
 
 val MapUiState.isSpoofing: Boolean

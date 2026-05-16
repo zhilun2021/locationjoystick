@@ -11,4 +11,5 @@ data class AppSettings(
     val mapFollowsLocation: Boolean = true,
     val useRoadSnappingByDefault: Boolean = false,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
+    val roamingDefaults: RoamingDefaults = RoamingDefaults(),
 )
