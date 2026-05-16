@@ -15,12 +15,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -267,26 +270,61 @@ internal fun MapFloatingView(
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 56.dp, start = 12.dp, end = 12.dp),
+                        .padding(top = 8.dp, start = 12.dp, end = 12.dp),
             )
         }
 
-        // Top-right controls: favorites, search, close
-        Row(
+        // Close button — top-right corner
+        IconButton(
+            onClick = onDismiss,
             modifier =
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    .padding(8.dp)
+                    .background(LjBg, CircleShape),
         ) {
-            IconButton(onClick = { showFavoritesPicker = true }) {
-                Icon(Icons.Rounded.Favorite, contentDescription = "Favorites", tint = Color.White)
+            Icon(Icons.Rounded.Close, contentDescription = "Close", tint = LjText)
+        }
+
+        // FAB column — bottom-right, mirrors main map layout
+        Column(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (!isFollowingCamera.value) {
+                FloatingActionButton(
+                    onClick = {
+                        isFollowingCamera.value = true
+                        val pos = locationRepository.currentPosition.value
+                        if (pos != null) {
+                            mapRef.value?.animateCamera(
+                                CameraUpdateFactory.newLatLng(MapLatLng(pos.latitude, pos.longitude)),
+                                500,
+                            )
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                ) {
+                    Icon(Icons.Rounded.MyLocation, contentDescription = "Re-center on location")
+                }
             }
-            IconButton(onClick = { showSearch = !showSearch }) {
-                Icon(Icons.Rounded.Search, contentDescription = "Search", tint = Color.White)
+            FloatingActionButton(
+                onClick = { showFavoritesPicker = true },
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            ) {
+                Icon(Icons.Rounded.Favorite, contentDescription = "Open favorites")
             }
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Rounded.Close, contentDescription = "Close", tint = Color.White)
+            FloatingActionButton(
+                onClick = { showSearch = !showSearch },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            ) {
+                Icon(Icons.Rounded.Search, contentDescription = "Search location")
             }
         }
 

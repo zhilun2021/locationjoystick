@@ -192,11 +192,6 @@ internal fun MapScreen(
             LjTopBar(
                 title = "Lj",
                 onNavigationClick = onOpenDrawer,
-                actions = {
-                    IconButton(onClick = { showSearch.value = !showSearch.value }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search location")
-                    }
-                },
             )
         },
         floatingActionButton = {
@@ -221,6 +216,16 @@ internal fun MapScreen(
                     Icon(
                         imageVector = LjIcons.Favorite,
                         contentDescription = "Open favorites",
+                    )
+                }
+                FloatingActionButton(
+                    onClick = { showSearch.value = !showSearch.value },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search location",
                     )
                 }
                 MapFab(
