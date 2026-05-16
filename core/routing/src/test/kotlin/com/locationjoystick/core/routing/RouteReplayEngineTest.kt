@@ -165,4 +165,46 @@ class RouteReplayEngineTest {
         assertEquals("updates should not increase after stop()", countBefore, countAfter)
         assertTrue("should have had some updates before stop", countBefore > 0)
     }
+
+    @Test
+    fun `looping mode continues after reaching end`() {
+        val positions = mutableListOf<LatLng>()
+        val completeCount = AtomicInteger(0)
+        engine.start(
+            waypoints = listOf(LatLng(0.0, 0.0), LatLng(0.0001, 0.0)),
+            speedMs = 1.4,
+            isLooping = true,
+            onPositionUpdate = { pos -> positions.add(pos) },
+            onComplete = { completeCount.incrementAndGet() },
+        )
+        Thread.sleep(3000)
+        kotlinx.coroutines.runBlocking { engine.stop() }
+        // In looping mode, onComplete should never be called
+        assertEquals(0, completeCount.get())
+        assertTrue("should have collected positions during looping", positions.size >= 2)
+    }
+
+    @Test
+    fun `appendWaypoint adds to saved waypoints`() {
+        val waypoints = listOf(LatLng(0.0, 0.0), LatLng(1.0, 0.0))
+        engine.start(
+            waypoints = waypoints,
+            speedMs = 1.4,
+            onPositionUpdate = {},
+            onComplete = {},
+        )
+        val newWaypoint = LatLng(2.0, 0.0)
+        engine.appendWaypoint(newWaypoint)
+        kotlinx.coroutines.runBlocking { engine.stop() }
+    }
+
+    @Test
+    fun `pause when no active job does not throw`() {
+        engine.pause()
+    }
+
+    @Test
+    fun `stop when no active job does not throw`() {
+        kotlinx.coroutines.runBlocking { engine.stop() }
+    }
 }

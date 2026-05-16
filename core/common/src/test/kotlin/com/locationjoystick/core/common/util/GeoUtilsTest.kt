@@ -256,4 +256,129 @@ class GeoUtilsTest {
     fun `metersToLngDegrees zero meters returns zero`() {
         assertEquals(0.0, metersToLngDegrees(0.0, 45.0), 0.0001)
     }
+
+    // haversineDistance raw coordinate overload
+
+    @Test
+    fun `haversineDistance raw coordinates same point returns zero`() {
+        assertEquals(0.0, haversineDistance(51.5, 0.0, 51.5, 0.0), 0.001)
+    }
+
+    @Test
+    fun `haversineDistance raw coordinates 1 degree latitude is approx 111km`() {
+        assertEquals(111_195.0, haversineDistance(0.0, 0.0, 1.0, 0.0), 500.0)
+    }
+
+    @Test
+    fun `haversineDistance raw coordinates is symmetric`() {
+        val ab = haversineDistance(40.0, -74.0, 51.5, 0.0)
+        val ba = haversineDistance(51.5, 0.0, 40.0, -74.0)
+        assertEquals(ab, ba, 0.001)
+    }
+
+    // calculateBearing
+
+    @Test
+    fun `calculateBearing due north returns 0`() {
+        assertEquals(0.0, calculateBearing(0.0, 0.0, 1.0, 0.0), 0.1)
+    }
+
+    @Test
+    fun `calculateBearing due east returns 90`() {
+        assertEquals(90.0, calculateBearing(0.0, 0.0, 0.0, 1.0), 0.1)
+    }
+
+    @Test
+    fun `calculateBearing due south returns 180`() {
+        assertEquals(180.0, calculateBearing(1.0, 0.0, 0.0, 0.0), 0.1)
+    }
+
+    @Test
+    fun `calculateBearing due west returns 270`() {
+        assertEquals(270.0, calculateBearing(0.0, 1.0, 0.0, 0.0), 0.1)
+    }
+
+    @Test
+    fun `calculateBearing result is in range 0 to 360`() {
+        val bearing = calculateBearing(51.5, 0.0, 40.7, -74.0)
+        assertTrue("bearing $bearing out of range [0,360)", bearing >= 0.0 && bearing < 360.0)
+    }
+
+    // advancePosition
+
+    @Test
+    fun `advancePosition north increases latitude`() {
+        val (newLat, newLon) = advancePosition(0.0, 0.0, 0.0, 111_195.0)
+        assertTrue(newLat > 0.0)
+        assertEquals(0.0, newLon, 0.01)
+    }
+
+    @Test
+    fun `advancePosition east increases longitude`() {
+        val (newLat, newLon) = advancePosition(0.0, 0.0, 90.0, 111_195.0)
+        assertEquals(0.0, newLat, 0.01)
+        assertTrue(newLon > 0.0)
+    }
+
+    @Test
+    fun `advancePosition zero distance returns same position`() {
+        val (newLat, newLon) = advancePosition(51.5, 0.0, 45.0, 0.0)
+        assertEquals(51.5, newLat, 0.01)
+        assertEquals(0.0, newLon, 0.01)
+    }
+
+    @Test
+    fun `advancePosition south decreases latitude`() {
+        val (newLat, newLon) = advancePosition(1.0, 0.0, 180.0, 111_195.0)
+        assertTrue(newLat < 1.0)
+    }
+
+    // RDP simplify with collinear points (zero-length line segment)
+
+    @Test
+    fun `rdpSimplify two points returns both`() {
+        val points = listOf(LatLng(0.0, 0.0), LatLng(1.0, 1.0))
+        val result = rdpSimplify(points, 0.1)
+        assertEquals(2, result.size)
+    }
+
+    @Test
+    fun `rdpSimplify single point returns it`() {
+        val points = listOf(LatLng(0.0, 0.0))
+        val result = rdpSimplify(points, 0.1)
+        assertEquals(1, result.size)
+        assertEquals(points[0], result[0])
+    }
+
+    @Test
+    fun `rdpSimplify empty list returns empty`() {
+        val result = rdpSimplify(emptyList(), 0.1)
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `rdpSimplify removes intermediate collinear points`() {
+        val points =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.5, 0.5),
+                LatLng(1.0, 1.0),
+            )
+        val result = rdpSimplify(points, 10.0)
+        assertEquals(2, result.size)
+        assertEquals(points.first(), result.first())
+        assertEquals(points.last(), result.last())
+    }
+
+    @Test
+    fun `rdpSimplify keeps points beyond epsilon`() {
+        val points =
+            listOf(
+                LatLng(0.0, 0.0),
+                LatLng(0.5, 0.1),
+                LatLng(1.0, 0.0),
+            )
+        val result = rdpSimplify(points, 0.001)
+        assertEquals(3, result.size)
+    }
 }

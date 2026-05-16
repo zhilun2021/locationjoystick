@@ -3,11 +3,15 @@ package com.locationjoystick.feature.map.impl
 import android.content.Context
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.datastore.AppPreferencesDataSource
+import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.Route
 import io.mockk.coEvery
 import io.mockk.every
@@ -17,8 +21,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -30,13 +35,15 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MapViewModelTest {
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var context: Context
     private lateinit var locationRepository: LocationRepository
     private lateinit var routeRepository: RouteRepository
     private lateinit var favoriteRepository: FavoriteRepository
     private lateinit var settingsRepository: SettingsRepository
+    private lateinit var roamingRepository: RoamingRepository
+    private lateinit var preferencesDataSource: AppPreferencesDataSource
     private lateinit var viewModel: MapViewModel
 
     private val walkTargetFlow = MutableStateFlow<LatLng?>(null)
@@ -51,15 +58,43 @@ class MapViewModelTest {
         routeRepository = mockk()
         favoriteRepository = mockk()
         settingsRepository = mockk(relaxed = true)
+        roamingRepository = mockk(relaxed = true)
+        preferencesDataSource = mockk(relaxed = true)
 
         every { locationRepository.observePosition() } returns MutableStateFlow(null)
         every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.IDLE)
         every { locationRepository.isWalkPaused } returns isWalkPausedFlow
         every { locationRepository.walkTarget } returns walkTargetFlow
+        every { locationRepository.currentMode } returns MutableStateFlow(MockMode.JOYSTICK)
+        every { locationRepository.routeWaypoints } returns MutableStateFlow(null)
         every { routeRepository.getRoutes() } returns flowOf(emptyList<Route>())
         every { favoriteRepository.getFavorites() } returns flowOf(emptyList<FavoriteLocation>())
+        every { roamingRepository.isRoaming } returns MutableStateFlow(false)
+        every { preferencesDataSource.getRoamingDefaults() } returns
+            flowOf(
+                com.locationjoystick.core.model
+                    .RoamingDefaults(),
+            )
+        every { preferencesDataSource.getSpeedProfiles() } returns
+            flowOf(
+                SpeedProfilePreferences(
+                    walkSpeedMs = 1.39,
+                    runSpeedMs = 3.0,
+                    bikeSpeedMs = 6.0,
+                    activeProfileId = "walk",
+                ),
+            )
 
-        viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+        viewModel =
+            MapViewModel(
+                context,
+                locationRepository,
+                routeRepository,
+                favoriteRepository,
+                settingsRepository,
+                roamingRepository,
+                preferencesDataSource,
+            )
     }
 
     @After
@@ -84,7 +119,17 @@ class MapViewModelTest {
             // Set state to RUNNING so isSpoofing == true
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -98,7 +143,17 @@ class MapViewModelTest {
             // Start spoofing so TapToTeleport sets pending
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -115,7 +170,17 @@ class MapViewModelTest {
             // Set pending position directly via spoofing tap
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(1.0, 2.0)))
             assertEquals(LatLng(1.0, 2.0), viewModel.uiState.value.pendingTapPosition)
@@ -131,7 +196,17 @@ class MapViewModelTest {
             // Start spoofing and set a pending tap
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(3.0, 4.0)))
             assertEquals(LatLng(3.0, 4.0), viewModel.uiState.value.pendingTapPosition)
@@ -146,7 +221,17 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(51.5074, -0.1278)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -162,7 +247,17 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -177,7 +272,17 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val pos1 = LatLng(0.0, 0.0)
             val pos2 = LatLng(1.0, 1.0)
@@ -198,7 +303,17 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.observeState() } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.observePosition() } returns MutableStateFlow(null)
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(10.5, 20.5)
             viewModel.onAction(MapAction.TapToTeleport(position))
@@ -252,14 +367,24 @@ class MapViewModelTest {
             every { locationRepository.setWalkTarget(any()) } answers {
                 walkTargetFlow.value = firstArg<LatLng?>()
             }
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(target))
             assertEquals(target, viewModel.uiState.value.walkTarget)
 
             // Simulate external stop (widget calls setWalkTarget(null))
             walkTargetFlow.value = null
-            advanceTimeBy(1100) // past the 1 000 ms delay in the walk loop
+            testDispatcher.scheduler.advanceTimeBy(1001)
 
             // finally block in walkTo() clears UI state
             assertNull(viewModel.uiState.value.walkTarget)
@@ -277,16 +402,29 @@ class MapViewModelTest {
             every { locationRepository.setWalkTarget(any()) } answers {
                 walkTargetFlow.value = firstArg<LatLng?>()
             }
-            viewModel = MapViewModel(context, locationRepository, routeRepository, favoriteRepository, settingsRepository)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(target))
             assertEquals(target, viewModel.uiState.value.walkTarget)
 
             // Pause externally (widget)
             isWalkPausedFlow.value = true
-            advanceTimeBy(5000) // several ticks pass
+            testDispatcher.scheduler.advanceTimeBy(100)
 
             // Walk must still be active — not terminated
             assertEquals(target, viewModel.uiState.value.walkTarget)
+
+            // Cancel the walk job to prevent infinite loop in test
+            viewModel.onAction(MapAction.StopWalk)
         }
 }
