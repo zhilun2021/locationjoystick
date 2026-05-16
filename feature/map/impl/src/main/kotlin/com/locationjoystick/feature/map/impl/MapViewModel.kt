@@ -54,6 +54,7 @@ class MapViewModel
             observeMockMode()
             observeRoutes()
             observeFavorites()
+            observeRouteWaypoints()
         }
 
         private fun observeLocationState() {
@@ -96,6 +97,14 @@ class MapViewModel
             viewModelScope.launch {
                 favoriteRepository.getFavorites().collect { favorites ->
                     _uiState.update { current -> current.copy(favorites = favorites) }
+                }
+            }
+        }
+
+        private fun observeRouteWaypoints() {
+            viewModelScope.launch {
+                locationRepository.routeWaypoints.collect { waypoints ->
+                    _uiState.update { current -> current.copy(routeTrace = waypoints) }
                 }
             }
         }

@@ -44,6 +44,10 @@ class LocationRepository
         private val _isWalkPaused = MutableStateFlow(false)
         val isWalkPaused: StateFlow<Boolean> = _isWalkPaused.asStateFlow()
 
+        /** Waypoints of the currently replaying route, null when no route is active. */
+        private val _routeWaypoints = MutableStateFlow<List<LatLng>?>(null)
+        val routeWaypoints: StateFlow<List<LatLng>?> = _routeWaypoints.asStateFlow()
+
         private val _currentMode = MutableStateFlow(MockMode.TELEPORT)
         val currentMode: StateFlow<MockMode> = _currentMode.asStateFlow()
 
@@ -108,5 +112,9 @@ class LocationRepository
 
         fun setMockMode(mode: MockMode) {
             _currentMode.value = mode
+        }
+
+        fun setRouteWaypoints(waypoints: List<LatLng>?) {
+            _routeWaypoints.value = waypoints
         }
     }

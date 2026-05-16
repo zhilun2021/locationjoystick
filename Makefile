@@ -1,5 +1,15 @@
+stop:
+	pkill -f gradlew || true
+	pkill -f "gradle" || true
+	pkill -f ktlint || true
+	pkill -f "adb logcat" || true
+
 clean:
 	./gradlew clean
+	rm -rf .gradle
+	rm -rf build
+	find . -name "build" -type d -not -path "*/.git/*" | xargs rm -rf
+	find . -name ".gradle" -type d -not -path "*/.git/*" | xargs rm -rf
 
 build:
 	./gradlew assembleRelease

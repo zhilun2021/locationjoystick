@@ -93,6 +93,8 @@ private const val TRACED_SOURCE_ID = "traced-source"
 private const val TRACED_LAYER_ID = "traced-layer"
 private const val REMAINING_SOURCE_ID = "remaining-source"
 private const val REMAINING_LAYER_ID = "remaining-layer"
+private const val WALK_ENDPOINTS_SOURCE_ID = "walk-endpoints-source"
+private const val WALK_ENDPOINTS_LAYER_ID = "walk-endpoints-layer"
 
 private fun fadeInScale(): EnterTransition =
     fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
@@ -149,6 +151,7 @@ internal fun MapScreen(
     val positionSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val tracedSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val remainingSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val endpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
 
@@ -317,6 +320,7 @@ internal fun MapScreen(
                                         .withProperties(
                                             PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                             PropertyFactory.lineWidth(4f),
+                                            PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
                                         ),
                                 )
                                 tracedSource.value = tracedSrc
@@ -328,10 +332,22 @@ internal fun MapScreen(
                                         .withProperties(
                                             PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                             PropertyFactory.lineWidth(4f),
-                                            PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
                                         ),
                                 )
                                 remainingSource.value = remainingSrc
+
+                                val endpointsSrc = GeoJsonSource(WALK_ENDPOINTS_SOURCE_ID, emptyGeoJson())
+                                style.addSource(endpointsSrc)
+                                style.addLayer(
+                                    CircleLayer(WALK_ENDPOINTS_LAYER_ID, WALK_ENDPOINTS_SOURCE_ID)
+                                        .withProperties(
+                                            PropertyFactory.circleRadius(8f),
+                                            PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
+                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                            PropertyFactory.circleStrokeWidth(2f),
+                                        ),
+                                )
+                                endpointsSource.value = endpointsSrc
                             }
 
                             map.addOnMapClickListener { latLng ->
@@ -372,6 +388,7 @@ internal fun MapScreen(
                     val map = mapRef.value ?: return@AndroidView
                     val tracedSrc = tracedSource.value ?: return@AndroidView
                     val remainingSrc = remainingSource.value ?: return@AndroidView
+                    val endpointsSrc = endpointsSource.value ?: return@AndroidView
                     val position = uiState.currentPosition
 
                     src.setGeoJson(buildPositionGeoJson(position))
@@ -384,6 +401,7 @@ internal fun MapScreen(
                             )
                         tracedSrc.setGeoJson(tracedGeoJson)
                         remainingSrc.setGeoJson(remainingGeoJson)
+                        endpointsSrc.setGeoJson(buildPointsGeoJson(uiState.routeTrace))
                     } else if (uiState.walkStart != null && uiState.walkTarget != null && position != null) {
                         val walkPoints = listOf(uiState.walkStart, uiState.walkTarget)
                         val (tracedGeoJson, remainingGeoJson) =
@@ -393,9 +411,11 @@ internal fun MapScreen(
                             )
                         tracedSrc.setGeoJson(tracedGeoJson)
                         remainingSrc.setGeoJson(remainingGeoJson)
+                        endpointsSrc.setGeoJson(buildPointsGeoJson(walkPoints))
                     } else {
                         tracedSrc.setGeoJson(emptyGeoJson())
                         remainingSrc.setGeoJson(emptyGeoJson())
+                        endpointsSrc.setGeoJson(emptyGeoJson())
                     }
 
                     if (isFollowingCamera.value && position != null) {
@@ -771,6 +791,15 @@ private fun buildLineGeoJson(points: List<com.locationjoystick.core.model.LatLng
     val coords = points.joinToString(",") { "[${it.longitude},${it.latitude}]" }
     val feature = """{"type":"Feature","geometry":{"type":"LineString","coordinates":[$coords]},"properties":{}}"""
     return """{"type":"FeatureCollection","features":[$feature]}"""
+}
+
+private fun buildPointsGeoJson(points: List<com.locationjoystick.core.model.LatLng>): String {
+    if (points.isEmpty()) return emptyGeoJson()
+    val features =
+        points.joinToString(",") {
+            """{"type":"Feature","geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]},"properties":{}}"""
+        }
+    return """{"type":"FeatureCollection","features":[$features]}"""
 }
 
 @Preview(showBackground = true)

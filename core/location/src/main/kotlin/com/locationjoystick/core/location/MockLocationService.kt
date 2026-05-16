@@ -397,6 +397,7 @@ class MockLocationService : Service() {
             locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
             locationRepository.setActiveRouteId(routeId)
             locationRepository.setIsReplayBackward(isBackward)
+            locationRepository.setRouteWaypoints(latLngs)
 
             walkToPosition(startPos, speedMs)
 
@@ -466,11 +467,13 @@ class MockLocationService : Service() {
     }
 
     private suspend fun handleReplayStop() {
+        locationRepository.setRouteWaypoints(null)
         routeReplayEngine.stop()
         stopSpoofing()
     }
 
     private suspend fun handleReplayCancel() {
+        locationRepository.setRouteWaypoints(null)
         routeReplayEngine.stop()
         locationRepository.setMockMode(MockMode.TELEPORT)
         locationRepository.setActiveRouteId(null)
