@@ -544,8 +544,8 @@ class SettingsViewModel
                 routes = routes,
                 favoriteLocations = favorites,
                 jitterIdleRadius = root.optDouble("jitterIdleRadius", 0.0),
-                jitterMovingRadius = root.optDouble("jitterMovingRadius", 10.0),
-                jitterIntervalSeconds = root.optInt("jitterIntervalSeconds", 5),
+                jitterMovingRadius = root.optDouble("jitterMovingRadius", 1.0),
+                jitterIntervalSeconds = root.optInt("jitterIntervalSeconds", 3),
             )
         }
     }

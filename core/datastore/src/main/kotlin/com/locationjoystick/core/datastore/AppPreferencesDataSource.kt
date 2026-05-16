@@ -295,7 +295,7 @@ class AppPreferencesDataSource
             const val DEFAULT_ROAMING_TRANSPORT_MODE = "walk"
 
             const val DEFAULT_JITTER_IDLE_RADIUS_METERS = 0.0
-            const val DEFAULT_JITTER_MOVING_RADIUS_METERS = 10.0
+            const val DEFAULT_JITTER_MOVING_RADIUS_METERS = 1.0
             const val MAX_JITTER_RADIUS_METERS = 50.0
             const val DEFAULT_JITTER_INTERVAL_SECONDS = 3
             const val MIN_JITTER_INTERVAL_SECONDS = 1
