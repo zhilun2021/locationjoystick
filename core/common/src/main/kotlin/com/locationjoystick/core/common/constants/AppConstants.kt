@@ -78,6 +78,7 @@ object AppConstants {
         const val SCHEMA_VERSION = 1
         const val FILENAME_PREFIX = "locationjoystick-export"
         const val MIME_TYPE = "application/json"
+        const val GPX_MIME_TYPE = "application/gpx+xml"
         const val GPX_VERSION = "1.1"
         const val GPX_CREATOR = "locationjoystick"
         const val QR_CHUNK_SIZE_LIMIT = 2400

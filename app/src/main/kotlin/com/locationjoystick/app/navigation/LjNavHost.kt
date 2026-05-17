@@ -3,6 +3,8 @@ package com.locationjoystick.app.navigation
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.spring
@@ -132,6 +134,16 @@ fun LjNavHost(
                 popEnterTransition = { fadeInScale() },
                 popExitTransition = { fadeOutScale() },
             ) {
+                val context = LocalContext.current
+                val viewModel: com.locationjoystick.feature.routes.impl.RoutesViewModel = hiltViewModel()
+                val gpxLauncher =
+                    rememberLauncherForActivityResult(
+                        ActivityResultContracts.OpenDocument(),
+                    ) { uri ->
+                        if (uri != null) {
+                            viewModel.importRouteFromGpxAsync(uri, context)
+                        }
+                    }
                 RoutesRoute(
                     onNavigateToDetail = { routeId ->
                         navController.navigate("$ROUTE_DETAIL_ROUTE/$routeId")
@@ -139,9 +151,13 @@ fun LjNavHost(
                     onNavigateToCreate = { routeType ->
                         navController.navigate("$ROUTE_CREATOR_ROUTE/${routeType.name}")
                     },
-                    onImportGpx = {},
+                    onImportGpx = {
+                        gpxLauncher.launch(
+                            arrayOf(com.locationjoystick.core.common.constants.AppConstants.ExportConstants.GPX_MIME_TYPE),
+                        )
+                    },
                     onOpenDrawer = onOpenDrawer,
-                    viewModel = hiltViewModel(),
+                    viewModel = viewModel,
                 )
             }
 
