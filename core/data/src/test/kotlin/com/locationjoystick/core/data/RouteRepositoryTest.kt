@@ -7,7 +7,12 @@ import com.locationjoystick.core.model.RouteType
 import com.locationjoystick.core.model.Waypoint
 import com.locationjoystick.core.testing.FakeRouteDao
 import com.locationjoystick.core.testing.FakeWaypointDao
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -15,16 +20,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RouteRepositoryTest {
     private lateinit var routeDao: FakeRouteDao
     private lateinit var waypointDao: FakeWaypointDao
     private lateinit var repository: RouteRepository
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         waypointDao = FakeWaypointDao()
         routeDao = FakeRouteDao(waypointDao)
-        repository = RouteRepository(routeDao, waypointDao)
+        repository = RouteRepository(routeDao, waypointDao, testDispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     // getRoutes

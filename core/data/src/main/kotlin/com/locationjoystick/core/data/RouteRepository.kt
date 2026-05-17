@@ -6,6 +6,7 @@ import com.locationjoystick.core.database.dao.WaypointDao
 import com.locationjoystick.core.database.entities.toDomain
 import com.locationjoystick.core.database.entities.toEntity
 import com.locationjoystick.core.model.Route
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,6 +22,7 @@ class RouteRepository
     constructor(
         private val routeDao: RouteDao,
         private val waypointDao: WaypointDao,
+        private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) {
         fun getRoutes(): Flow<List<Route>> =
             routeDao.getAllWithWaypoints().map { list ->
@@ -30,7 +32,7 @@ class RouteRepository
         fun getRouteWithWaypoints(id: String): Flow<Route?> = routeDao.getWithWaypoints(id).map { it?.route?.toDomain(it.waypoints) }
 
         suspend fun insertRoute(route: Route): Result<Unit> =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 runCatching {
                     routeDao.insert(route.toEntity())
                     waypointDao.deleteByRouteId(route.id)
@@ -42,7 +44,7 @@ class RouteRepository
             }
 
         suspend fun updateRoute(route: Route): Result<Unit> =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 runCatching {
                     routeDao.update(route.toEntity())
                     waypointDao.deleteByRouteId(route.id)
@@ -54,7 +56,7 @@ class RouteRepository
             }
 
         suspend fun deleteRoute(id: String): Result<Unit> =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 runCatching {
                     val entity = routeDao.getById(id)
                     if (entity != null) {
@@ -66,7 +68,7 @@ class RouteRepository
             }
 
         suspend fun removeWaypoint(waypointId: String): Result<Unit> =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 runCatching {
                     waypointDao.delete(waypointId)
                 }.onFailure { e ->
@@ -78,7 +80,7 @@ class RouteRepository
             routeId: String,
             name: String,
         ): Result<Unit> =
-            withContext(Dispatchers.IO) {
+            withContext(ioDispatcher) {
                 runCatching {
                     val entity = routeDao.getById(routeId)
                     if (entity != null) {
