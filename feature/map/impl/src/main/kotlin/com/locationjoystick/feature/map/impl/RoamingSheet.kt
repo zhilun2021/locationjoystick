@@ -6,17 +6,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Slider
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.designsystem.LjTheme
@@ -50,29 +56,35 @@ fun RoamingSheet(
 
             Spacer(Modifier.height(16.dp))
 
-            Text(
-                "Radius: ${formatDistance(draft.radiusMeters)}",
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Slider(
-                value = draft.radiusMeters.toFloat().coerceIn(RADIUS_MIN, RADIUS_MAX),
-                onValueChange = { onAction(MapAction.UpdateRoamingRadius(it.toDouble())) },
-                valueRange = RADIUS_MIN..RADIUS_MAX,
-                steps = 197,
+            var radiusText by remember { mutableStateOf(draft.radiusMeters.roundToInt().toString()) }
+            OutlinedTextField(
+                value = radiusText,
+                onValueChange = { text ->
+                    radiusText = text
+                    text.toDoubleOrNull()?.let { v ->
+                        onAction(MapAction.UpdateRoamingRadius(v.coerceIn(RADIUS_MIN.toDouble(), RADIUS_MAX.toDouble())))
+                    }
+                },
+                label = { Text("Radius (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
             Spacer(Modifier.height(8.dp))
 
-            Text(
-                "Route distance: ${formatDistance(draft.distanceMeters)}",
-                style = MaterialTheme.typography.labelLarge,
-            )
-            Slider(
-                value = draft.distanceMeters.toFloat().coerceIn(DISTANCE_MIN, DISTANCE_MAX),
-                onValueChange = { onAction(MapAction.UpdateRoamingDistance(it.toDouble())) },
-                valueRange = DISTANCE_MIN..DISTANCE_MAX,
-                steps = 998,
+            var distanceText by remember { mutableStateOf(draft.distanceMeters.roundToInt().toString()) }
+            OutlinedTextField(
+                value = distanceText,
+                onValueChange = { text ->
+                    distanceText = text
+                    text.toDoubleOrNull()?.let { v ->
+                        onAction(MapAction.UpdateRoamingDistance(v.coerceIn(DISTANCE_MIN.toDouble(), DISTANCE_MAX.toDouble())))
+                    }
+                },
+                label = { Text("Route distance (m)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -137,15 +149,6 @@ fun RoamingSheet(
     }
 }
 
-private fun formatDistance(meters: Double): String {
-    val rounded = meters.roundToInt()
-    return if (rounded >= 1_000) {
-        val km = rounded / 1_000.0
-        if (km == km.toLong().toDouble()) "${km.toLong()} km" else "${String.format("%.1f", km)} km"
-    } else {
-        "$rounded m"
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

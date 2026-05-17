@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -551,29 +550,35 @@ internal fun SettingsScreen(
                         Text("Default Roaming", style = MaterialTheme.typography.headlineSmall)
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            "Radius: ${formatRoamingDistance(roamingDefaults.radiusMeters)}",
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Slider(
-                            value = roamingDefaults.radiusMeters.toFloat().coerceIn(1_000f, 100_000f),
-                            onValueChange = { onUpdateRoamingDefaults(roamingDefaults.copy(radiusMeters = it.toDouble())) },
-                            valueRange = 1_000f..100_000f,
-                            steps = 197,
+                        var radiusText by remember { mutableStateOf(roamingDefaults.radiusMeters.toInt().toString()) }
+                        OutlinedTextField(
+                            value = radiusText,
+                            onValueChange = { text ->
+                                radiusText = text
+                                text.toDoubleOrNull()?.let { v ->
+                                    onUpdateRoamingDefaults(roamingDefaults.copy(radiusMeters = v.coerceIn(1_000.0, 100_000.0)))
+                                }
+                            },
+                            label = { Text("Radius (m)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
 
                         Spacer(modifier = Modifier.height(4.dp))
 
-                        Text(
-                            "Distance: ${formatRoamingDistance(roamingDefaults.distanceMeters)}",
-                            style = MaterialTheme.typography.labelLarge,
-                        )
-                        Slider(
-                            value = roamingDefaults.distanceMeters.toFloat().coerceIn(50f, 50_000f),
-                            onValueChange = { onUpdateRoamingDefaults(roamingDefaults.copy(distanceMeters = it.toDouble())) },
-                            valueRange = 50f..50_000f,
-                            steps = 998,
+                        var distanceText by remember { mutableStateOf(roamingDefaults.distanceMeters.toInt().toString()) }
+                        OutlinedTextField(
+                            value = distanceText,
+                            onValueChange = { text ->
+                                distanceText = text
+                                text.toDoubleOrNull()?.let { v ->
+                                    onUpdateRoamingDefaults(roamingDefaults.copy(distanceMeters = v.coerceIn(50.0, 50_000.0)))
+                                }
+                            },
+                            label = { Text("Route distance (m)") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
 
@@ -658,15 +663,6 @@ internal fun SettingsScreen(
     }
 }
 
-private fun formatRoamingDistance(meters: Double): String {
-    val rounded = meters.toInt()
-    return if (rounded >= 1_000) {
-        val km = rounded / 1_000.0
-        if (km == km.toLong().toDouble()) "${km.toLong()} km" else "${String.format("%.1f", km)} km"
-    } else {
-        "$rounded m"
-    }
-}
 
 @Composable
 private fun SpeedProfileInput(
