@@ -9,6 +9,26 @@ No-root mock location app for Android. Spoof GPS anywhere using floating joystic
 
 ---
 
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Map** | OpenStreetMap via MapLibre (GPU-accelerated, offline-capable). Tap to walk or teleport. Spoofed position shown as live marker. |
+| **Last Position** | Restores last spoofed location on app restart. No manual re-entry needed. |
+| **Joystick** | Floating overlay stays on top of any app. Drag to move in any direction at chosen speed. Draggable anywhere on screen. |
+| **Speed Profiles** | Walk / Run / Bike presets, all user-editable. Anti-cheat warning when speed exceeds threshold. Accessible from floating widget. |
+| **Routes** | Create waypoints on map → polyline. Two types: **straight** (direct segments) and **guided** (OSRM road-following). Save, edit, replay, loop, or record in real time. |
+| **Roaming** | Set center, radius, duration. Auto-walks randomly within radius. Optional road-following via OSRM. Configured via bottom sheet on Map screen. |
+| **Favorites** | Save named map positions. Instantly teleport or walk to any. Add via inline dialog or MapPicker with Nominatim search. |
+| **Floating Widget** | Configurable quick-access panel floats over other apps. Collapsible FAB → expanded panel with user-selected controls. |
+| **Click-to-Move** | Long-press map → "Walk here" or "Teleport here". Walk advances at current speed; teleport jumps instantly. |
+| **QR Transfer** | Share or import config between devices via QR codes. Export splits into scannable chunks; import scans and reassembles. |
+| **Import/Export** | All data to/from JSON (routes, favorites, speed profiles, widget config, roaming defaults, jitter settings). |
+| **Background Service** | Spoofs while minimized or screen off via foreground service. Low-priority notification. |
+| **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
+
+---
+
 ## What is locationjoystick?
 
 GPS spoofing app built on Android's official mock location API. No root, no Xposed, no system mods. Enable Developer Options, pick locationjoystick as mock location provider → device believes it's wherever you say.
@@ -16,21 +36,6 @@ GPS spoofing app built on Android's official mock location API. No root, no Xpos
 Primary use case: location-based games like Pokémon GO. Walk saved routes, roam a neighborhood automatically, or nudge position with floating joystick while game runs in foreground. App keeps spoofing in background.
 
 Also useful for: privacy (mask real location), QA testing (simulate movement at desk), development (test geofences, location triggers, map features).
-
----
-
-## Features
-
-- **Map**: OpenStreetMap via MapLibre (GPU-accelerated, offline-capable). Tap to walk or teleport. Spoofed position as live marker.
-- **Last Position**: Restores last spoofed location on app restart. No manual re-entry needed.
-- **Joystick**: Floating overlay, stays on top of any app. Move any direction at chosen speed. Draggable. Persists while minimized.
-- **Speeds**: Walk / Run / Bike presets (see `AppConstants.ProfileConstants` for values). Each user-editable. Anti-cheat warning shown inline when speed exceeds threshold. Accessible from floating widget.
-- **Routes**: Two modes — **straight** (direct segments, no network) and **guided** (OSRM road-following). Create waypoints on map. Save/rename/edit/delete. Replay, loop, or record in real time.
-- **Roaming**: Set radius + duration. Auto-walks randomly. Optional road-following via OSRM.
-- **Favorites**: Save named map positions. Instantly teleport to any.
-- **Floating Widget**: Configurable quick-access panel floats over other apps. Collapsible.
-- **Background**: Spoofs while minimized or screen off via foreground service. Low-priority notification.
-- **Import/Export**: All settings to/from JSON (routes, favorites, speed presets, widget config).
 
 ---
 
@@ -137,7 +142,7 @@ core/location    — Mock GPS engine (ForegroundService), independent of UI
 core/model       — Pure Kotlin data classes, no Android deps
 ```
 
-MVVM + Repository. ViewModels expose `StateFlow`/`SharedFlow`. Compose collects via `collectAsStateWithLifecycle()`. Hilt DI throughout. Single `NavHost` in `MainActivity`.
+MVVM + Repository. ViewModels expose `StateFlow`/`SharedFlow`. Compose collects via `collectAsStateWithLifecycle()`. Hilt DI throughout. `LjApp` wraps `LjNavHost` in a `ModalNavigationDrawer`. `IdleScreen` serves as the main hub after onboarding, with cards navigating to Map, Routes, Favorites, and Settings.
 
 ### Modules
 
@@ -145,25 +150,25 @@ Each feature split into `:api` (public contract) + `:impl` (implementation).
 
 | Module | Purpose |
 |--------|---------|
-| `:app` | Entry point, Hilt setup, NavGraph |
-| `:core:common` | Utilities, extensions, constants |
+| `:app` | Entry point, Hilt setup, `LjApp` composable, `LjNavHost`, drawer |
+| `:core:common` | Utilities, extensions, constants (`AppConstants`) |
 | `:core:data` | Repositories, DataStore preferences |
-| `:core:database` | Room DB, DAOs, entities |
+| `:core:database` | Room DB (v2), DAOs, entities |
 | `:core:datastore` | DataStore preferences source |
-| `:core:designsystem` | Design tokens, theme, typography |
+| `:core:designsystem` | Design tokens, theme, typography, shared components |
 | `:core:location` | Mock GPS foreground service + movement engine |
 | `:core:model` | Pure Kotlin domain data classes |
 | `:core:overlay` | Shared WindowManager overlay utilities |
-| `:core:routing` | OSRM client + route interpolation |
+| `:core:routing` | OSRM client, route interpolation, roaming engine, replay engine |
 | `:core:testing` | Shared test utilities, fakes |
 | `:feature:favorites:api` / `:impl` | Favorites list, MapPicker, teleport |
 | `:feature:joystick:api` / `:impl` | Floating joystick overlay service |
-| `:feature:map:api` / `:impl` | MapLibre screen, map interactions |
+| `:feature:map:api` / `:impl` | MapLibre screen, map interactions, roaming bottom sheet |
 | `:feature:onboarding:api` / `:impl` | Multi-step onboarding flow |
-| `:feature:roaming:api` / `:impl` | Roaming config, RoamingEngine |
-| `:feature:routes:api` / `:impl` | Route list, editor, replay |
-| `:feature:settings:api` / `:impl` | Speed profiles, widget config, export/import |
-| `:feature:widget:api` / `:impl` | Floating widget overlay service |
+| `:feature:roaming:api` / `:impl` | Roaming config UI (scaffolding — not yet wired into build) |
+| `:feature:routes:api` / `:impl` | Route list, creator, detail, replay |
+| `:feature:settings:api` / `:impl` | Speed profiles, widget config, export/import, QR transfer |
+| `:feature:widget:api` / `:impl` | Floating widget overlay service, map floating view |
 
 ---
 

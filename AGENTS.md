@@ -138,7 +138,7 @@ Multi-module, NowInAndroid-style. Each feature = two Gradle modules (`api` + `im
 
 MVVM + Repository pattern. ViewModel → Repository → DataSource (Room / DataStore / LocationManager). ViewModels expose `StateFlow`/`SharedFlow`. Compose UI collects via `collectAsStateWithLifecycle()`.
 
-`LjNavHost` uses nested `navigation {}` graphs for back-isolation: `routes_graph` (Routes + RouteCreator + RouteDetail) and `favorites_graph` (Favorites + MapPicker). Drawer navigation uses `popUpTo(IDLE_ROUTE) { saveState = true }` + `launchSingleTop + restoreState`. `FavoritesViewModel` shared across favorites graph via `hiltViewModel(navController.getBackStackEntry("favorites_graph"))`.
+`LjApp` wraps `LjNavHost` in a `ModalNavigationDrawer`. `IdleScreen` serves as the main hub after onboarding, with cards navigating to Map, Routes, Favorites, and Settings. `LjNavHost` uses nested `navigation {}` graphs for back-isolation: `routes_graph` (Routes + RouteCreator + RouteDetail) and `favorites_graph` (Favorites + MapPicker). Drawer navigation uses `popUpTo(IDLE_ROUTE) { saveState = true }` + `launchSingleTop + restoreState`. `FavoritesViewModel` shared across favorites graph via `hiltViewModel(navController.getBackStackEntry("favorites_graph"))`.
 
 DI: Hilt throughout. Every ViewModel `@HiltViewModel`. Every repository `@Singleton`.
 
@@ -305,6 +305,22 @@ Key files: `:feature:settings:impl/SettingsScreen.kt`, `:core:data/SettingsRepos
 
 ---
 
+### QR Share / Transfer
+
+Settings → share or import config between devices via QR codes. Export splits `ExportData` into scannable JSON chunks encoded as QR codes. Import scans chunks sequentially, reassembles, validates, and imports.
+
+Chunking: `QrChunker` splits serialized JSON into chunks sized for QR capacity (alphanumeric mode, ~4296 chars max per QR). Each chunk prefixed with envelope (`ChunkEnvelope`) containing chunk index, total count, and checksum.
+
+Scanner: `QrScannerScreen` uses ZXing (`CameraX` + `ImageAnalysis`) to scan QR codes. `ZxingImageAnalyzer` decodes frames, `ChunkReassembler` collects chunks in order, validates checksum, reassembles JSON.
+
+Share dialog: `QrShareDialog` displays chunks as QR images via `QrEncoder` (ZXing `MultiFormatWriter`). User swipes through chunks; each displayed as Compose `Image` from generated `Bitmap`.
+
+Edge cases: chunk loss during scan → reassembler detects missing index, shows progress. Corrupted chunk → checksum mismatch, retry. Large exports → many chunks, show progress indicator.
+
+Key files: `:feature:settings:impl/QrScannerScreen.kt`, `:feature:settings:impl/QrShareDialog.kt`, `:feature:settings:impl/QrEncoder.kt`, `:feature:settings:impl/QrChunker.kt`, `:feature:settings:impl/ChunkReassemblerTest.kt`
+
+---
+
 ### Last Remembered Location
 
 On app restart, restores last spoofed position. No manual re-entry needed.
@@ -350,8 +366,9 @@ All in `:core:model`. Pure Kotlin — no Android imports, no Room annotations. R
 | `RouteType` | enum: `STRAIGHT`, `GUIDED` |
 | `SpeedProfile` | `id: String`, `name: String`, `speedMetersPerSecond: Double` |
 | `RoamingConfig` | `centerPosition: LatLng`, `radiusMeters: Double`, `durationSeconds: Long`, `useRoadSnapping: Boolean` |
-| `AppSettings` | `activeSpeedProfileId: String`, `joystickStyle: JoystickStyle`, `enabledWidgetFeatures: List<WidgetFeature>`, `mapFollowsLocation: Boolean`, `useRoadSnappingByDefault: Boolean`, `speedUnit: SpeedUnit` |
-| `ExportData` | `schemaVersion: Int`, `exportedAt: Long`, `settings: AppSettings`, `speedProfiles: List<SpeedProfile>`, `routes: List<Route>`, `favoriteLocations: List<FavoriteLocation>` |
+| `RoamingDefaults` | `radiusMeters: Double`, `distanceMeters: Double`, `speedProfileId: String`, `followRoads: Boolean`, `returnToInitialLocation: Boolean` |
+| `AppSettings` | `activeSpeedProfileId: String`, `joystickStyle: JoystickStyle`, `enabledWidgetFeatures: List<WidgetFeature>`, `mapFollowsLocation: Boolean`, `useRoadSnappingByDefault: Boolean`, `speedUnit: SpeedUnit`, `roamingDefaults: RoamingDefaults` |
+| `ExportData` | `schemaVersion: Int`, `exportedAt: Long`, `settings: AppSettings`, `speedProfiles: List<SpeedProfile>`, `routes: List<Route>`, `favoriteLocations: List<FavoriteLocation>`, `jitterIdleRadius: Double`, `jitterMovingRadius: Double`, `jitterIntervalSeconds: Int` |
 | `MockMode` | enum: `JOYSTICK`, `ROUTE_REPLAY`, `ROAMING`, `TELEPORT` |
 | `MockLocationState` | enum: `IDLE`, `RUNNING`, `PAUSED`, `ERROR` |
 | `WidgetFeature` | enum: `JOYSTICK_TOGGLE`, `JOYSTICK_LOCK`, `ROUTES_FLOATING`, `FAVORITES_FLOATING`, `SPEED_CYCLE`, `MAP_FLOATING` |
