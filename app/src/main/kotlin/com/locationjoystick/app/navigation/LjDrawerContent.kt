@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Settings
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.locationjoystick.app.IDLE_ROUTE
+import com.locationjoystick.app.INFO_ROUTE
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.routes.api.ROUTES_ROUTE
@@ -92,6 +94,19 @@ fun LjDrawerContent(
             selected = false,
             onClick = {
                 navController.navigate(SETTINGS_ROUTE) {
+                    popUpTo(IDLE_ROUTE) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                scope.launch { drawerState.close() }
+            },
+        )
+        NavigationDrawerItem(
+            icon = { Icon(Icons.Rounded.Info, "About") },
+            label = { Text("About") },
+            selected = false,
+            onClick = {
+                navController.navigate(INFO_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true

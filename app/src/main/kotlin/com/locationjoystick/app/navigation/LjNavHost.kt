@@ -22,7 +22,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.locationjoystick.app.IDLE_ROUTE
+import com.locationjoystick.app.INFO_ROUTE
 import com.locationjoystick.app.IdleScreen
+import com.locationjoystick.app.InfoScreen
 import com.locationjoystick.core.common.util.isMockLocationEnabled
 import com.locationjoystick.core.common.util.isOverlayPermissionGranted
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
@@ -120,6 +122,9 @@ fun LjNavHost(
                 },
                 onNavigateToSettings = {
                     navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToInfo = {
+                    navController.navigate(INFO_ROUTE) { launchSingleTop = true }
                 },
             )
         }
@@ -244,6 +249,16 @@ fun LjNavHost(
                 onOpenDrawer = onOpenDrawer,
                 viewModel = hiltViewModel(),
             )
+        }
+
+        composable(
+            route = INFO_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
+            InfoScreen(onNavigateBack = { navController.navigateUp() })
         }
     }
 }

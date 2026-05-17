@@ -43,7 +43,8 @@ fun LjApp(navigateToMapFlow: Flow<Unit> = emptyFlow()) {
                 if (event == Lifecycle.Event.ON_STOP) {
                     val current = navController.currentDestination?.route
                     // Skip redirect for screens that may launch sub-activities (file pickers, etc.)
-                    val skipRedirect = current == IDLE_ROUTE || current == ONBOARDING_ROUTE || current == SETTINGS_ROUTE
+                    val skipRedirect =
+                        current == IDLE_ROUTE || current == ONBOARDING_ROUTE || current == SETTINGS_ROUTE || current == INFO_ROUTE
                     if (!skipRedirect) {
                         navController.navigate(IDLE_ROUTE) {
                             popUpTo(IDLE_ROUTE) { inclusive = false }

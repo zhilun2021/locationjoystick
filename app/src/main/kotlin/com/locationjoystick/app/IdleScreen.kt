@@ -41,6 +41,7 @@ internal fun IdleScreen(
     onNavigateToRoutes: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToInfo: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -98,6 +99,13 @@ internal fun IdleScreen(
                 title = "Settings",
                 description = "Configure locationjoystick and spoof preferences.",
                 onClick = onNavigateToSettings,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            IdleDestinationCard(
+                icon = LjIcons.Info,
+                title = "About",
+                description = "App info, credits, and license.",
+                onClick = onNavigateToInfo,
             )
 
             Spacer(modifier = Modifier.height(24.dp))
