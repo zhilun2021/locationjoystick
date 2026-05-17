@@ -2,15 +2,10 @@
 
 ## Backlog
 
-### about page information
-
-should leverage the AppConstants.kt AppInfo URL for linking to github and reporting a bug. The AGENTS.md "Info / About Page" section properly describes it.
-
 ### create route from map
 
 the map overlay should display the same "map screen" features such as "pick from favorite", in order to quickly jump to a favorite location to start a route, and the "center on location" icon.
 
+### roaming route tracing
 
-### floatingwidgetservice
-
-it currently spawns middle left of the screen, but when we click on it to reveal the other icons, it goes up, the other icons should just spawn below if there's enough space
+the roaming route should be traced on the map with actual points and line/dashed-lines like a regular route. right now it only displays some blue squares.
