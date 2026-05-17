@@ -356,7 +356,9 @@ internal fun SettingsScreen(
                                     uiState.jitterIdleRadiusMeters
                                         .toInt()
                                 },
-                            onValueChange = { onSetJitterIdleRadius(if (isMph) it / 3.28084 else it.toDouble()) },
+                            onValueChange = {
+                                onSetJitterIdleRadius(if (isMph) it / 3.28084 else it.toDouble())
+                            },
                             label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
                         )
                         Spacer(modifier = Modifier.height(8.dp))
