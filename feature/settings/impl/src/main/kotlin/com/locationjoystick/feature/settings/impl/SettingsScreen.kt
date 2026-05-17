@@ -59,6 +59,9 @@ fun SettingsRoute(
     val roamingDefaults by viewModel.roamingDefaults.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var showQrShare by remember { mutableStateOf(false) }
+    var qrChunkResult by remember { mutableStateOf<QrChunker.ChunkResult?>(null) }
+    var showQrScanner by remember { mutableStateOf(false) }
 
     val exportLauncher =
         rememberLauncherForActivityResult(
@@ -92,6 +95,27 @@ fun SettingsRoute(
         )
     }
 
+    if (showQrScanner) {
+        QrScannerScreen(
+            onChunkScanned = viewModel::onChunkScanned,
+            onPermissionDenied = { showQrScanner = false },
+            onNavigateBack = { showQrScanner = false },
+        )
+        return
+    }
+
+    val result = qrChunkResult
+    if (showQrShare && result != null) {
+        QrShareDialog(
+            chunks = result.chunks,
+            skippedRoutes = result.skippedRoutes,
+            onDismiss = {
+                showQrShare = false
+                qrChunkResult = null
+            },
+        )
+    }
+
     SettingsScreen(
         uiState = uiState,
         roamingDefaults = roamingDefaults,
@@ -109,6 +133,12 @@ fun SettingsRoute(
         onUpdateRoamingDefaults = viewModel::updateRoamingDefaults,
         onExport = { exportLauncher.launch("${AppConstants.ExportConstants.FILENAME_PREFIX}-${System.currentTimeMillis()}.json") },
         onImport = { importLauncher.launch(arrayOf(AppConstants.ExportConstants.MIME_TYPE)) },
+        onQrShare = {
+            val chunkResult = viewModel.buildQrChunks()
+            qrChunkResult = chunkResult
+            showQrShare = true
+        },
+        onQrScan = { showQrScanner = true },
         onSaveChanges = viewModel::saveChanges,
         onDiscardChanges = viewModel::discardChanges,
     )
@@ -132,6 +162,8 @@ internal fun SettingsScreen(
     onUpdateRoamingDefaults: (RoamingDefaults) -> Unit = {},
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onQrShare: () -> Unit,
+    onQrScan: () -> Unit,
     onSaveChanges: () -> Unit = {},
     onDiscardChanges: () -> Unit = {},
 ) {
@@ -571,6 +603,18 @@ internal fun SettingsScreen(
 
                         Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
                             Text("Import Settings")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(onClick = onQrShare, modifier = Modifier.fillMaxWidth()) {
+                            Text("Transfer via QR")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(onClick = onQrScan, modifier = Modifier.fillMaxWidth()) {
+                            Text("Import from QR")
                         }
 
                         if (uiState.isDirty) {
