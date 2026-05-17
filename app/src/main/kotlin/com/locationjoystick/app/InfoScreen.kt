@@ -1,8 +1,12 @@
 package com.locationjoystick.app
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -12,8 +16,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.component.AppIcon
 import com.locationjoystick.core.designsystem.component.LjTopBar
 
@@ -21,6 +27,11 @@ internal const val INFO_ROUTE = "info"
 
 @Composable
 internal fun InfoScreen(onNavigateBack: () -> Unit) {
+    val context = LocalContext.current
+    fun openUrl(url: String) {
+        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
     Scaffold(
         topBar = {
             LjTopBar(title = "Lj", onNavigationClick = onNavigateBack)
@@ -84,6 +95,28 @@ internal fun InfoScreen(onNavigateBack: () -> Unit) {
                 text = "MIT License",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Links",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "GitHub",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth().clickable { openUrl(AppConstants.AppInfo.GITHUB_URL) },
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Report a bug",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth().clickable { openUrl(AppConstants.AppInfo.GITHUB_ISSUES_URL) },
             )
 
             Spacer(modifier = Modifier.height(24.dp))
