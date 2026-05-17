@@ -21,7 +21,7 @@ internal const val INFO_ROUTE = "info"
 internal fun InfoScreen(onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
-            LjTopBar(title = "About", onNavigationClick = onNavigateBack)
+            LjTopBar(title = "Lj", onNavigationClick = onNavigateBack)
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
@@ -33,15 +33,20 @@ internal fun InfoScreen(onNavigateBack: () -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp),
         ) {
+            Spacer(modifier = Modifier.height(40.dp))
+
+            AppIcon()
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "locationjoystick",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground,
+                textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Text(
                 text = "Open source Android mock GPS app. All data stays on-device — no accounts, no cloud.",
