@@ -417,7 +417,10 @@ class MockLocationService : Service() {
                         Log.e(TAG, "Position update failed during route replay", e)
                     }
                 },
-                onComplete = { stopSpoofing() },
+                onComplete = {
+                    locationRepository.setRouteWaypoints(null)
+                    stopSpoofing()
+                },
             )
         }
     }
@@ -445,7 +448,10 @@ class MockLocationService : Service() {
                     Log.e(TAG, "Position update failed during route resume", e)
                 }
             },
-            onComplete = { stopSpoofing() },
+            onComplete = {
+                locationRepository.setRouteWaypoints(null)
+                stopSpoofing()
+            },
         )
         Log.i(TAG, "Replay resumed at ${speedMs}m/s")
     }

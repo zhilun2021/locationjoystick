@@ -24,27 +24,49 @@ import javax.inject.Singleton
 
 interface PreferencesDataSource {
     fun getSpeedProfiles(): Flow<SpeedProfilePreferences>
+
     suspend fun setWalkSpeed(ms: Double)
+
     suspend fun setRunSpeed(ms: Double)
+
     suspend fun setBikeSpeed(ms: Double)
+
     suspend fun setActiveProfileId(profileId: String)
+
     fun getWidgetItems(): Flow<Set<String>>
+
     suspend fun setWidgetItems(items: Set<String>)
+
     fun getRoamingDefaults(): Flow<RoamingDefaults>
+
     suspend fun updateRoamingDefaults(defaults: RoamingDefaults)
+
     fun getOnboardingComplete(): Flow<Boolean>
+
     suspend fun setOnboardingComplete(complete: Boolean)
+
     fun getSpeedUnit(): Flow<String>
+
     suspend fun setSpeedUnit(unit: String)
+
     fun getRememberLastLocation(): Flow<Boolean>
+
     suspend fun setRememberLastLocation(enabled: Boolean)
+
     fun getLastLocation(): Flow<LatLng?>
+
     suspend fun setLastLocation(location: LatLng)
+
     fun getJitterIdleRadius(): Flow<Double>
+
     fun getJitterMovingRadius(): Flow<Double>
+
     fun getJitterIntervalSeconds(): Flow<Int>
+
     suspend fun setJitterIdleRadius(meters: Double)
+
     suspend fun setJitterMovingRadius(meters: Double)
+
     suspend fun setJitterIntervalSeconds(seconds: Int)
 }
 
