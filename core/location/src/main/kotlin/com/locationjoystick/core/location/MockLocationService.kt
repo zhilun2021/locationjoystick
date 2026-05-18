@@ -423,6 +423,12 @@ class MockLocationService : Service() {
                     locationRepository.setMockMode(MockMode.TELEPORT)
                 },
             )
+
+            // If pause was requested during walk-to-start (before engine launched),
+            // ensure the engine is paused now that it has been initialized.
+            if (_state.value == MockLocationState.PAUSED) {
+                routeReplayEngine.pause()
+            }
         }
     }
 
