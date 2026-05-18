@@ -291,7 +291,7 @@ class FloatingWidgetService :
         composeView = view
 
         var dragOffsetX = 0f
-        var dragOffsetY = 0f
+        var dragOffsetY = resources.displayMetrics.heightPixels / 2f
 
         view.setContent {
             val features by settingsRepository.getWidgetFeatures().collectAsState(initial = emptyList())
