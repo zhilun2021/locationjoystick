@@ -24,6 +24,7 @@ import com.locationjoystick.core.common.util.advancePosition
 import com.locationjoystick.core.common.util.calculateBearing
 import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.BuildConfig
@@ -87,6 +88,8 @@ class MockLocationService : Service() {
     @Inject lateinit var locationManager: LocationManager
 
     @Inject lateinit var locationRepository: LocationRepository
+
+    @Inject lateinit var roamingRepository: RoamingRepository
 
     @Inject lateinit var routeRepository: RouteRepository
 
@@ -383,6 +386,10 @@ class MockLocationService : Service() {
         speedMs: Double,
     ) {
         serviceScope.launch {
+            // Ensure roaming is stopped before starting route replay — they must not run concurrently.
+            if (locationRepository.currentMode.value == MockMode.ROAMING) {
+                roamingRepository.stopRoaming()
+            }
             val route = routeRepository.getRouteWithWaypoints(routeId).first() ?: return@launch
             if (route.waypoints.size < 2) return@launch
 
@@ -573,7 +580,7 @@ class MockLocationService : Service() {
             val jitterRadius =
                 when (mode) {
                     MockMode.TELEPORT -> 0.0
-                    MockMode.JOYSTICK, MockMode.ROUTE_REPLAY, MockMode.ROAMING -> jitterMovingRadiusMeters
+                    MockMode.JOYSTICK, MockMode.ROUTE_REPLAY, MockMode.ROAMING, MockMode.WALK_TO -> jitterMovingRadiusMeters
                 }
 
             val (outLat, outLon, outAccuracy) =

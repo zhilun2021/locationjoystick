@@ -51,7 +51,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
-import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjText
@@ -87,7 +86,6 @@ private const val MAP_FLOATING_VIEW_ENDPOINTS_LAYER = "panel-endpoints-layer"
 internal fun MapFloatingView(
     locationRepository: LocationRepository,
     favoriteRepository: FavoriteRepository,
-    roamingRepository: RoamingRepository,
     onTeleport: (LatLng) -> Unit,
     onWalkTo: (LatLng) -> Unit,
     onStopRouteAndTeleport: (LatLng) -> Unit,
@@ -102,8 +100,8 @@ internal fun MapFloatingView(
     val walkTarget by locationRepository.walkTarget.collectAsState()
     val routeWaypoints by locationRepository.routeWaypoints.collectAsState()
     val mockMode by locationRepository.currentMode.collectAsState()
-    val isRouteReplay = mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY
-    val isRoaming by roamingRepository.isRoaming.collectAsState()
+    val isRoaming = mockMode == com.locationjoystick.core.model.MockMode.ROAMING
+    val isActivityActive by locationRepository.isActivityActive.collectAsState(initial = false)
     val favoritesFlow = remember { favoriteRepository.getFavorites() }
     val favorites by favoritesFlow.collectAsState(initial = emptyList())
 
@@ -363,19 +361,23 @@ internal fun MapFloatingView(
                 onClick = {
                     if (isRoaming) {
                         onStopRoaming()
-                    } else {
+                    } else if (!isActivityActive) {
                         onStartRoaming()
                     }
                 },
                 containerColor =
                     if (isRoaming) {
                         MaterialTheme.colorScheme.errorContainer
+                    } else if (isActivityActive) {
+                        MaterialTheme.colorScheme.surfaceVariant
                     } else {
                         MaterialTheme.colorScheme.tertiaryContainer
                     },
                 contentColor =
                     if (isRoaming) {
                         MaterialTheme.colorScheme.onErrorContainer
+                    } else if (isActivityActive) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     } else {
                         MaterialTheme.colorScheme.onTertiaryContainer
                     },

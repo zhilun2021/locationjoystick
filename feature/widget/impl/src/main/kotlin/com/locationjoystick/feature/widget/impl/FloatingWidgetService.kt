@@ -151,9 +151,7 @@ class FloatingWidgetService :
     private val joystickLockedFlow = MutableStateFlow(false)
     private val activeProfileIdFlow = MutableStateFlow("walk")
 
-    // Route/walk-to active state
-    private val isRouteActiveFlow = MutableStateFlow(false)
-    private val isRoutePausedFlow = MutableStateFlow(false)
+    // Activity state — driven entirely by locationRepository.currentMode via isActivityActive/isActivityPausable
     private val routeExpandedFlow = MutableStateFlow(false)
 
     // Master panel expand/collapse
@@ -222,23 +220,9 @@ class FloatingWidgetService :
             }
         }
         lifecycleScope.launch {
-            kotlinx.coroutines.flow
-                .combine(
-                    locationRepository.walkTarget,
-                    locationRepository.activeRouteId,
-                    locationRepository.mockLocationState,
-                    locationRepository.isWalkPaused,
-                ) { walkTarget, activeRouteId, state, walkPaused ->
-                    val active = walkTarget != null || activeRouteId != null
-                    val paused =
-                        walkPaused ||
-                            (activeRouteId != null && state == com.locationjoystick.core.model.MockLocationState.PAUSED)
-                    active to paused
-                }.collect { (active, paused) ->
-                    if (!active) routeExpandedFlow.value = false
-                    isRouteActiveFlow.value = active
-                    isRoutePausedFlow.value = paused
-                }
+            locationRepository.isActivityActive.collect { active ->
+                if (!active) routeExpandedFlow.value = false
+            }
         }
     }
 
@@ -301,8 +285,17 @@ class FloatingWidgetService :
             val joystickVisible by joystickVisibleFlow.collectAsState()
             val joystickLocked by joystickLockedFlow.collectAsState()
             val activeProfileId by activeProfileIdFlow.collectAsState()
-            val isRouteActive by isRouteActiveFlow.collectAsState()
-            val isRoutePaused by isRoutePausedFlow.collectAsState()
+            val isActivityActive by locationRepository.isActivityActive.collectAsState(initial = false)
+            val isActivityPausable by locationRepository.isActivityPausable.collectAsState(initial = false)
+            val mockMode by locationRepository.currentMode.collectAsState()
+            val mockLocationState by locationRepository.mockLocationState.collectAsState()
+            val isWalkPaused by locationRepository.isWalkPaused.collectAsState()
+            val isActivityPaused =
+                isWalkPaused ||
+                    (
+                        mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY &&
+                            mockLocationState == com.locationjoystick.core.model.MockLocationState.PAUSED
+                    )
             val routeExpanded by routeExpandedFlow.collectAsState()
             val isPanelExpanded by isPanelExpandedFlow.collectAsState()
 
@@ -312,8 +305,9 @@ class FloatingWidgetService :
                     joystickVisible = joystickVisible,
                     joystickLocked = joystickLocked,
                     activeProfileId = activeProfileId,
-                    isRouteActive = isRouteActive,
-                    isRoutePaused = isRoutePaused,
+                    isActivityActive = isActivityActive,
+                    isActivityPaused = isActivityPaused,
+                    isActivityPausable = isActivityPausable,
                     routeExpanded = routeExpanded,
                     isPanelExpanded = isPanelExpanded,
                     onToggleMaster = { isPanelExpandedFlow.value = !isPanelExpandedFlow.value },
@@ -339,8 +333,9 @@ class FloatingWidgetService :
         joystickVisible: Boolean,
         joystickLocked: Boolean,
         activeProfileId: String,
-        isRouteActive: Boolean,
-        isRoutePaused: Boolean,
+        isActivityActive: Boolean,
+        isActivityPaused: Boolean,
+        isActivityPausable: Boolean,
         routeExpanded: Boolean,
         isPanelExpanded: Boolean,
         onToggleMaster: () -> Unit,
@@ -393,7 +388,7 @@ class FloatingWidgetService :
             if (isPanelExpanded) {
                 features.forEach { feature ->
                     if (feature == WidgetFeature.ROUTES_FLOATING) {
-                        val routeIconTint = if (isRouteActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                        val routeIconTint = if (isActivityActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
                         // Route icon + active controls in a horizontal row
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
@@ -412,25 +407,27 @@ class FloatingWidgetService :
                                     modifier = Modifier.size(20.dp),
                                 )
                             }
-                            // Pause/stop shown to the right when route active and expanded
-                            if (isRouteActive && routeExpanded) {
-                                val pauseResumeIcon = if (isRoutePaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
-                                val pauseResumeTint = if (isRoutePaused) Color(0xFF4CAF50) else Color(0xFF757575)
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier =
-                                        Modifier
-                                            .padding(4.dp)
-                                            .size(36.dp)
-                                            .background(Color.Black, CircleShape)
-                                            .clickable { onRoutePauseResume() },
-                                ) {
-                                    Icon(
-                                        imageVector = pauseResumeIcon,
-                                        contentDescription = if (isRoutePaused) "Resume route" else "Pause route",
-                                        tint = pauseResumeTint,
-                                        modifier = Modifier.size(20.dp),
-                                    )
+                            // Pause/stop shown to the right when activity active and expanded
+                            if (isActivityActive && routeExpanded) {
+                                if (isActivityPausable) {
+                                    val pauseResumeIcon = if (isActivityPaused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause
+                                    val pauseResumeTint = if (isActivityPaused) Color(0xFF4CAF50) else Color(0xFF757575)
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier =
+                                            Modifier
+                                                .padding(4.dp)
+                                                .size(36.dp)
+                                                .background(Color.Black, CircleShape)
+                                                .clickable { onRoutePauseResume() },
+                                    ) {
+                                        Icon(
+                                            imageVector = pauseResumeIcon,
+                                            contentDescription = if (isActivityPaused) "Resume" else "Pause",
+                                            tint = pauseResumeTint,
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
                                 }
                                 Box(
                                     contentAlignment = Alignment.Center,
@@ -443,7 +440,7 @@ class FloatingWidgetService :
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Stop,
-                                        contentDescription = "Stop route",
+                                        contentDescription = "Stop",
                                         tint = Color(0xFFF44336),
                                         modifier = Modifier.size(20.dp),
                                     )
@@ -895,7 +892,7 @@ class FloatingWidgetService :
         when (feature) {
             WidgetFeature.JOYSTICK_TOGGLE -> toggleJoystick()
             WidgetFeature.JOYSTICK_LOCK -> toggleJoystickLock()
-            WidgetFeature.ROUTES_FLOATING -> showRoutesFloatingView()
+            WidgetFeature.ROUTES_FLOATING -> onRouteIconClicked()
             WidgetFeature.FAVORITES_FLOATING -> showFavoritesFloatingView()
             WidgetFeature.SPEED_CYCLE -> cycleSpeedProfile()
             WidgetFeature.MAP_FLOATING -> showMapFloatingView()
@@ -903,7 +900,12 @@ class FloatingWidgetService :
     }
 
     private fun onRouteIconClicked() {
-        if (isRouteActiveFlow.value) {
+        val mode = locationRepository.currentMode.value
+        val isActive =
+            mode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY ||
+                mode == com.locationjoystick.core.model.MockMode.ROAMING ||
+                mode == com.locationjoystick.core.model.MockMode.WALK_TO
+        if (isActive) {
             routeExpandedFlow.value = !routeExpandedFlow.value
         } else {
             showRoutesFloatingView()
@@ -911,8 +913,15 @@ class FloatingWidgetService :
     }
 
     private fun onRoutePauseResumeClicked() {
-        if (isRoutePausedFlow.value) {
-            if (locationRepository.walkTarget.value != null) {
+        val mode = locationRepository.currentMode.value
+        val isPaused =
+            locationRepository.isWalkPaused.value ||
+                (
+                    mode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY &&
+                        locationRepository.mockLocationState.value == com.locationjoystick.core.model.MockLocationState.PAUSED
+                )
+        if (isPaused) {
+            if (mode == com.locationjoystick.core.model.MockMode.WALK_TO) {
                 locationRepository.setWalkPaused(false)
                 resumeWalkToJob()
             } else {
@@ -927,7 +936,7 @@ class FloatingWidgetService :
                 }
             }
         } else {
-            if (locationRepository.walkTarget.value != null) {
+            if (mode == com.locationjoystick.core.model.MockMode.WALK_TO) {
                 pauseWalkToJob()
                 locationRepository.setWalkPaused(true)
             } else {
@@ -942,16 +951,24 @@ class FloatingWidgetService :
 
     private fun onRouteStopClicked() {
         routeExpandedFlow.value = false
-        if (locationRepository.walkTarget.value != null) {
-            walkToJob?.cancel()
-            walkToJob = null
-            locationRepository.setWalkTarget(null)
-        } else {
-            val intent =
-                Intent(this, MockLocationService::class.java).apply {
-                    action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
-                }
-            startService(intent)
+        when (locationRepository.currentMode.value) {
+            com.locationjoystick.core.model.MockMode.ROAMING -> {
+                serviceScope.launch { roamingRepository.stopRoaming() }
+            }
+
+            com.locationjoystick.core.model.MockMode.WALK_TO -> {
+                walkToJob?.cancel()
+                walkToJob = null
+                locationRepository.setWalkTarget(null)
+            }
+
+            else -> {
+                val intent =
+                    Intent(this, MockLocationService::class.java).apply {
+                        action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
+                    }
+                startService(intent)
+            }
         }
     }
 
@@ -1107,7 +1124,6 @@ class FloatingWidgetService :
                 MapFloatingView(
                     locationRepository = locationRepository,
                     favoriteRepository = favoriteRepository,
-                    roamingRepository = roamingRepository,
                     onTeleport = { pos ->
                         val svc = mockLocationService
                         if (svc != null) {

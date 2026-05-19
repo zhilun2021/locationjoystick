@@ -4,5 +4,6 @@ enum class MockMode {
     JOYSTICK,
     ROUTE_REPLAY,
     ROAMING,
+    WALK_TO,
     TELEPORT,
 }

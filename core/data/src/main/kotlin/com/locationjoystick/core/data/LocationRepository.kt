@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,6 +21,14 @@ private const val TAG = "LocationRepository"
  * The actual GPS injection is performed by MockLocationService (core:location).
  * This repository acts as the shared state bus between the service and all feature modules.
  * MockLocationService reads from and writes to this repository; feature ViewModels observe it.
+ *
+ * ## Unified activity state
+ * Use [isActivityActive] to know whether any movement mode is currently running
+ * (route replay, roaming, or walk-to). This is the single source of truth — do NOT
+ * re-derive this by combining [activeRouteId], [walkTarget], and roaming flags individually.
+ *
+ * Use [isActivityPausable] to know whether the current active mode supports pause/resume.
+ * Roaming ([MockMode.ROAMING]) does not support pause; all other active modes do.
  */
 @Singleton
 class LocationRepository
@@ -51,6 +60,24 @@ class LocationRepository
 
         private val _currentMode = MutableStateFlow(MockMode.TELEPORT)
         val currentMode: StateFlow<MockMode> = _currentMode.asStateFlow()
+
+        /**
+         * True whenever any active movement mode is running:
+         * [MockMode.ROUTE_REPLAY], [MockMode.ROAMING], or [MockMode.WALK_TO].
+         */
+        val isActivityActive: Flow<Boolean> =
+            _currentMode.map { mode ->
+                mode == MockMode.ROUTE_REPLAY || mode == MockMode.ROAMING || mode == MockMode.WALK_TO
+            }
+
+        /**
+         * True when the current active mode supports pause/resume.
+         * [MockMode.ROAMING] does NOT support pause — only stop is available.
+         */
+        val isActivityPausable: Flow<Boolean> =
+            _currentMode.map { mode ->
+                mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO
+            }
 
         fun observePosition(): Flow<LatLng?> = _currentPosition.asStateFlow()
 
@@ -105,7 +132,16 @@ class LocationRepository
 
         fun setWalkTarget(target: LatLng?) {
             _walkTarget.value = target
-            if (target == null) _isWalkPaused.value = false
+            if (target == null) {
+                _isWalkPaused.value = false
+                // Only reset mode if we are currently in WALK_TO to avoid clobbering
+                // a mode set by another subsystem (e.g. ROUTE_REPLAY stopping after walk).
+                if (_currentMode.value == MockMode.WALK_TO) {
+                    _currentMode.value = MockMode.TELEPORT
+                }
+            } else {
+                _currentMode.value = MockMode.WALK_TO
+            }
         }
 
         fun setWalkPaused(paused: Boolean) {
