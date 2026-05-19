@@ -5,6 +5,12 @@ import androidx.room.PrimaryKey
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
 
+/**
+ * Room entity for routes stored in the database.
+ *
+ * Each route has a one-to-many relationship with [WaypointEntity].
+ * Use [toDomain] to convert to the domain model [Route].
+ */
 @Entity(tableName = "routes")
 data class RouteEntity(
     @PrimaryKey
@@ -16,6 +22,10 @@ data class RouteEntity(
     val updatedAt: Long,
 )
 
+/**
+ * Converts this entity to a domain [Route] model.
+ * @param waypoints List of waypoint entities to include in the route
+ */
 fun RouteEntity.toDomain(waypoints: List<WaypointEntity>): Route =
     Route(
         id = id,

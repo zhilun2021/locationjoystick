@@ -16,6 +16,12 @@ import javax.inject.Singleton
 
 private const val TAG = "OsrmClient"
 
+/**
+ * Retrofit API interface for OSRM (Open Source Routing Machine) HTTP API.
+ *
+ * Used for road-following routes in roaming mode and guided routes.
+ * See [AppConstants.OsrmConstants] for base URL and other constants.
+ */
 internal interface OsrmApi {
     @GET("route/v1/{profile}/{coordinates}")
     suspend fun getRoute(
@@ -30,27 +36,40 @@ internal interface OsrmApi {
 // Response data classes (Gson-mapped)
 // ---------------------------------------------------------------------------
 
+/** OSRM API response wrapper. */
 data class OsrmRouteResponse(
     val code: String,
     val routes: List<OsrmRoute>?,
 )
 
+/** Single route from OSRM response. */
 data class OsrmRoute(
     val geometry: OsrmGeometry,
     val distance: Double,
     val duration: Double,
 )
 
+/** Route geometry containing coordinate list. */
 data class OsrmGeometry(
     val coordinates: List<List<Double>>,
     val type: String,
 )
 
+/** Helper class for coordinate parsing. */
 data class OsrmCoordinate(
     val latitude: Double,
     val longitude: Double,
 )
 
+/**
+ * HTTP client for OSRM routing API.
+ *
+ * Provides road-following routes between two points using OSRM public demo server.
+ * Falls back to straight-line routes on network failure.
+ *
+ * @see AppConstants.OsrmConstants for base URL and configuration
+ * @see AppConstants.RoamingConstants for profile constants (foot/bike)
+ */
 @Singleton
 class OsrmClient
     @Inject

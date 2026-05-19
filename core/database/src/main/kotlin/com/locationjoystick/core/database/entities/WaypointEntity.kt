@@ -7,6 +7,17 @@ import androidx.room.PrimaryKey
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.Waypoint
 
+/**
+ * Room entity for route waypoints.
+ *
+ * Each waypoint belongs to a single [RouteEntity] (foreign key with CASCADE delete).
+ * Waypoints are ordered by [orderIndex] within their route.
+ *
+ * @property routeId Foreign key to the parent route
+ * @property latitude Waypoint latitude in degrees
+ * @property longitude Waypoint longitude in degrees
+ * @property orderIndex Position in the route (0 = first waypoint)
+ */
 @Entity(
     tableName = "waypoints",
     foreignKeys = [
@@ -28,6 +39,7 @@ data class WaypointEntity(
     val orderIndex: Int,
 )
 
+/** Converts this entity to the domain [Waypoint] model. */
 fun WaypointEntity.toDomain(): Waypoint =
     Waypoint(
         id = id,
@@ -35,6 +47,7 @@ fun WaypointEntity.toDomain(): Waypoint =
         orderIndex = orderIndex,
     )
 
+/** Converts a domain [Waypoint] to this entity for a given route. */
 fun Waypoint.toEntity(routeId: String): WaypointEntity =
     WaypointEntity(
         id = id,

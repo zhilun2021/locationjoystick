@@ -13,6 +13,19 @@ import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import org.json.JSONObject
 
+/**
+ * CameraX ImageAnalysis analyzer that decodes QR codes using ZXing.
+ *
+ * Used by [QrScannerScreen] to scan QR codes emitted by [QrShareDialog].
+ * Each scanned QR is parsed as JSON and converted to a [ChunkEnvelope].
+ *
+ * Key features:
+ * - Debouncing: ignores duplicate scans within 500ms
+ * - YUV format handling: converts camera YUV_420_888 to ZXing's planar format
+ * - Error tolerance: logs failures but doesn't crash on bad codes
+ *
+ * @param onQrScanned Callback invoked with successfully parsed [ChunkEnvelope]
+ */
 class ZxingImageAnalyzer(
     private val onQrScanned: (ChunkEnvelope) -> Unit,
 ) : ImageAnalysis.Analyzer {

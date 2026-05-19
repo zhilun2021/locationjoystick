@@ -42,6 +42,26 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import java.util.concurrent.Executors
 import androidx.compose.ui.tooling.preview.Preview as ComposePreview
 
+/**
+ * QR code scanner screen for importing settings via camera.
+ *
+ * Uses CameraX + ZXing to scan QR codes emitted by [QrShareDialog].
+ * Scanned chunks are passed to the caller (typically [SettingsViewModel])
+ * for reassembly via [ChunkReassembler].
+ *
+ * Flow:
+ * 1. Request camera permission
+ * 2. Start camera preview with [ZxingImageAnalyzer]
+ * 3. On QR detection, parse [ChunkEnvelope] from JSON
+ * 4. Pass valid chunks to [onChunkScanned]
+ * 5. Caller tracks progress and reassembles when all chunks received
+ *
+ * Requires CAMERA permission (handled internally).
+ *
+ * @param onChunkScanned Called with each successfully scanned chunk
+ * @param onPermissionDenied Called when user denies camera permission
+ * @param onNavigateBack Called when user taps back button
+ */
 @ComposePreview(showBackground = true)
 @Composable
 private fun QrScannerScreenPreview() {

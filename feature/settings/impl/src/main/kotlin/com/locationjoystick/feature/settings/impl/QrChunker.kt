@@ -10,14 +10,45 @@ import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.zip.GZIPOutputStream
 
+/**
+ * Chunks export data into QR-code-scannable pieces.
+ *
+ * Large exports (many routes) may not fit in a single QR code.
+ * This class splits the data into multiple chunks that can be scanned
+ * sequentially by [ChunkReassembler] on the receiving device.
+ *
+ * Algorithm:
+ * 1. Creates a session ID to identify this export batch
+ * 2. Packs items (settings, favorites, routes) using greedy bin-packing
+ * 3. Each bin becomes one QR chunk with metadata (index, total, checksum)
+ * 4. Large routes that don't fit in any chunk are skipped and reported
+ *
+ * Uses GZIP compression to maximize data density per QR code.
+ *
+ * @see AppConstants.ExportConstants.QR_CHUNK_SIZE_LIMIT for size limit
+ * @see ChunkEnvelope for chunk metadata format
+ * @see ChunkReassembler for the receiving-side reassembler
+ */
 internal object QrChunker {
     private val CHUNK_SIZE_LIMIT = AppConstants.ExportConstants.QR_CHUNK_SIZE_LIMIT
 
+    /**
+     * Result of chunking operation.
+     *
+     * @property chunks List of chunks to encode as QR codes (in order)
+     * @property skippedRoutes Names of routes that were too large to fit in any chunk
+     */
     data class ChunkResult(
         val chunks: List<ChunkEnvelope>,
         val skippedRoutes: List<String>, // names of routes too large for a single QR chunk
     )
 
+    /**
+     * Chunks export data into QR-scannable pieces.
+     *
+     * @param exportData Complete export data to chunk
+     * @return [ChunkResult] containing chunks and any skipped items
+     */
     fun chunk(exportData: com.locationjoystick.core.model.ExportData): ChunkResult {
         val sessionId = UUID.randomUUID().toString()
         val skipped = mutableListOf<String>()

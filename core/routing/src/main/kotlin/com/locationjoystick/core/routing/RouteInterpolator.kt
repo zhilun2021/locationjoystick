@@ -11,10 +11,29 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 
+/**
+ * Handles position interpolation along routes for replay and roaming.
+ *
+ * Used by [RouteReplayEngine] and [RoamingEngine] to advance positions
+ * along a series of waypoints at a given speed.
+ *
+ * Key functionality:
+ * - Advances a position along a great-circle bearing by a given distance
+ * - Handles waypoint arrival detection and automatic advancement to next waypoint
+ * - Snaps to waypoints within a threshold distance ([AppConstants.RouteConstants.WAYPOINT_SNAP_THRESHOLD_METERS])
+ */
 @Singleton
 class RouteInterpolator
     @Inject
     constructor() {
+        /**
+         * Advances a position along a bearing by a given distance.
+         *
+         * @param from Starting position
+         * @param bearingDeg Bearing in degrees (0 = north, 90 = east)
+         * @param distanceMeters Distance to travel in meters
+         * @return New position after advancing
+         */
         fun advancePosition(
             from: LatLng,
             bearingDeg: Double,
@@ -29,6 +48,16 @@ class RouteInterpolator
             return LatLng(Math.toDegrees(lat2), Math.toDegrees(lon2))
         }
 
+        /**
+         * Interpolates movement along a route for one time step.
+         *
+         * @param waypoints Ordered list of waypoints to follow
+         * @param currentPosition Current position
+         * @param currentWaypointIndex Index of the target waypoint in the list
+         * @param speedMs Movement speed in meters per second
+         * @param deltaTimeMs Time step in milliseconds
+         * @return [InterpolationResult] with new position, next waypoint index, and end-of-route flag
+         */
         fun interpolateAlongRoute(
             waypoints: List<LatLng>,
             currentPosition: LatLng,
@@ -61,6 +90,13 @@ class RouteInterpolator
         }
     }
 
+/**
+ * Result of one interpolation step along a route.
+ *
+ * @property position New position after interpolation
+ * @property nextWaypointIndex Index of the next waypoint to target
+ * @property reachedEnd True if the last waypoint has been reached
+ */
 data class InterpolationResult(
     val position: LatLng,
     val nextWaypointIndex: Int,

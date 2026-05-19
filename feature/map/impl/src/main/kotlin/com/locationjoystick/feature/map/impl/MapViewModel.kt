@@ -41,6 +41,25 @@ import javax.inject.Inject
 
 private const val TAG = "MapViewModel"
 
+/**
+ * ViewModel for the Map screen.
+ *
+ * Manages:
+ * - Spoofed position display and updates
+ * - Route replay controls (start/pause/resume/stop)
+ * - Walk-to-target movement
+ * - Roaming mode controls
+ * - Favorite location teleportation
+ *
+ * All state is exposed via [uiState] as [MapUiState].
+ * UI actions trigger service commands via intents to [MockLocationService].
+ *
+ * Key flows:
+ * - Location state observed from [LocationRepository]
+ * - Routes observed from [RouteRepository]
+ * - Favorites observed from [FavoriteRepository]
+ * - Service commands sent via Intent actions (see [MockLocationService.ACTION_*])
+ */
 @HiltViewModel
 class MapViewModel
     @Inject

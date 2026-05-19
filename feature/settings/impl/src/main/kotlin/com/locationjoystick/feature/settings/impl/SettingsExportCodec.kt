@@ -13,7 +13,39 @@ import com.locationjoystick.core.model.WidgetFeature
 import org.json.JSONArray
 import org.json.JSONObject
 
+/**
+ * Serializes and deserializes app data for export/import.
+ *
+ * Used by Settings screen for:
+ * - JSON export via share intent
+ * - QR code chunking via [QrChunker]
+ * - JSON import from file picker
+ *
+ * Schema:
+ * ```
+ * {
+ *   "schemaVersion": 1,
+ *   "exportedAt": 1699999999999,
+ *   "settings": { ... },
+ *   "speedProfiles": [ ... ],
+ *   "routes": [ ... ],
+ *   "favoriteLocations": [ ... ],
+ *   "jitterIdleRadius": 0.5,
+ *   "jitterMovingRadius": 1.5,
+ *   "jitterIntervalSeconds": 3
+ * }
+ * ```
+ *
+ * @see AppConstants.ExportConstants.SCHEMA_VERSION for current version
+ * @see ExportData for the domain model
+ */
 internal object SettingsExportCodec {
+    /**
+     * Serializes export data to JSON string.
+     *
+     * @param data Complete export data to serialize
+     * @return JSON string ready for sharing or chunking
+     */
     fun serializeExportData(data: ExportData): String {
         val root = JSONObject()
         root.put("schemaVersion", data.schemaVersion)

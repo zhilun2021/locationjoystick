@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Display order for widget features in the floating widget.
+ * Items are sorted by this order when retrieved.
+ */
 private val widgetDisplayOrder =
     listOf(
         WidgetFeature.MAP_FLOATING,
@@ -25,6 +29,20 @@ private val widgetDisplayOrder =
         WidgetFeature.SPEED_CYCLE,
     )
 
+/**
+ * Repository for all user settings and preferences.
+ *
+ * Acts as the single source of truth for:
+ * - Speed profiles (walk/run/bike speeds)
+ * - Active speed profile
+ * - Widget features configuration
+ * - Onboarding state
+ * - Roaming defaults
+ * - Last remembered location
+ *
+ * All data flows from DataStore through this repository.
+ * ViewModels and services consume these flows to observe settings changes.
+ */
 @Singleton
 class SettingsRepository
     @Inject

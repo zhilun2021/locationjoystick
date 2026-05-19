@@ -22,51 +22,82 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Interface for accessing app preferences stored in DataStore.
+ *
+ * This abstraction allows for easy testing and potential future migration
+ * from DataStore to another storage mechanism.
+ *
+ * Keys are defined in [AppConstants.DataStoreConstants].
+ */
 interface PreferencesDataSource {
+    /** Gets the current speed profiles (walk/run/bike speeds and active profile ID). */
     fun getSpeedProfiles(): Flow<SpeedProfilePreferences>
 
+    /** Sets the walk speed in meters per second. */
     suspend fun setWalkSpeed(ms: Double)
 
+    /** Sets the run speed in meters per second. */
     suspend fun setRunSpeed(ms: Double)
 
+    /** Sets the bike speed in meters per second. */
     suspend fun setBikeSpeed(ms: Double)
 
+    /** Sets the active speed profile ID (walk/run/bike). */
     suspend fun setActiveProfileId(profileId: String)
 
+    /** Gets the set of enabled widget feature keys. */
     fun getWidgetItems(): Flow<Set<String>>
 
+    /** Sets the enabled widget feature keys. */
     suspend fun setWidgetItems(items: Set<String>)
 
+    /** Gets the default roaming configuration. */
     fun getRoamingDefaults(): Flow<RoamingDefaults>
 
+    /** Updates the roaming defaults. */
     suspend fun updateRoamingDefaults(defaults: RoamingDefaults)
 
+    /** Gets whether onboarding has been completed. */
     fun getOnboardingComplete(): Flow<Boolean>
 
+    /** Sets whether onboarding has been completed. */
     suspend fun setOnboardingComplete(complete: Boolean)
 
+    /** Gets the speed unit preference (KMH/MPH). */
     fun getSpeedUnit(): Flow<String>
 
+    /** Sets the speed unit preference. */
     suspend fun setSpeedUnit(unit: String)
 
+    /** Gets whether to remember the last spoofed location. */
     fun getRememberLastLocation(): Flow<Boolean>
 
+    /** Sets whether to remember the last spoofed location. */
     suspend fun setRememberLastLocation(enabled: Boolean)
 
+    /** Gets the last spoofed location (for restore on app restart). */
     fun getLastLocation(): Flow<LatLng?>
 
+    /** Sets the last spoofed location. */
     suspend fun setLastLocation(location: LatLng)
 
+    /** Gets the GPS jitter radius when idle (meters). */
     fun getJitterIdleRadius(): Flow<Double>
 
+    /** Gets the GPS jitter radius when moving (meters). */
     fun getJitterMovingRadius(): Flow<Double>
 
+    /** Gets the GPS jitter update interval (seconds). */
     fun getJitterIntervalSeconds(): Flow<Int>
 
+    /** Sets the GPS jitter radius when idle. */
     suspend fun setJitterIdleRadius(meters: Double)
 
+    /** Sets the GPS jitter radius when moving. */
     suspend fun setJitterMovingRadius(meters: Double)
 
+    /** Sets the GPS jitter update interval. */
     suspend fun setJitterIntervalSeconds(seconds: Int)
 }
 

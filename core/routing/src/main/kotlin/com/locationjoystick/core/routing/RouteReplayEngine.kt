@@ -17,6 +17,29 @@ import javax.inject.Singleton
 
 private const val TAG = "RouteReplayEngine"
 
+/**
+ * Engine for replaying pre-recorded routes.
+ *
+ * Interpolates between waypoints at a given speed, supporting:
+ * - Forward and backward playback
+ * - Looping (wraps from last waypoint back to first)
+ * - Pause/resume
+ * - Dynamic waypoint appending (for recording)
+ *
+ * Usage:
+ * ```
+ * routeReplayEngine.start(
+ *     waypoints = listOf(LatLng(...), LatLng(...), ...),
+ *     speedMs = 1.5,
+ *     isLooping = true,
+ *     onPositionUpdate = { pos -> /* called each tick */ },
+ *     onComplete = { /* called when route ends */ }
+ * )
+ * ```
+ *
+ * The engine maintains state for pause/resume support — call [stop] to fully reset.
+ * Only one replay can be active at a time.
+ */
 @Singleton
 class RouteReplayEngine
     @Inject
@@ -27,17 +50,37 @@ class RouteReplayEngine
             CoroutineExceptionHandler { _, throwable ->
                 Log.e(TAG, "Replay coroutine crashed", throwable)
             }
+
+        /** Scope for replay coroutines. Uses SupervisorJob so failures don't propagate. */
         private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
+
+        /** Current replay job. Null when not replaying. */
         private var activeJob: Job? = null
 
+        /** Position to resume from after pause. Set by [pause]. */
         @Volatile private var resumePosition: LatLng? = null
 
+        /** Waypoint index to resume from after pause. */
         @Volatile private var resumeWaypointIndex: Int = 1
+
+        /** Saved waypoints for resume. */
         private var savedWaypoints: List<LatLng> = emptyList()
+
+        /** Saved speed for resume. */
         private var savedSpeedMs: Double = 0.0
 
+        /** Whether looping is enabled. */
         @Volatile private var isLooping: Boolean = false
 
+        /**
+         * Starts a new route replay from the first waypoint.
+         *
+         * @param waypoints List of waypoints in order
+         * @param speedMs Movement speed in meters per second
+         * @param isLooping Whether to loop back to start when reaching end
+         * @param onPositionUpdate Callback invoked each tick with new position
+         * @param onComplete Callback invoked when replay finishes or stops
+         */
         fun start(
             waypoints: List<LatLng>,
             speedMs: Double,
@@ -54,6 +97,13 @@ class RouteReplayEngine
             Log.i(TAG, "Replay started: ${waypoints.size} waypoints at ${speedMs}m/s looping=$isLooping")
         }
 
+        /**
+         * Resumes a previously paused replay from the saved position.
+         * Use [pause] to pause, then call resume to continue.
+         *
+         * @param onPositionUpdate Callback invoked each tick with new position
+         * @param onComplete Callback invoked when replay finishes
+         */
         fun resume(
             onPositionUpdate: (LatLng) -> Unit,
             onComplete: () -> Unit,
@@ -62,12 +112,20 @@ class RouteReplayEngine
             Log.i(TAG, "Replay resumed at index $resumeWaypointIndex")
         }
 
+        /**
+         * Pauses the current replay. Call [resume] to continue from current position.
+         * State is saved internally for resume.
+         */
         fun pause() {
             activeJob?.cancel()
             activeJob = null
             Log.i(TAG, "Replay paused at index $resumeWaypointIndex")
         }
 
+        /**
+         * Stops the replay and clears all state.
+         * Use this to fully reset after pause or to cancel a running replay.
+         */
         suspend fun stop() {
             activeJob?.cancelAndJoin()
             activeJob = null
@@ -77,6 +135,10 @@ class RouteReplayEngine
             Log.i(TAG, "Replay stopped")
         }
 
+        /**
+         * Appends a waypoint to the current replay (used for recording).
+         * @param pos Position to append
+         */
         fun appendWaypoint(pos: LatLng) {
             savedWaypoints = savedWaypoints + pos
             Log.i(TAG, "Waypoint appended; total=${savedWaypoints.size}")

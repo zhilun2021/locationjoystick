@@ -109,6 +109,28 @@ import javax.inject.Inject
 import kotlin.math.min
 import android.view.WindowManager as AndroidWindowManager
 
+/**
+ * Floating widget overlay service.
+ *
+ * Displays a compact FAB that expands to a panel with quick-access controls:
+ * - Joystick toggle and lock
+ * - Routes list with replay controls
+ * - Favorites list with teleport buttons
+ * - Speed profile switcher
+ *
+ * The widget is configured via [WidgetFeature] items stored in DataStore.
+ * Each feature can be enabled/disabled independently in Settings.
+ *
+ * Lifecycle:
+ * - Starts collapsed (FAB only)
+ * - Tap expands to full panel
+ * - Drag to reposition (persisted via WindowManager params)
+ *
+ * Requires SYSTEM_ALERT_WINDOW permission (enforced by [OverlayService]).
+ *
+ * @see WidgetFeature for available features
+ * @see SettingsRepository.getWidgetFeatures for configuration
+ */
 @AndroidEntryPoint
 class FloatingWidgetService :
     OverlayService(),

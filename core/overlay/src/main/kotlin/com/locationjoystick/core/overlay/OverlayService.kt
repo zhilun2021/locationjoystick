@@ -10,6 +10,20 @@ import android.view.View
 import android.view.WindowManager
 import com.locationjoystick.core.common.constants.AppConstants
 
+/**
+ * Base service for creating and managing floating overlay views on top of all apps.
+ *
+ * Uses TYPE_APPLICATION_OVERLAY which requires SYSTEM_ALERT_WINDOW permission.
+ * Subclasses implement [createOverlayView] to provide their specific UI.
+ *
+ * Key lifecycle:
+ * - onCreate: initializes WindowManager
+ * - onStartCommand: creates and adds overlay view
+ * - onDestroy: removes overlay view to prevent leaks
+ *
+ * @see JoystickOverlayService
+ * @see FloatingWidgetService
+ */
 abstract class OverlayService : Service() {
     private val tag: String get() = this::class.java.simpleName
 

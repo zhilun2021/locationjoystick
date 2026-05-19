@@ -21,6 +21,24 @@ import kotlin.math.sqrt
 
 private const val TAG = "RoamingEngine"
 
+/**
+ * Engine for simulating random walking within a circular area.
+ *
+ * Supports two modes:
+ * - Straight-line walking (no network required)
+ * - Road-following via OSRM routing (requires internet, falls back to straight-line on failure)
+ *
+ * Usage:
+ * ```
+ * val config = RoamingConfig(centerPosition = LatLng(48.8566, 2.3522), radiusMeters = 500.0, ...)
+ * roamingEngine.startRoaming(config, speedMs = 1.5) { position ->
+ *     // Called each tick with new position
+ * }
+ * ```
+ *
+ * The engine runs on [engineScope] and can be stopped via [stopRoaming].
+ * Only one roaming session can be active at a time — starting a new one cancels any existing.
+ */
 @Singleton
 class RoamingEngine
     @Inject
@@ -28,9 +46,20 @@ class RoamingEngine
         private val osrmClient: OsrmClient,
         private val routeInterpolator: RouteInterpolator,
     ) {
+        /** Coroutine scope for all roaming coroutines. Uses SupervisorJob so one failure doesn't cancel others. */
         private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+        /** Current active roaming job. Null when not roaming. */
         private var activeJob: Job? = null
 
+        /**
+         * Generates a uniformly random point within a circle of given radius.
+         * Uses polar coordinate transformation with square-root for uniform distribution.
+         *
+         * @param center Center of the circle
+         * @param radiusMeters Radius in meters
+         * @return Random LatLng within the circle
+         */
         fun randomPointInRadius(
             center: LatLng,
             radiusMeters: Double,
@@ -42,6 +71,15 @@ class RoamingEngine
             return LatLng(center.latitude + dLat, center.longitude + dLon)
         }
 
+        /**
+         * Starts a roaming session.
+         *
+         * @param config Roaming configuration (center, radius, duration, etc.)
+         * @param speedMs Movement speed in meters per second
+         * @param onPositionUpdate Callback invoked each tick with new position
+         * @param onRouteUpdate Callback invoked when route changes (for UI display)
+         * @return Job that can be used to track/cancel the roaming session
+         */
         fun startRoaming(
             config: RoamingConfig,
             speedMs: Double,
@@ -112,11 +150,25 @@ class RoamingEngine
             return job
         }
 
+        /**
+         * Stops the current roaming session gracefully.
+         * Waits for the active coroutine to finish before returning.
+         */
         suspend fun stopRoaming() {
             activeJob?.cancelAndJoin()
             activeJob = null
         }
 
+        /**
+         * Fetches a route between two points.
+         * If [config.useRoadSnapping] is true, uses OSRM for road-following.
+         * Falls back to straight-line on OSRM failure.
+         *
+         * @param config Roaming configuration
+         * @param from Starting position
+         * @param to Destination position
+         * @return List of waypoints forming the route
+         */
         private suspend fun fetchRoute(
             config: RoamingConfig,
             from: LatLng,
