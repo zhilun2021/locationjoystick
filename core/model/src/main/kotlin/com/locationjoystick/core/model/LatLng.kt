@@ -4,7 +4,6 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
-import kotlin.math.toRadians
 
 /**
  * Immutable geographic coordinate.
@@ -24,10 +23,10 @@ data class LatLng(
  * Haversine distance in meters between two coordinates.
  */
 fun LatLng.distanceTo(other: LatLng): Double {
-    val lat1 = latitude.toRadians()
-    val lat2 = other.latitude.toRadians()
-    val dLat = (other.latitude - latitude).toRadians()
-    val dLon = (other.longitude - longitude).toRadians()
+    val lat1 = Math.toRadians(latitude)
+    val lat2 = Math.toRadians(other.latitude)
+    val dLat = Math.toRadians(other.latitude - latitude)
+    val dLon = Math.toRadians(other.longitude - longitude)
 
     val a =
         sin(dLat / 2) * sin(dLat / 2) +
