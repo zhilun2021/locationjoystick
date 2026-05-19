@@ -35,8 +35,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.toDegrees
-import kotlin.math.toRadians
+
+private fun Double.toRadians(): Double = Math.toRadians(this)
+private fun Double.toDegrees(): Double = Math.toDegrees(this)
 
 private const val TAG = "JoystickOverlayService"
 

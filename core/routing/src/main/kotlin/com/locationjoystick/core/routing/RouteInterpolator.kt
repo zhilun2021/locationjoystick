@@ -10,8 +10,9 @@ import kotlin.math.asin
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.toDegrees
-import kotlin.math.toRadians
+
+private fun Double.toRadians(): Double = Math.toRadians(this)
+private fun Double.toDegrees(): Double = Math.toDegrees(this)
 
 /**
  * Handles position interpolation along routes for replay and roaming.

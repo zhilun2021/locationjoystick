@@ -26,7 +26,8 @@ import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.toRadians
+
+private fun Double.toRadians(): Double = Math.toRadians(this)
 
 private const val TAG = "RouteCreatorViewModel"
 

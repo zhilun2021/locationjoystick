@@ -14,7 +14,8 @@ import com.locationjoystick.core.overlay.OverlayView
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.toDegrees
+
+private fun Double.toDegrees(): Double = Math.toDegrees(this)
 
 data class JoystickInput(
     val angleDegrees: Float,

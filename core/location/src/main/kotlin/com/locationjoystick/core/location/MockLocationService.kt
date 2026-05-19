@@ -53,8 +53,9 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.ln
 import kotlin.math.sqrt
-import kotlin.math.toRadians
 import kotlin.random.Random
+
+private fun Double.toRadians(): Double = Math.toRadians(this)
 
 @AndroidEntryPoint
 class MockLocationService : Service() {
