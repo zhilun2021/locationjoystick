@@ -7,7 +7,6 @@ import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.database.dao.FavoriteDao
 import com.locationjoystick.core.database.dao.RouteDao
-import com.locationjoystick.core.database.dao.WaypointDao
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.routing.RoamingEngine
 import dagger.Module
@@ -23,8 +22,7 @@ object DataModule {
     @Singleton
     fun provideRouteRepository(
         routeDao: RouteDao,
-        waypointDao: WaypointDao,
-    ): RouteRepository = RouteRepository(routeDao, waypointDao)
+    ): RouteRepository = RouteRepository(routeDao)
 
     @Provides
     @Singleton
