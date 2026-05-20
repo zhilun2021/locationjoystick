@@ -507,8 +507,12 @@ class MapViewModel
                     } catch (e: Exception) {
                         Log.e(TAG, "Walk interrupted", e)
                     } finally {
-                        locationRepository.setWalkTarget(null)
-                        _uiState.update { it.copy(walkTarget = null, walkStart = null) }
+                        // Only clean up if this coroutine is still the active walk.
+                        // A cancelled job's finally must not wipe state set by the replacement walk.
+                        if (locationRepository.walkTarget.value == position) {
+                            locationRepository.setWalkTarget(null)
+                            _uiState.update { it.copy(walkTarget = null, walkStart = null) }
+                        }
                     }
                 }
         }

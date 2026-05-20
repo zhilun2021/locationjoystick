@@ -1074,7 +1074,11 @@ class FloatingWidgetService :
                 } catch (e: Exception) {
                     Log.e(TAG, "Walk to position interrupted", e)
                 } finally {
-                    locationRepository.setWalkTarget(null)
+                    // Only clean up if this coroutine is still the active walk.
+                    // A cancelled job's finally must not wipe state set by the replacement walk.
+                    if (locationRepository.walkTarget.value == target) {
+                        locationRepository.setWalkTarget(null)
+                    }
                 }
             }
     }
