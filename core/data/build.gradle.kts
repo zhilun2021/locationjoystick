@@ -15,6 +15,7 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:database"))
     implementation(project(":core:datastore"))
+    implementation(project(":core:routing"))
 
     implementation(libs.kotlinx.coroutines.android)
 
