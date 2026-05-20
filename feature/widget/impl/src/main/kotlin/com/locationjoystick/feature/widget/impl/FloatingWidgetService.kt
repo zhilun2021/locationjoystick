@@ -76,10 +76,6 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.common.constants.AppConstants.ServiceConstants
-import com.locationjoystick.core.common.util.advancePosition
-import com.locationjoystick.core.common.util.calculateBearing
-import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -87,6 +83,7 @@ import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.LjTheme
+import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
@@ -94,6 +91,7 @@ import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.overlay.OverlayServiceHelper
+import com.locationjoystick.core.routing.WalkCoordinator
 import com.locationjoystick.feature.joystick.impl.JoystickOverlayService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -108,7 +106,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.math.min
 import android.view.WindowManager as AndroidWindowManager
 
 /**
@@ -164,10 +161,10 @@ class FloatingWidgetService :
 
     @Inject lateinit var roamingRepository: com.locationjoystick.core.data.RoamingRepository
 
+    @Inject lateinit var walkCoordinator: WalkCoordinator
+
     private var composeView: ComposeView? = null
     private var panelComposeView: ComposeView? = null
-    private var walkToJob: Job? = null
-    private var walkWasServiceInitiated = false
     private var joystickPollJob: Job? = null
 
     // Joystick state
@@ -261,7 +258,7 @@ class FloatingWidgetService :
 
     override fun onDestroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        walkToJob?.cancel()
+        walkCoordinator.cancel()
         joystickPollJob?.cancel()
         serviceScope.cancel()
         hidePanelView()
@@ -947,28 +944,20 @@ class FloatingWidgetService :
         if (isPaused) {
             if (mode == com.locationjoystick.core.model.MockMode.WALK_TO) {
                 locationRepository.setWalkPaused(false)
-                resumeWalkToJob()
+                val target = locationRepository.walkTarget.value ?: return
+                walkCoordinator.startWalk(target, serviceScope)
             } else {
                 serviceScope.launch {
                     val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                    val intent =
-                        Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
-                            action = MockLocationService.ACTION_ROUTE_REPLAY_RESUME
-                            putExtra(MockLocationService.EXTRA_SPEED_MS, speedMs)
-                        }
-                    startService(intent)
+                    startService(MockLocationIntentBuilder.resumeRouteReplay(this@FloatingWidgetService, speedMs))
                 }
             }
         } else {
             if (mode == com.locationjoystick.core.model.MockMode.WALK_TO) {
-                pauseWalkToJob()
                 locationRepository.setWalkPaused(true)
+                walkCoordinator.cancel()
             } else {
-                val intent =
-                    Intent(this, MockLocationService::class.java).apply {
-                        action = MockLocationService.ACTION_ROUTE_REPLAY_PAUSE
-                    }
-                startService(intent)
+                startService(MockLocationIntentBuilder.pauseRouteReplay(this@FloatingWidgetService))
             }
         }
     }
@@ -981,106 +970,13 @@ class FloatingWidgetService :
             }
 
             com.locationjoystick.core.model.MockMode.WALK_TO -> {
-                walkToJob?.cancel()
-                walkToJob = null
-                locationRepository.setWalkTarget(null)
+                walkCoordinator.cancel()
             }
 
             else -> {
-                val intent =
-                    Intent(this, MockLocationService::class.java).apply {
-                        action = MockLocationService.ACTION_ROUTE_REPLAY_STOP
-                    }
-                startService(intent)
+                startService(MockLocationIntentBuilder.stopRouteReplay(this))
             }
         }
-    }
-
-    private fun pauseWalkToJob() {
-        walkWasServiceInitiated = walkToJob != null
-        walkToJob?.cancel()
-        walkToJob = null
-    }
-
-    private fun resumeWalkToJob() {
-        if (!walkWasServiceInitiated) return
-        val target = locationRepository.walkTarget.value ?: return
-        startWalkToPosition(target)
-    }
-
-    private fun startWalkToPosition(target: LatLng) {
-        walkToJob?.cancel()
-        walkToJob =
-            serviceScope.launch {
-                try {
-                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                    val targetLat = target.latitude
-                    val targetLon = target.longitude
-
-                    while (true) {
-                        val current = locationRepository.currentPosition.value
-                        if (current == null) {
-                            Log.w(TAG, "No current position; stopping walk to target")
-                            break
-                        }
-
-                        val distanceM =
-                            haversineDistance(
-                                current.latitude,
-                                current.longitude,
-                                targetLat,
-                                targetLon,
-                            )
-                        if (distanceM < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) {
-                            Log.d(TAG, "Reached walk target")
-                            break
-                        }
-
-                        val bearing =
-                            calculateBearing(
-                                current.latitude,
-                                current.longitude,
-                                targetLat,
-                                targetLon,
-                            )
-                        val advanceM = min(speedMs * 1.0, distanceM)
-                        val (newLat, newLon) =
-                            advancePosition(
-                                current.latitude,
-                                current.longitude,
-                                bearing,
-                                advanceM,
-                            )
-
-                        try {
-                            val svc = mockLocationService
-                            if (svc != null) {
-                                svc.updatePosition(newLat, newLon)
-                            } else {
-                                val intent =
-                                    Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
-                                        action = MockLocationService.ACTION_UPDATE_POSITION
-                                        putExtra(ServiceConstants.EXTRA_LAT, newLat)
-                                        putExtra(ServiceConstants.EXTRA_LON, newLon)
-                                    }
-                                startService(intent)
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Walk update failed", e)
-                        }
-
-                        delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Walk to position interrupted", e)
-                } finally {
-                    // Only clean up if this coroutine is still the active walk.
-                    // A cancelled job's finally must not wipe state set by the replacement walk.
-                    if (locationRepository.walkTarget.value == target) {
-                        locationRepository.setWalkTarget(null)
-                    }
-                }
-            }
     }
 
     private fun teleportToFavorite(favorite: FavoriteLocation) {
@@ -1095,8 +991,7 @@ class FloatingWidgetService :
     }
 
     private fun startWalkToFavorite(favorite: FavoriteLocation) {
-        locationRepository.setWalkTarget(favorite.position)
-        startWalkToPosition(favorite.position)
+        walkCoordinator.startWalk(favorite.position, serviceScope)
     }
 
     private fun toggleJoystick() {
@@ -1165,8 +1060,7 @@ class FloatingWidgetService :
                         moveAppToBack()
                     },
                     onWalkTo = { pos ->
-                        locationRepository.setWalkTarget(pos)
-                        startWalkToPosition(pos)
+                        walkCoordinator.startWalk(pos, serviceScope)
                         moveAppToBack()
                     },
                     onStopRouteAndTeleport = { pos ->
@@ -1181,8 +1075,7 @@ class FloatingWidgetService :
                     },
                     onStopRouteAndWalkTo = { pos ->
                         sendReplayCancel()
-                        locationRepository.setWalkTarget(pos)
-                        startWalkToPosition(pos)
+                        walkCoordinator.startWalk(pos, serviceScope)
                         moveAppToBack()
                     },
                     onFinishRouteAndWalkTo = { pos ->
@@ -1239,16 +1132,7 @@ class FloatingWidgetService :
 
     private fun sendReplayCancel() {
         try {
-            val intent =
-                Intent(
-                    com.locationjoystick.core.location.MockLocationService.ACTION_ROUTE_REPLAY_CANCEL,
-                ).apply {
-                    setClassName(
-                        packageName,
-                        "com.locationjoystick.core.location.MockLocationService",
-                    )
-                }
-            startService(intent)
+            startService(MockLocationIntentBuilder.cancelRouteReplay(this))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send replay cancel", e)
         }
@@ -1256,24 +1140,7 @@ class FloatingWidgetService :
 
     private fun sendAppendWaypoint(pos: com.locationjoystick.core.model.LatLng) {
         try {
-            val intent =
-                Intent(
-                    com.locationjoystick.core.location.MockLocationService.ACTION_ROUTE_APPEND_WAYPOINT,
-                ).apply {
-                    setClassName(
-                        packageName,
-                        "com.locationjoystick.core.location.MockLocationService",
-                    )
-                    putExtra(
-                        com.locationjoystick.core.location.MockLocationService.EXTRA_WAYPOINT_LAT,
-                        pos.latitude,
-                    )
-                    putExtra(
-                        com.locationjoystick.core.location.MockLocationService.EXTRA_WAYPOINT_LON,
-                        pos.longitude,
-                    )
-                }
-            startService(intent)
+            startService(MockLocationIntentBuilder.appendWaypoint(this, pos))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send append waypoint", e)
         }
@@ -1334,14 +1201,7 @@ class FloatingWidgetService :
     ) {
         serviceScope.launch {
             val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-            val intent =
-                Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
-                    action = MockLocationService.ACTION_ROUTE_REPLAY_START
-                    putExtra(MockLocationService.EXTRA_ROUTE_ID, routeId)
-                    putExtra(MockLocationService.EXTRA_IS_BACKWARD, isBackward)
-                    putExtra(MockLocationService.EXTRA_SPEED_MS, speedMs)
-                }
-            startService(intent)
+            startService(MockLocationIntentBuilder.startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isBackward))
         }
     }
 }

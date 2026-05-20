@@ -7,12 +7,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,11 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -61,11 +54,18 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
+import com.locationjoystick.core.designsystem.component.FavoritesList
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
+import com.locationjoystick.core.map.geojson.buildLineGeoJson
+import com.locationjoystick.core.map.geojson.buildPointsGeoJson
+import com.locationjoystick.core.map.geojson.buildPositionGeoJson
+import com.locationjoystick.core.map.geojson.buildRouteTraceGeoJson
+import com.locationjoystick.core.map.geojson.emptyGeoJson
+import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
+import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.feature.map.api.MAP_ROUTE
@@ -86,14 +86,6 @@ import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private val OSM_SOURCE_ID = AppConstants.MapConstants.OSM_SOURCE_ID
 private val OSM_LAYER_ID = AppConstants.MapConstants.OSM_LAYER_ID
-private const val POSITION_SOURCE_ID = "position-source"
-private const val POSITION_LAYER_ID = "position-layer"
-private const val TRACED_SOURCE_ID = "traced-source"
-private const val TRACED_LAYER_ID = "traced-layer"
-private const val REMAINING_SOURCE_ID = "remaining-source"
-private const val REMAINING_LAYER_ID = "remaining-layer"
-private const val WALK_ENDPOINTS_SOURCE_ID = "walk-endpoints-source"
-private const val WALK_ENDPOINTS_LAYER_ID = "walk-endpoints-layer"
 
 private fun fadeInScale(): EnterTransition =
     fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
@@ -327,10 +319,10 @@ internal fun MapScreen(
                                 )
                                 style.addLayer(RasterLayer(OSM_LAYER_ID, OSM_SOURCE_ID))
 
-                                val src = GeoJsonSource(POSITION_SOURCE_ID, emptyGeoJson())
+                                val src = GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
                                 style.addSource(src)
                                 style.addLayer(
-                                    CircleLayer(POSITION_LAYER_ID, POSITION_SOURCE_ID)
+                                    CircleLayer(MapLibreLayerIds.POSITION, MapLibreSourceIds.POSITION)
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
                                             PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
@@ -340,10 +332,10 @@ internal fun MapScreen(
                                 )
                                 positionSource.value = src
 
-                                val tracedSrc = GeoJsonSource(TRACED_SOURCE_ID, emptyGeoJson())
+                                val tracedSrc = GeoJsonSource(MapLibreSourceIds.TRACE_TRACED, emptyGeoJson())
                                 style.addSource(tracedSrc)
                                 style.addLayer(
-                                    LineLayer(TRACED_LAYER_ID, TRACED_SOURCE_ID)
+                                    LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
                                         .withProperties(
                                             PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                             PropertyFactory.lineWidth(4f),
@@ -352,10 +344,10 @@ internal fun MapScreen(
                                 )
                                 tracedSource.value = tracedSrc
 
-                                val remainingSrc = GeoJsonSource(REMAINING_SOURCE_ID, emptyGeoJson())
+                                val remainingSrc = GeoJsonSource(MapLibreSourceIds.TRACE_REMAINING, emptyGeoJson())
                                 style.addSource(remainingSrc)
                                 style.addLayer(
-                                    LineLayer(REMAINING_LAYER_ID, REMAINING_SOURCE_ID)
+                                    LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
                                         .withProperties(
                                             PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                             PropertyFactory.lineWidth(4f),
@@ -363,10 +355,10 @@ internal fun MapScreen(
                                 )
                                 remainingSource.value = remainingSrc
 
-                                val endpointsSrc = GeoJsonSource(WALK_ENDPOINTS_SOURCE_ID, emptyGeoJson())
+                                val endpointsSrc = GeoJsonSource(MapLibreSourceIds.ENDPOINTS, emptyGeoJson())
                                 style.addSource(endpointsSrc)
                                 style.addLayer(
-                                    CircleLayer(WALK_ENDPOINTS_LAYER_ID, WALK_ENDPOINTS_SOURCE_ID)
+                                    CircleLayer(MapLibreLayerIds.ENDPOINTS, MapLibreSourceIds.ENDPOINTS)
                                         .withProperties(
                                             PropertyFactory.circleRadius(8f),
                                             PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
@@ -520,11 +512,16 @@ private fun FavoritesPickerSheet(
     ) {
         val target = uiState.favoriteTarget
         if (target == null) {
-            FavoritesPickerList(
+            FavoritesList(
+                title = "Favorites",
                 favorites = uiState.favorites,
-                hasCurrentPosition = uiState.currentPosition != null,
                 onSelect = { onAction(MapAction.SelectFavorite(it)) },
-                onSaveCurrentLocation = { showSaveDialog = true },
+                onSaveCurrentLocation =
+                    if (uiState.currentPosition != null) {
+                        { showSaveDialog = true }
+                    } else {
+                        null
+                    },
             )
         } else {
             FavoriteTargetDetail(
@@ -607,74 +604,6 @@ private fun PendingTapSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("Do nothing")
-            }
-        }
-    }
-}
-
-@Composable
-private fun FavoritesPickerList(
-    favorites: List<FavoriteLocation>,
-    hasCurrentPosition: Boolean,
-    onSelect: (FavoriteLocation) -> Unit,
-    onSaveCurrentLocation: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text("Favorites", style = MaterialTheme.typography.headlineSmall)
-            if (hasCurrentPosition) {
-                IconButton(onClick = onSaveCurrentLocation) {
-                    Icon(Icons.Default.Add, contentDescription = "Save current location")
-                }
-            }
-        }
-
-        if (favorites.isEmpty()) {
-            Text(
-                "No saved favorites yet",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-        } else {
-            LazyColumn(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                contentPadding = PaddingValues(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(items = favorites, key = { it.id }) { favorite ->
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    RoundedCornerShape(8.dp),
-                                ).clickable { onSelect(favorite) }
-                                .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(favorite.name, style = MaterialTheme.typography.titleMedium)
-                            Text(
-                                "${String.format("%.4f", favorite.position.latitude)}, " +
-                                    "${String.format("%.4f", favorite.position.longitude)}",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -780,64 +709,6 @@ private fun MapFab(
             contentDescription = if (isSpoofing) "Stop location simulation" else "Start location simulation",
         )
     }
-}
-
-private fun emptyGeoJson(): String = """{"type":"FeatureCollection","features":[]}"""
-
-private fun buildPositionGeoJson(position: com.locationjoystick.core.model.LatLng?): String =
-    if (position != null) {
-        """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${position.longitude},${position.latitude}]},"properties":{}}]}"""
-    } else {
-        emptyGeoJson()
-    }
-
-private fun buildRouteTraceGeoJson(
-    waypoints: List<com.locationjoystick.core.model.LatLng>,
-    currentPosition: com.locationjoystick.core.model.LatLng?,
-): Pair<String, String> {
-    if (currentPosition == null || waypoints.isEmpty()) {
-        return emptyGeoJson() to emptyGeoJson()
-    }
-
-    var closestIdx = 0
-    var minDist = Double.MAX_VALUE
-    for (i in waypoints.indices) {
-        val dist =
-            haversineDistance(
-                currentPosition.latitude,
-                currentPosition.longitude,
-                waypoints[i].latitude,
-                waypoints[i].longitude,
-            )
-        if (dist < minDist) {
-            minDist = dist
-            closestIdx = i
-        }
-    }
-
-    val tracedPoints = (0..closestIdx).map { waypoints[it] } + currentPosition
-    val remainingPoints = listOf(currentPosition) + waypoints.drop(closestIdx + 1)
-
-    val tracedGeoJson = buildLineGeoJson(tracedPoints)
-    val remainingGeoJson = buildLineGeoJson(remainingPoints)
-
-    return tracedGeoJson to remainingGeoJson
-}
-
-private fun buildLineGeoJson(points: List<com.locationjoystick.core.model.LatLng>): String {
-    if (points.size < 2) return emptyGeoJson()
-    val coords = points.joinToString(",") { "[${it.longitude},${it.latitude}]" }
-    val feature = """{"type":"Feature","geometry":{"type":"LineString","coordinates":[$coords]},"properties":{}}"""
-    return """{"type":"FeatureCollection","features":[$feature]}"""
-}
-
-private fun buildPointsGeoJson(points: List<com.locationjoystick.core.model.LatLng>): String {
-    if (points.isEmpty()) return emptyGeoJson()
-    val features =
-        points.joinToString(",") {
-            """{"type":"Feature","geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]},"properties":{}}"""
-        }
-    return """{"type":"FeatureCollection","features":[$features]}"""
 }
 
 @Preview(showBackground = true)

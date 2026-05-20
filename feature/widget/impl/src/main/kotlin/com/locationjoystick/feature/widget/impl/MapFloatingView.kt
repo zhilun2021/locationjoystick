@@ -55,6 +55,12 @@ import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
+import com.locationjoystick.core.map.geojson.buildPointsGeoJson
+import com.locationjoystick.core.map.geojson.buildPositionGeoJson
+import com.locationjoystick.core.map.geojson.buildRouteTraceGeoJson
+import com.locationjoystick.core.map.geojson.emptyGeoJson
+import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
+import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.LatLng
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -73,14 +79,6 @@ import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private const val MAP_FLOATING_VIEW_OSM_SOURCE = "panel-osm-source"
 private const val MAP_FLOATING_VIEW_OSM_LAYER = "panel-osm-layer"
-private const val MAP_FLOATING_VIEW_POS_SOURCE = "panel-pos-source"
-private const val MAP_FLOATING_VIEW_POS_LAYER = "panel-pos-layer"
-private const val MAP_FLOATING_VIEW_TRACED_SOURCE = "panel-traced-source"
-private const val MAP_FLOATING_VIEW_TRACED_LAYER = "panel-traced-layer"
-private const val MAP_FLOATING_VIEW_REMAINING_SOURCE = "panel-remaining-source"
-private const val MAP_FLOATING_VIEW_REMAINING_LAYER = "panel-remaining-layer"
-private const val MAP_FLOATING_VIEW_ENDPOINTS_SOURCE = "panel-endpoints-source"
-private const val MAP_FLOATING_VIEW_ENDPOINTS_LAYER = "panel-endpoints-layer"
 
 @Composable
 internal fun MapFloatingView(
@@ -192,10 +190,10 @@ internal fun MapFloatingView(
                             style.addLayer(RasterLayer(MAP_FLOATING_VIEW_OSM_LAYER, MAP_FLOATING_VIEW_OSM_SOURCE))
 
                             val tracedSrc =
-                                GeoJsonSource(MAP_FLOATING_VIEW_TRACED_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                                GeoJsonSource(MapLibreSourceIds.TRACE_TRACED, emptyGeoJson())
                             style.addSource(tracedSrc)
                             style.addLayer(
-                                LineLayer(MAP_FLOATING_VIEW_TRACED_LAYER, MAP_FLOATING_VIEW_TRACED_SOURCE)
+                                LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
                                     .withProperties(
                                         PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                         PropertyFactory.lineWidth(3f),
@@ -205,10 +203,10 @@ internal fun MapFloatingView(
                             tracedSource.value = tracedSrc
 
                             val remainingSrc =
-                                GeoJsonSource(MAP_FLOATING_VIEW_REMAINING_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                                GeoJsonSource(MapLibreSourceIds.TRACE_REMAINING, emptyGeoJson())
                             style.addSource(remainingSrc)
                             style.addLayer(
-                                LineLayer(MAP_FLOATING_VIEW_REMAINING_LAYER, MAP_FLOATING_VIEW_REMAINING_SOURCE)
+                                LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
                                     .withProperties(
                                         PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
                                         PropertyFactory.lineWidth(3f),
@@ -217,10 +215,10 @@ internal fun MapFloatingView(
                             remainingSource.value = remainingSrc
 
                             val endpointsSrc =
-                                GeoJsonSource(MAP_FLOATING_VIEW_ENDPOINTS_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                                GeoJsonSource(MapLibreSourceIds.ENDPOINTS, emptyGeoJson())
                             style.addSource(endpointsSrc)
                             style.addLayer(
-                                CircleLayer(MAP_FLOATING_VIEW_ENDPOINTS_LAYER, MAP_FLOATING_VIEW_ENDPOINTS_SOURCE)
+                                CircleLayer(MapLibreLayerIds.ENDPOINTS, MapLibreSourceIds.ENDPOINTS)
                                     .withProperties(
                                         PropertyFactory.circleRadius(8f),
                                         PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
@@ -231,10 +229,10 @@ internal fun MapFloatingView(
                             endpointsSource.value = endpointsSrc
 
                             val src =
-                                GeoJsonSource(MAP_FLOATING_VIEW_POS_SOURCE, """{"type":"FeatureCollection","features":[]}""")
+                                GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
                             style.addSource(src)
                             style.addLayer(
-                                CircleLayer(MAP_FLOATING_VIEW_POS_LAYER, MAP_FLOATING_VIEW_POS_SOURCE)
+                                CircleLayer(MapLibreLayerIds.POSITION, MapLibreSourceIds.POSITION)
                                     .withProperties(
                                         PropertyFactory.circleRadius(10f),
                                         PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
@@ -265,26 +263,27 @@ internal fun MapFloatingView(
                 val endpointsSrc = endpointsSource.value ?: return@AndroidView
                 val position = currentPosition
 
-                src.setGeoJson(buildFloatingPositionGeoJson(position))
+                src.setGeoJson(buildPositionGeoJson(position))
 
                 val waypoints = routeWaypoints
                 val walkStartSnap = walkStart
                 val target = walkTarget
                 if (waypoints != null && position != null) {
-                    val (tracedGeoJson, remainingGeoJson) = buildFloatingRouteTraceGeoJson(waypoints, position)
+                    val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(waypoints, position)
                     tracedSrc.setGeoJson(tracedGeoJson)
                     remainingSrc.setGeoJson(remainingGeoJson)
-                    endpointsSrc.setGeoJson(buildFloatingPointsGeoJson(waypoints))
+                    endpointsSrc.setGeoJson(buildPointsGeoJson(waypoints))
                 } else if (walkStartSnap != null && target != null && position != null) {
                     val walkPoints = listOf(walkStartSnap, target)
-                    val (tracedGeoJson, remainingGeoJson) = buildFloatingRouteTraceGeoJson(walkPoints, position)
+                    val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(walkPoints, position)
                     tracedSrc.setGeoJson(tracedGeoJson)
                     remainingSrc.setGeoJson(remainingGeoJson)
-                    endpointsSrc.setGeoJson(buildFloatingPointsGeoJson(walkPoints))
+                    endpointsSrc.setGeoJson(buildPointsGeoJson(walkPoints))
                 } else {
-                    tracedSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
-                    remainingSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
-                    endpointsSrc.setGeoJson("""{"type":"FeatureCollection","features":[]}""")
+                    val empty = emptyGeoJson()
+                    tracedSrc.setGeoJson(empty)
+                    remainingSrc.setGeoJson(empty)
+                    endpointsSrc.setGeoJson(empty)
                 }
 
                 if (isFollowingCamera.value && position != null) {
@@ -522,51 +521,4 @@ internal fun MapFloatingView(
             }
         }
     }
-}
-
-private fun buildFloatingPositionGeoJson(position: LatLng?): String =
-    if (position != null) {
-        """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${position.longitude},${position.latitude}]},"properties":{}}]}"""
-    } else {
-        """{"type":"FeatureCollection","features":[]}"""
-    }
-
-private fun buildFloatingRouteTraceGeoJson(
-    waypoints: List<LatLng>,
-    currentPosition: LatLng,
-): Pair<String, String> {
-    if (waypoints.isEmpty()) return Pair("""{"type":"FeatureCollection","features":[]}""", """{"type":"FeatureCollection","features":[]}""")
-
-    var closestIdx = 0
-    var minDist = Double.MAX_VALUE
-    for (i in waypoints.indices) {
-        val dLat = currentPosition.latitude - waypoints[i].latitude
-        val dLon = currentPosition.longitude - waypoints[i].longitude
-        val dist = dLat * dLat + dLon * dLon
-        if (dist < minDist) {
-            minDist = dist
-            closestIdx = i
-        }
-    }
-
-    val tracedPoints = (0..closestIdx).map { waypoints[it] } + currentPosition
-    val remainingPoints = listOf(currentPosition) + waypoints.drop(closestIdx + 1)
-
-    return Pair(buildFloatingLineGeoJson(tracedPoints), buildFloatingLineGeoJson(remainingPoints))
-}
-
-private fun buildFloatingLineGeoJson(points: List<LatLng>): String {
-    if (points.size < 2) return """{"type":"FeatureCollection","features":[]}"""
-    val coords = points.joinToString(",") { "[${it.longitude},${it.latitude}]" }
-    val geometry = """{"type":"LineString","coordinates":[$coords]}"""
-    return """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":$geometry,"properties":{}}]}"""
-}
-
-private fun buildFloatingPointsGeoJson(points: List<LatLng>): String {
-    if (points.isEmpty()) return """{"type":"FeatureCollection","features":[]}"""
-    val features =
-        points.joinToString(",") {
-            """{"type":"Feature","geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]},"properties":{}}"""
-        }
-    return """{"type":"FeatureCollection","features":[$features]}"""
 }

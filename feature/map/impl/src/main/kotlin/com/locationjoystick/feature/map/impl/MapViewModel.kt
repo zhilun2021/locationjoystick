@@ -1,43 +1,33 @@
 package com.locationjoystick.feature.map.impl
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.common.constants.AppConstants.ServiceConstants
-import com.locationjoystick.core.common.util.advancePosition
-import com.locationjoystick.core.common.util.calculateBearing
-import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
-import com.locationjoystick.core.datastore.AppPreferencesDataSource
 import com.locationjoystick.core.datastore.PreferencesDataSource
-import com.locationjoystick.core.datastore.SpeedProfilePreferences
-import com.locationjoystick.core.location.MockLocationService
+import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
+import com.locationjoystick.core.routing.WalkCoordinator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val TAG = "MapViewModel"
@@ -72,19 +62,12 @@ class MapViewModel
         private val settingsRepository: SettingsRepository,
         private val roamingRepository: RoamingRepository,
         private val preferencesDataSource: PreferencesDataSource,
+        private val walkCoordinator: WalkCoordinator,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-        private var walkToJob: Job? = null
         private var latestRoamingDefaults: RoamingDefaults = RoamingDefaults()
-        private var latestSpeedProfiles: SpeedProfilePreferences =
-            SpeedProfilePreferences(
-                walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
-                runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
-                bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
-                activeProfileId = AppPreferencesDataSource.DEFAULT_ACTIVE_PROFILE_ID,
-            )
 
         init {
             observeLocationState()
@@ -94,7 +77,6 @@ class MapViewModel
             observeRouteWaypoints()
             observeRoaming()
             observeRoamingDefaults()
-            observeSpeedProfiles()
             observeSpeedUnit()
         }
 
@@ -162,14 +144,6 @@ class MapViewModel
             viewModelScope.launch {
                 preferencesDataSource.getRoamingDefaults().collect { defaults ->
                     latestRoamingDefaults = defaults
-                }
-            }
-        }
-
-        private fun observeSpeedProfiles() {
-            viewModelScope.launch {
-                preferencesDataSource.getSpeedProfiles().collect { profiles ->
-                    latestSpeedProfiles = profiles
                 }
             }
         }
@@ -282,8 +256,7 @@ class MapViewModel
                 }
 
                 MapAction.StopWalk -> {
-                    walkToJob?.cancel()
-                    locationRepository.setWalkTarget(null)
+                    walkCoordinator.cancel()
                     _uiState.update {
                         it.copy(walkTarget = null, walkStart = null, isWalkPaused = false)
                     }
@@ -379,22 +352,25 @@ class MapViewModel
                         Log.w(TAG, "Cannot start roaming: no current position")
                         return
                     }
-                    val speedMs =
-                        when (draft.speedProfileId) {
-                            "run" -> latestSpeedProfiles.runSpeedMs
-                            "bike" -> latestSpeedProfiles.bikeSpeedMs
-                            else -> latestSpeedProfiles.walkSpeedMs
-                        }
-                    val config =
-                        RoamingConfig(
-                            centerPosition = position,
-                            radiusMeters = draft.radiusMeters,
-                            distanceMeters = draft.distanceMeters,
-                            speedProfileId = draft.speedProfileId,
-                            useRoadSnapping = draft.followRoads,
-                            returnToInitialLocation = draft.returnToInitialLocation,
-                        )
-                    roamingRepository.startRoaming(config, speedMs)
+                    viewModelScope.launch {
+                        val speedMs =
+                            settingsRepository
+                                .getSpeedProfiles()
+                                .first()
+                                .firstOrNull { it.id == draft.speedProfileId }
+                                ?.speedMetersPerSecond
+                                ?: settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                        val config =
+                            RoamingConfig(
+                                centerPosition = position,
+                                radiusMeters = draft.radiusMeters,
+                                distanceMeters = draft.distanceMeters,
+                                speedProfileId = draft.speedProfileId,
+                                useRoadSnapping = draft.followRoads,
+                                returnToInitialLocation = draft.returnToInitialLocation,
+                            )
+                        roamingRepository.startRoaming(config, speedMs)
+                    }
                     _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }
                 }
 
@@ -409,17 +385,9 @@ class MapViewModel
         private fun teleportTo(position: LatLng) {
             viewModelScope.launch {
                 try {
-                    val intent =
-                        Intent(AppConstants.ServiceConstants.ACTION_UPDATE_POSITION).apply {
-                            component =
-                                ComponentName(
-                                    context,
-                                    MockLocationService::class.java,
-                                )
-                            putExtra(ServiceConstants.EXTRA_LAT, position.latitude)
-                            putExtra(ServiceConstants.EXTRA_LON, position.longitude)
-                        }
-                    context.startService(intent)
+                    context.startService(
+                        MockLocationIntentBuilder.updatePosition(context, position.latitude, position.longitude),
+                    )
                     Log.d(TAG, "Teleport to ${position.latitude}, ${position.longitude}")
                 } catch (e: Exception) {
                     Log.e(TAG, "Teleport failed", e)
@@ -428,8 +396,6 @@ class MapViewModel
         }
 
         private fun walkTo(position: LatLng) {
-            walkToJob?.cancel()
-            locationRepository.setWalkTarget(position)
             _uiState.update {
                 it.copy(
                     walkTarget = position,
@@ -437,122 +403,28 @@ class MapViewModel
                     routeTrace = null,
                 )
             }
-            walkToJob =
-                viewModelScope.launch {
-                    try {
-                        val targetLat = position.latitude
-                        val targetLon = position.longitude
-                        val speedMs = 1.39
-
-                        while (true) {
-                            if (locationRepository.walkTarget.value == null) break
-                            if (locationRepository.isWalkPaused.value) {
-                                delay(200)
-                                continue
-                            }
-                            val current = _uiState.value.currentPosition
-                            if (current == null) {
-                                Log.w(TAG, "No current position; stopping walk")
-                                break
-                            }
-
-                            val distanceM =
-                                haversineDistance(
-                                    current.latitude,
-                                    current.longitude,
-                                    targetLat,
-                                    targetLon,
-                                )
-                            if (distanceM < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) {
-                                Log.d(TAG, "Reached target; stopping walk")
-                                break
-                            }
-
-                            val bearing =
-                                calculateBearing(
-                                    current.latitude,
-                                    current.longitude,
-                                    targetLat,
-                                    targetLon,
-                                )
-                            val advanceDistance = minOf(speedMs * 1.0, distanceM)
-                            val newPos =
-                                advancePosition(
-                                    current.latitude,
-                                    current.longitude,
-                                    bearing,
-                                    advanceDistance,
-                                )
-
-                            withContext(Dispatchers.Main) {
-                                try {
-                                    val intent =
-                                        Intent(AppConstants.ServiceConstants.ACTION_UPDATE_POSITION).apply {
-                                            component =
-                                                ComponentName(
-                                                    context,
-                                                    MockLocationService::class.java,
-                                                )
-                                            putExtra(ServiceConstants.EXTRA_LAT, newPos.first)
-                                            putExtra(ServiceConstants.EXTRA_LON, newPos.second)
-                                        }
-                                    context.startService(intent)
-                                } catch (e: Exception) {
-                                    Log.e(TAG, "Walk update failed", e)
-                                }
-                            }
-
-                            delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Walk interrupted", e)
-                    } finally {
-                        // Only clean up if this coroutine is still the active walk.
-                        // A cancelled job's finally must not wipe state set by the replacement walk.
-                        if (locationRepository.walkTarget.value == position) {
-                            locationRepository.setWalkTarget(null)
-                            _uiState.update { it.copy(walkTarget = null, walkStart = null) }
-                        }
-                    }
-                }
+            walkCoordinator.startWalk(position, viewModelScope)
         }
 
         private fun stopRouteOnly() {
-            val intent =
-                Intent(MockLocationService.ACTION_ROUTE_REPLAY_CANCEL).apply {
-                    component = ComponentName(context, MockLocationService::class.java)
-                }
-            context.startService(intent)
+            context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
         }
 
         private fun appendWaypointToRoute(position: LatLng) {
-            val intent =
-                Intent(MockLocationService.ACTION_ROUTE_APPEND_WAYPOINT).apply {
-                    component = ComponentName(context, MockLocationService::class.java)
-                    putExtra(MockLocationService.EXTRA_WAYPOINT_LAT, position.latitude)
-                    putExtra(MockLocationService.EXTRA_WAYPOINT_LON, position.longitude)
-                }
-            context.startService(intent)
+            context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
         }
 
         private fun startSpoofing() {
             val startPos =
                 locationRepository.currentPosition.value
                     ?: LatLng(AppConstants.MapConstants.DEFAULT_LAT, AppConstants.MapConstants.DEFAULT_LON)
-            val intent =
-                Intent(MockLocationService.ACTION_START).apply {
-                    setClassName(context, "com.locationjoystick.core.location.MockLocationService")
-                    putExtra(ServiceConstants.EXTRA_LAT, startPos.latitude)
-                    putExtra(ServiceConstants.EXTRA_LON, startPos.longitude)
-                }
-            ContextCompat.startForegroundService(context, intent)
+            ContextCompat.startForegroundService(
+                context,
+                MockLocationIntentBuilder.startSpoofing(context, startPos.latitude, startPos.longitude),
+            )
         }
 
         private fun stopSpoofing() {
-            val intent =
-                Intent(MockLocationService.ACTION_STOP).apply {
-                    setClassName(context, "com.locationjoystick.core.location.MockLocationService")
-                }
-            ContextCompat.startForegroundService(context, intent)
+            ContextCompat.startForegroundService(context, MockLocationIntentBuilder.stopSpoofing(context))
         }
     }

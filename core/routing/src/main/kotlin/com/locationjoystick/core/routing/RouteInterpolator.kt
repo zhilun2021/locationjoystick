@@ -12,6 +12,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 private fun Double.toRadians(): Double = Math.toRadians(this)
+
 private fun Double.toDegrees(): Double = Math.toDegrees(this)
 
 /**

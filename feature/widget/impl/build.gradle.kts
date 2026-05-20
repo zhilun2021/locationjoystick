@@ -17,8 +17,9 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:overlay"))
     implementation(project(":core:location"))
+    implementation(project(":core:map"))
+    implementation(project(":core:routing"))
 
-    implementation(libs.maplibre.android.sdk)
     implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.compose.material.icons.extended)
 }

@@ -41,6 +41,10 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
+import com.locationjoystick.core.map.geojson.buildMarkerGeoJson
+import com.locationjoystick.core.map.geojson.emptyGeoJson
+import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
+import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.overlay.OverlayService
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -58,10 +62,6 @@ import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private val OSM_SOURCE_ID = AppConstants.MapConstants.OSM_SOURCE_ID
 private val OSM_LAYER_ID = AppConstants.MapConstants.OSM_LAYER_ID
-private const val CURRENT_POS_SOURCE_ID = "current-pos-source"
-private const val CURRENT_POS_LAYER_ID = "current-pos-layer"
-private const val MARKER_SOURCE_ID = "marker-source"
-private const val MARKER_LAYER_ID = "marker-layer"
 
 @Composable
 fun MapPickerRoute(
@@ -201,12 +201,12 @@ internal fun MapPickerScreen(
                                 if (initialPosition != null) {
                                     val currentPosSrc =
                                         GeoJsonSource(
-                                            CURRENT_POS_SOURCE_ID,
+                                            MapLibreSourceIds.CURRENT_POS,
                                             buildMarkerGeoJson(initialPosition.latitude, initialPosition.longitude),
                                         )
                                     style.addSource(currentPosSrc)
                                     style.addLayer(
-                                        CircleLayer(CURRENT_POS_LAYER_ID, CURRENT_POS_SOURCE_ID)
+                                        CircleLayer(MapLibreLayerIds.CURRENT_POS, MapLibreSourceIds.CURRENT_POS)
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
                                                 PropertyFactory.circleColor(Color(0xFF1976D2).toArgb()),
@@ -216,10 +216,10 @@ internal fun MapPickerScreen(
                                     )
                                 }
 
-                                val src = GeoJsonSource(MARKER_SOURCE_ID, emptyGeoJson())
+                                val src = GeoJsonSource(MapLibreSourceIds.MARKER, emptyGeoJson())
                                 style.addSource(src)
                                 style.addLayer(
-                                    CircleLayer(MARKER_LAYER_ID, MARKER_SOURCE_ID)
+                                    CircleLayer(MapLibreLayerIds.MARKER, MapLibreSourceIds.MARKER)
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
                                             PropertyFactory.circleColor(Color(0xFFFF5722).toArgb()),
@@ -321,11 +321,3 @@ private fun SaveLocationDialog(
         },
     )
 }
-
-private fun emptyGeoJson(): String = """{"type":"FeatureCollection","features":[]}"""
-
-private fun buildMarkerGeoJson(
-    lat: Double,
-    lon: Double,
-): String =
-    """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[$lon,$lat]},"properties":{}}]}"""

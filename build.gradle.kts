@@ -14,6 +14,7 @@ dependencies {
     kover(project(":app"))
     kover(project(":core:common"))
     kover(project(":core:data"))
+    kover(project(":core:map"))
     kover(project(":core:database"))
     kover(project(":core:datastore"))
     kover(project(":core:designsystem"))

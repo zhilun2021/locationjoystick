@@ -7,5 +7,6 @@ android {
 }
 
 dependencies {
+    api(project(":core:map"))
     implementation(libs.androidx.navigation.compose)
 }

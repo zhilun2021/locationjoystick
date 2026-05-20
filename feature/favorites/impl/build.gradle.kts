@@ -13,6 +13,7 @@ dependencies {
     implementation(project(":core:location"))
     implementation(project(":core:overlay"))
     implementation(project(":core:designsystem"))
+    implementation(project(":core:map"))
 
     implementation(libs.hilt.navigation.compose)
     implementation(libs.androidx.navigation.compose)

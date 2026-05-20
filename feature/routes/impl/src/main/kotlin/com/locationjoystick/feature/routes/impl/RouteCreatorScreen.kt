@@ -1,12 +1,9 @@
 package com.locationjoystick.feature.routes.impl
 
 import android.content.Intent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Undo
@@ -57,8 +51,14 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.component.FavoritesList
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
+import com.locationjoystick.core.map.geojson.buildSegmentsGeoJson
+import com.locationjoystick.core.map.geojson.buildWaypointsGeoJson
+import com.locationjoystick.core.map.geojson.emptyGeoJson
+import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
+import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.overlay.OverlayService
@@ -79,12 +79,6 @@ import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private val OSM_SOURCE_ID = AppConstants.MapConstants.OSM_SOURCE_ID
 private val OSM_LAYER_ID = AppConstants.MapConstants.OSM_LAYER_ID
-private const val CURRENT_POS_SOURCE_ID = "current-pos-source"
-private const val CURRENT_POS_LAYER_ID = "current-pos-layer"
-private const val SEGMENTS_SOURCE_ID = "segments-source"
-private const val SEGMENTS_LAYER_ID = "segments-layer"
-private const val WAYPOINTS_SOURCE_ID = "waypoints-source"
-private const val WAYPOINTS_LAYER_ID = "waypoints-layer"
 
 @Composable
 fun RouteCreatorRoute(
@@ -292,12 +286,12 @@ internal fun RouteCreatorScreen(
                                 if (initialPosition != null) {
                                     val currentPosSrc =
                                         GeoJsonSource(
-                                            CURRENT_POS_SOURCE_ID,
+                                            MapLibreSourceIds.CURRENT_POS,
                                             """{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[${initialPosition.longitude},${initialPosition.latitude}]},"properties":{}}]}""",
                                         )
                                     style.addSource(currentPosSrc)
                                     style.addLayer(
-                                        CircleLayer(CURRENT_POS_LAYER_ID, CURRENT_POS_SOURCE_ID)
+                                        CircleLayer(MapLibreLayerIds.CURRENT_POS, MapLibreSourceIds.CURRENT_POS)
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
                                                 PropertyFactory.circleColor(Color(0xFF1976D2).toArgb()),
@@ -307,10 +301,10 @@ internal fun RouteCreatorScreen(
                                     )
                                 }
 
-                                val segSrc = GeoJsonSource(SEGMENTS_SOURCE_ID, emptyGeoJson())
+                                val segSrc = GeoJsonSource(MapLibreSourceIds.ROUTE_SEGMENTS, emptyGeoJson())
                                 style.addSource(segSrc)
                                 style.addLayer(
-                                    LineLayer(SEGMENTS_LAYER_ID, SEGMENTS_SOURCE_ID)
+                                    LineLayer(MapLibreLayerIds.ROUTE_SEGMENTS, MapLibreSourceIds.ROUTE_SEGMENTS)
                                         .withProperties(
                                             PropertyFactory.lineColor(
                                                 Color(0xFF2196F3).toArgb(),
@@ -320,10 +314,10 @@ internal fun RouteCreatorScreen(
                                 )
                                 segmentsSource.value = segSrc
 
-                                val wpSrc = GeoJsonSource(WAYPOINTS_SOURCE_ID, emptyGeoJson())
+                                val wpSrc = GeoJsonSource(MapLibreSourceIds.ROUTE_WAYPOINTS, emptyGeoJson())
                                 style.addSource(wpSrc)
                                 style.addLayer(
-                                    CircleLayer(WAYPOINTS_LAYER_ID, WAYPOINTS_SOURCE_ID)
+                                    CircleLayer(MapLibreLayerIds.ROUTE_WAYPOINTS, MapLibreSourceIds.ROUTE_WAYPOINTS)
                                         .withProperties(
                                             PropertyFactory.circleRadius(8f),
                                             PropertyFactory.circleColor(
@@ -417,53 +411,11 @@ private fun CreatorFavoritesSheet(
     onDismiss: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-        ) {
-            Text("Jump to Favorite", style = MaterialTheme.typography.headlineSmall)
-            if (favorites.isEmpty()) {
-                Text(
-                    "No saved favorites yet",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-            } else {
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                    contentPadding = PaddingValues(vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(items = favorites, key = { it.id }) { favorite ->
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                        RoundedCornerShape(8.dp),
-                                    ).clickable { onSelect(favorite.position) }
-                                    .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(favorite.name, style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "${String.format("%.4f", favorite.position.latitude)}, " +
-                                        "${String.format("%.4f", favorite.position.longitude)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        FavoritesList(
+            title = "Jump to Favorite",
+            favorites = favorites,
+            onSelect = { onSelect(it.position) },
+        )
     }
 }
 
@@ -503,29 +455,4 @@ private fun SaveRouteDialog(
             }
         },
     )
-}
-
-private fun emptyGeoJson(): String = """{"type":"FeatureCollection","features":[]}"""
-
-private fun buildSegmentsGeoJson(segments: List<List<LatLng>>): String {
-    if (segments.isEmpty()) return emptyGeoJson()
-
-    val features =
-        segments.map { segment ->
-            val coordinates = segment.map { listOf(it.longitude, it.latitude) }
-            """{"type":"Feature","geometry":{"type":"LineString","coordinates":$coordinates},"properties":{}}"""
-        }
-
-    return """{"type":"FeatureCollection","features":[${features.joinToString(",")}]}"""
-}
-
-private fun buildWaypointsGeoJson(waypoints: List<LatLng>): String {
-    if (waypoints.isEmpty()) return emptyGeoJson()
-
-    val features =
-        waypoints.map { wp ->
-            """{"type":"Feature","geometry":{"type":"Point","coordinates":[${wp.longitude},${wp.latitude}]},"properties":{}}"""
-        }
-
-    return """{"type":"FeatureCollection","features":[${features.joinToString(",")}]}"""
 }
