@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -509,7 +510,7 @@ class MockLocationService : Service() {
         speedMs: Double,
     ) {
         val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
-        while (isActive) {
+        while (currentCoroutineContext().isActive) {
             val dist = haversineDistance(currentLat, currentLon, target.latitude, target.longitude)
             if (dist < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) break
             val bearing = calculateBearing(currentLat, currentLon, target.latitude, target.longitude)
