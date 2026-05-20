@@ -26,14 +26,14 @@ private val COLOR_MARKER = Color(0xFFFF5722).toArgb()
  * Adds the OSM raster tile layer to the style.
  */
 fun Style.Builder.addOsmRasterLayer(): Style.Builder {
-    addSource(
+    withSource(
         RasterSource(
             MapLibreSourceIds.OSM,
             TileSet("2.2.0", AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
             256,
         ),
     )
-    addLayer(RasterLayer(MapLibreLayerIds.OSM, MapLibreSourceIds.OSM))
+    withLayer(RasterLayer(MapLibreLayerIds.OSM, MapLibreSourceIds.OSM))
     return this
 }
 

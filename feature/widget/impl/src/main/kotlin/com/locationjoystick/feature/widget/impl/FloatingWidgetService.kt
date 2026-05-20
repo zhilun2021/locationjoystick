@@ -81,6 +81,7 @@ import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.LjTheme
@@ -92,7 +93,6 @@ import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.overlay.OverlayServiceHelper
-import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.feature.joystick.impl.JoystickOverlayService
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -1089,7 +1089,9 @@ class FloatingWidgetService :
                     },
                     onWalkTo = { pos ->
                         walkCoordinator.startWalk(pos, serviceScope) { newPos ->
-                            startService(MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude))
+                            startService(
+                                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude),
+                            )
                         }
                         moveAppToBack()
                     },
@@ -1106,7 +1108,9 @@ class FloatingWidgetService :
                     onStopRouteAndWalkTo = { pos ->
                         sendReplayCancel()
                         walkCoordinator.startWalk(pos, serviceScope) { newPos ->
-                            startService(MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude))
+                            startService(
+                                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude),
+                            )
                         }
                         moveAppToBack()
                     },

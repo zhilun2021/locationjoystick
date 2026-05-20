@@ -20,9 +20,7 @@ import javax.inject.Singleton
 object DataModule {
     @Provides
     @Singleton
-    fun provideRouteRepository(
-        routeDao: RouteDao,
-    ): RouteRepository = RouteRepository(routeDao)
+    fun provideRouteRepository(routeDao: RouteDao): RouteRepository = RouteRepository(routeDao)
 
     @Provides
     @Singleton
