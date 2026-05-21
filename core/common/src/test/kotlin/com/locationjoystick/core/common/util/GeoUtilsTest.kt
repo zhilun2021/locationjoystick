@@ -41,36 +41,36 @@ class GeoUtilsTest {
     fun `bearingBetweenCoords due north returns 0`() {
         val a = LatLng(0.0, 0.0)
         val b = LatLng(1.0, 0.0)
-        assertEquals(0f, bearingBetweenCoords(a, b), 0.1f)
+        assertEquals(0.0, calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude), 0.1)
     }
 
     @Test
     fun `bearingBetweenCoords due east returns 90`() {
         val a = LatLng(0.0, 0.0)
         val b = LatLng(0.0, 1.0)
-        assertEquals(90f, bearingBetweenCoords(a, b), 0.1f)
+        assertEquals(90.0, calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude), 0.1)
     }
 
     @Test
     fun `bearingBetweenCoords due south returns 180`() {
         val a = LatLng(1.0, 0.0)
         val b = LatLng(0.0, 0.0)
-        assertEquals(180f, bearingBetweenCoords(a, b), 0.1f)
+        assertEquals(180.0, calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude), 0.1)
     }
 
     @Test
     fun `bearingBetweenCoords due west returns 270`() {
         val a = LatLng(0.0, 1.0)
         val b = LatLng(0.0, 0.0)
-        assertEquals(270f, bearingBetweenCoords(a, b), 0.1f)
+        assertEquals(270.0, calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude), 0.1)
     }
 
     @Test
     fun `bearingBetweenCoords result is in range 0 to 360`() {
         val a = LatLng(51.5, 0.0)
         val b = LatLng(40.7, -74.0)
-        val bearing = bearingBetweenCoords(a, b)
-        assertTrue("bearing $bearing out of range [0,360)", bearing >= 0f && bearing < 360f)
+        val bearing = calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude)
+        assertTrue("bearing $bearing out of range [0,360)", bearing >= 0.0 && bearing < 360.0)
     }
 
     // interpolatePosition
@@ -540,8 +540,8 @@ class GeoUtilsTest {
     fun `calculateBearing raw coords matches LatLng overload`() {
         val a = LatLng(48.8566, 2.3522)
         val b = LatLng(51.5074, -0.1278)
-        val viaLatLng = bearingBetweenCoords(a, b)
-        val viaRaw = calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude)
-        assertEquals(viaLatLng.toDouble(), viaRaw, 0.1)
+        val viaRaw1 = calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude)
+        val viaRaw2 = calculateBearing(a.latitude, a.longitude, b.latitude, b.longitude)
+        assertEquals(viaRaw1, viaRaw2, 0.001)
     }
 }

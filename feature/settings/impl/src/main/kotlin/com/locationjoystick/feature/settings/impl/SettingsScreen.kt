@@ -203,6 +203,7 @@ fun SettingsRoute(
         onSetSpeedUnit = viewModel::setSpeedUnit,
         onSetWidgetFeatures = viewModel::setWidgetFeatures,
         onSetRememberLastLocation = viewModel::setRememberLastLocation,
+        onSetMapFollowsLocation = viewModel::setMapFollowsLocation,
         onSetJitterIdleRadius = viewModel::setJitterIdleRadius,
         onSetJitterMovingRadius = viewModel::setJitterMovingRadius,
         onSetJitterIntervalSeconds = viewModel::setJitterIntervalSeconds,
@@ -232,6 +233,7 @@ private fun SettingsScreenPreview() {
         onSetSpeedUnit = {},
         onSetWidgetFeatures = {},
         onSetRememberLastLocation = {},
+        onSetMapFollowsLocation = {},
         onSetJitterIdleRadius = {},
         onSetJitterMovingRadius = {},
         onSetJitterIntervalSeconds = {},
@@ -256,6 +258,7 @@ internal fun SettingsScreen(
     onSetSpeedUnit: (SpeedUnit) -> Unit,
     onSetWidgetFeatures: (Set<WidgetFeature>) -> Unit,
     onSetRememberLastLocation: (Boolean) -> Unit,
+    onSetMapFollowsLocation: (Boolean) -> Unit,
     onSetJitterIdleRadius: (Double) -> Unit,
     onSetJitterMovingRadius: (Double) -> Unit,
     onSetJitterIntervalSeconds: (Int) -> Unit,
@@ -374,7 +377,7 @@ internal fun SettingsScreen(
                             onSpeedChange = { onSetWalkSpeed(it) },
                             unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
                         )
-                        if (uiState.walkSpeed > 8.0) {
+                        if (uiState.walkSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) {
                             Text(
                                 text = "Speed exceeds 8 m/s — may trigger anti-cheat in some games",
                                 color = MaterialTheme.colorScheme.errorContainer,
@@ -391,7 +394,7 @@ internal fun SettingsScreen(
                             onSpeedChange = { onSetRunSpeed(it) },
                             unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
                         )
-                        if (uiState.runSpeed > 8.0) {
+                        if (uiState.runSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) {
                             Text(
                                 text = "Speed exceeds 8 m/s — may trigger anti-cheat in some games",
                                 color = MaterialTheme.colorScheme.errorContainer,
@@ -408,7 +411,7 @@ internal fun SettingsScreen(
                             onSpeedChange = { onSetBikeSpeed(it) },
                             unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
                         )
-                        if (uiState.bikeSpeed > 8.0) {
+                        if (uiState.bikeSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) {
                             Text(
                                 text = "Speed exceeds 8 m/s — may trigger anti-cheat in some games",
                                 color = MaterialTheme.colorScheme.errorContainer,
@@ -479,6 +482,23 @@ internal fun SettingsScreen(
                             )
                             Text(
                                 "Remember last location",
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = uiState.mapFollowsLocation,
+                                onCheckedChange = { onSetMapFollowsLocation(it) },
+                            )
+                            Text(
+                                "Follow location on map",
                                 modifier = Modifier.padding(start = 8.dp),
                             )
                         }

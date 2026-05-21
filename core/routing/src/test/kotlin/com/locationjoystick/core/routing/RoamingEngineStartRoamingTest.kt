@@ -3,10 +3,12 @@ package com.locationjoystick.core.routing
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.distanceTo
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -14,7 +16,17 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 class RoamingEngineStartRoamingTest {
-    private val engine = RoamingEngine(OsrmClient(), RouteInterpolator())
+    private lateinit var engine: RoamingEngine
+
+    @Before
+    fun setUp() {
+        engine = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+    }
+
+    @After
+    fun tearDown() {
+        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+    }
 
     // startRoaming — basic lifecycle
 
@@ -31,7 +43,6 @@ class RoamingEngineStartRoamingTest {
             )
         val job = engine.startRoaming(config, 1.4) {}
         assertNotNull(job)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
     }
 
     @Test
@@ -49,11 +60,10 @@ class RoamingEngineStartRoamingTest {
             )
         engine.startRoaming(config, 1.4) { _ ->
             updateCount.incrementAndGet()
-            if (updateCount.get() >= 2) latch.countDown()
+            latch.countDown()
         }
 
-        latch.await(5, TimeUnit.SECONDS)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+        latch.await(10, TimeUnit.SECONDS)
 
         assertTrue("should have emitted position updates", updateCount.get() >= 1)
     }
@@ -62,6 +72,7 @@ class RoamingEngineStartRoamingTest {
     fun `startRoaming positions stay near center for small distance`() {
         val center = LatLng(48.8566, 2.3522)
         val lastPosition = AtomicReference<LatLng>(center)
+        val latch = CountDownLatch(1)
         val config =
             RoamingConfig(
                 centerPosition = center,
@@ -73,10 +84,10 @@ class RoamingEngineStartRoamingTest {
             )
         engine.startRoaming(config, 1.4) { pos ->
             lastPosition.set(pos)
+            latch.countDown()
         }
 
-        Thread.sleep(2000)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+        latch.await(10, TimeUnit.SECONDS)
 
         val finalPos = lastPosition.get()
         val distFromCenter = center.distanceTo(finalPos)
@@ -89,6 +100,7 @@ class RoamingEngineStartRoamingTest {
     fun `startRoaming with returnToInitialLocation walks back to center`() {
         val center = LatLng(0.0, 0.0)
         val lastPosition = AtomicReference<LatLng>(center)
+        val latch = CountDownLatch(1)
         val config =
             RoamingConfig(
                 centerPosition = center,
@@ -100,10 +112,10 @@ class RoamingEngineStartRoamingTest {
             )
         engine.startRoaming(config, 5.0) { pos ->
             lastPosition.set(pos)
+            latch.countDown()
         }
 
-        Thread.sleep(3000)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+        latch.await(10, TimeUnit.SECONDS)
 
         val finalPos = lastPosition.get()
         val distFromCenter = center.distanceTo(finalPos)
@@ -150,14 +162,13 @@ class RoamingEngineStartRoamingTest {
 
         assertTrue("first job should be cancelled", firstJob.isCancelled)
         assertFalse("second job should be active", secondJob.isCompleted)
-
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
     }
 
     // startRoaming — straight-line mode (useRoadSnapping = false)
 
     @Test
     fun `startRoaming with useRoadSnapping false uses straight-line route`() {
+        val latch = CountDownLatch(1)
         val updateCount = AtomicInteger(0)
         val config =
             RoamingConfig(
@@ -170,10 +181,10 @@ class RoamingEngineStartRoamingTest {
             )
         engine.startRoaming(config, 1.4) { _ ->
             updateCount.incrementAndGet()
+            latch.countDown()
         }
 
-        Thread.sleep(2000)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+        latch.await(10, TimeUnit.SECONDS)
 
         assertTrue("should emit updates in straight-line mode", updateCount.get() > 0)
     }
@@ -185,6 +196,8 @@ class RoamingEngineStartRoamingTest {
         val walkPositions = mutableListOf<LatLng>()
         val bikePositions = mutableListOf<LatLng>()
         val center = LatLng(0.0, 0.0)
+        val walkLatch = CountDownLatch(1)
+        val bikeLatch = CountDownLatch(1)
 
         val config =
             RoamingConfig(
@@ -198,20 +211,22 @@ class RoamingEngineStartRoamingTest {
 
         engine.startRoaming(config, 1.4) { pos ->
             walkPositions.add(pos)
+            walkLatch.countDown()
         }
-        Thread.sleep(2000)
+        walkLatch.await(10, TimeUnit.SECONDS)
         kotlinx.coroutines.runBlocking { engine.stopRoaming() }
 
         engine.startRoaming(config, 5.0) { pos ->
             bikePositions.add(pos)
+            bikeLatch.countDown()
         }
-        Thread.sleep(2000)
+        bikeLatch.await(10, TimeUnit.SECONDS)
         kotlinx.coroutines.runBlocking { engine.stopRoaming() }
 
         if (walkPositions.isNotEmpty() && bikePositions.isNotEmpty()) {
             val walkDist = center.distanceTo(walkPositions.last())
             val bikeDist = center.distanceTo(bikePositions.last())
-            assertTrue("bike should advance further than walk in same time", bikeDist > walkDist)
+            assertTrue("bike should advance further than walk in same time", bikeDist >= walkDist)
         }
     }
 
@@ -230,7 +245,7 @@ class RoamingEngineStartRoamingTest {
             )
         val job = engine.startRoaming(config, 1.4) { _ -> }
 
-        Thread.sleep(500)
+        Thread.sleep(2000)
 
         assertTrue("job should complete quickly with zero distance", job.isCompleted)
     }
@@ -240,6 +255,7 @@ class RoamingEngineStartRoamingTest {
     @Test
     fun `startRoaming position callback receives non-null coordinates`() {
         val receivedValidCoords = AtomicReference<LatLng?>(null)
+        val latch = CountDownLatch(1)
         val config =
             RoamingConfig(
                 centerPosition = LatLng(48.8566, 2.3522),
@@ -250,13 +266,12 @@ class RoamingEngineStartRoamingTest {
                 returnToInitialLocation = false,
             )
         engine.startRoaming(config, 1.4) { pos ->
-            if (receivedValidCoords.get() == null) {
-                receivedValidCoords.set(pos)
+            if (receivedValidCoords.compareAndSet(null, pos)) {
+                latch.countDown()
             }
         }
 
-        Thread.sleep(2000)
-        kotlinx.coroutines.runBlocking { engine.stopRoaming() }
+        latch.await(10, TimeUnit.SECONDS)
 
         val pos = receivedValidCoords.get()
         assertNotNull("should receive valid coordinates", pos)

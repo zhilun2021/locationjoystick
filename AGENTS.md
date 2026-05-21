@@ -14,7 +14,7 @@ Android-only mock GPS app. Background operation, minimal battery.
 | Language | Kotlin |
 | UI | Jetpack Compose |
 | Min SDK | API 31 |
-| Distribution | GitHub Releases APK |
+| Distribution | GitHub Releases APK + Play Store (AAB) |
 | Storage | Room + DataStore |
 | Backend | None |
 | Open source | Yes |
@@ -45,6 +45,13 @@ Work is NOT complete until lint and test passes.
 ```bash
 make format
 make lint
+make test
+```
+
+To verify the AAB builds locally (manual Play Store upload — no automated CI deployment):
+
+```bash
+make bundle
 ```
 
 Rules:

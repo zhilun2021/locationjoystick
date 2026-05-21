@@ -58,7 +58,7 @@ class SettingsViewModel
         val qrImportReady: SharedFlow<ExportData> = _qrImportReady
 
         private val _qrChunksReady = MutableSharedFlow<QrChunker.ChunkResult>(extraBufferCapacity = 1)
-        internal val qrChunksReady: SharedFlow<QrChunker.ChunkResult> = _qrChunksReady
+        val qrChunksReady: SharedFlow<QrChunker.ChunkResult> = _qrChunksReady
 
         private data class RepoState(
             val walkSpeed: Double,
@@ -67,6 +67,7 @@ class SettingsViewModel
             val speedUnit: SpeedUnit,
             val widgetFeatures: Set<WidgetFeature>,
             val rememberLastLocation: Boolean,
+            val mapFollowsLocation: Boolean,
             val jitterIdleRadius: Double,
             val jitterMovingRadius: Double,
             val jitterIntervalSeconds: Int,
@@ -79,6 +80,7 @@ class SettingsViewModel
             val speedUnit: SpeedUnit? = null,
             val widgetFeatures: Set<WidgetFeature>? = null,
             val rememberLastLocation: Boolean? = null,
+            val mapFollowsLocation: Boolean? = null,
             val jitterIdleRadius: Double? = null,
             val jitterMovingRadius: Double? = null,
             val jitterIntervalSeconds: Int? = null,
@@ -91,6 +93,7 @@ class SettingsViewModel
         private val draftSpeedUnitFlow = MutableStateFlow<SpeedUnit?>(null)
         private val draftWidgetFeaturesFlow = MutableStateFlow<Set<WidgetFeature>?>(null)
         private val draftRememberLastLocationFlow = MutableStateFlow<Boolean?>(null)
+        private val draftMapFollowsLocationFlow = MutableStateFlow<Boolean?>(null)
         private val draftJitterIdleRadiusFlow = MutableStateFlow<Double?>(null)
         private val draftJitterMovingRadiusFlow = MutableStateFlow<Double?>(null)
         private val draftJitterIntervalSecondsFlow = MutableStateFlow<Int?>(null)
@@ -117,7 +120,8 @@ class SettingsViewModel
                     settingsRepository.getJitterMovingRadius(),
                     settingsRepository.getJitterIntervalSeconds(),
                 ) { idle, moving, interval -> Triple(idle, moving, interval) },
-            ) { speeds, settings, jitter ->
+                settingsRepository.getMapFollowsLocation(),
+            ) { speeds, settings, jitter, mapFollows ->
                 RepoState(
                     walkSpeed = speeds.first,
                     runSpeed = speeds.second,
@@ -125,6 +129,7 @@ class SettingsViewModel
                     speedUnit = settings.first,
                     widgetFeatures = settings.second.toSet(),
                     rememberLastLocation = settings.third,
+                    mapFollowsLocation = mapFollows,
                     jitterIdleRadius = jitter.first,
                     jitterMovingRadius = jitter.second,
                     jitterIntervalSeconds = jitter.third,
@@ -153,7 +158,8 @@ class SettingsViewModel
                     draftJitterIntervalSecondsFlow.asStateFlow(),
                 ) { idle, moving, interval -> Triple(idle, moving, interval) },
                 draftRoamingDefaultsFlow.asStateFlow(),
-            ) { speeds, settings, jitter, roaming ->
+                draftMapFollowsLocationFlow.asStateFlow(),
+            ) { speeds, settings, jitter, roaming, mapFollows ->
                 DraftState(
                     walkSpeed = speeds.first,
                     runSpeed = speeds.second,
@@ -161,6 +167,7 @@ class SettingsViewModel
                     speedUnit = settings.first,
                     widgetFeatures = settings.second,
                     rememberLastLocation = settings.third,
+                    mapFollowsLocation = mapFollows,
                     jitterIdleRadius = jitter.first,
                     jitterMovingRadius = jitter.second,
                     jitterIntervalSeconds = jitter.third,
@@ -188,6 +195,7 @@ class SettingsViewModel
                     draftState.walkSpeed != null || draftState.runSpeed != null ||
                         draftState.bikeSpeed != null || draftState.speedUnit != null ||
                         draftState.widgetFeatures != null || draftState.rememberLastLocation != null ||
+                        draftState.mapFollowsLocation != null ||
                         draftState.jitterIdleRadius != null || draftState.jitterMovingRadius != null ||
                         draftState.jitterIntervalSeconds != null || draftState.roamingDefaults != null
                 SettingsUiState(
@@ -198,6 +206,7 @@ class SettingsViewModel
                     speedUnit = draftState.speedUnit ?: repoState.speedUnit,
                     enabledWidgetFeatures = draftState.widgetFeatures ?: repoState.widgetFeatures,
                     rememberLastLocation = draftState.rememberLastLocation ?: repoState.rememberLastLocation,
+                    mapFollowsLocation = draftState.mapFollowsLocation ?: repoState.mapFollowsLocation,
                     jitterIdleRadiusMeters = draftState.jitterIdleRadius ?: repoState.jitterIdleRadius,
                     jitterMovingRadiusMeters = draftState.jitterMovingRadius ?: repoState.jitterMovingRadius,
                     jitterIntervalSeconds = draftState.jitterIntervalSeconds ?: repoState.jitterIntervalSeconds,
@@ -234,6 +243,10 @@ class SettingsViewModel
 
         fun setRememberLastLocation(enabled: Boolean) {
             draftRememberLastLocationFlow.value = enabled
+        }
+
+        fun setMapFollowsLocation(enabled: Boolean) {
+            draftMapFollowsLocationFlow.value = enabled
         }
 
         fun setJitterIdleRadius(meters: Double) {
@@ -285,6 +298,11 @@ class SettingsViewModel
                     settingsRepository.setRememberLastLocation(draftRememberLastLocation)
                     draftRememberLastLocationFlow.value = null
                 }
+                val draftMapFollows = draftMapFollowsLocationFlow.value
+                if (draftMapFollows != null) {
+                    settingsRepository.setMapFollowsLocation(draftMapFollows)
+                    draftMapFollowsLocationFlow.value = null
+                }
                 val draftJitterIdle = draftJitterIdleRadiusFlow.value
                 if (draftJitterIdle != null) {
                     settingsRepository.setJitterIdleRadius(draftJitterIdle)
@@ -315,6 +333,7 @@ class SettingsViewModel
             draftSpeedUnitFlow.value = null
             draftWidgetFeaturesFlow.value = null
             draftRememberLastLocationFlow.value = null
+            draftMapFollowsLocationFlow.value = null
             draftJitterIdleRadiusFlow.value = null
             draftJitterMovingRadiusFlow.value = null
             draftJitterIntervalSecondsFlow.value = null

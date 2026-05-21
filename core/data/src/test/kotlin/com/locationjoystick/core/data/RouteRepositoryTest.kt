@@ -32,7 +32,7 @@ class RouteRepositoryTest {
         Dispatchers.setMain(testDispatcher)
         waypointDao = FakeWaypointDao()
         routeDao = FakeRouteDao(waypointDao)
-        repository = RouteRepository(routeDao, waypointDao, testDispatcher)
+        repository = RouteRepository(routeDao, testDispatcher)
     }
 
     @After

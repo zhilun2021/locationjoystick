@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class RoamingEngineTest {
-    private val engine = RoamingEngine(OsrmClient(), RouteInterpolator())
+    private val engine = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
 
     @Test
     fun `randomPointInRadius stays within radius`() {
@@ -96,7 +96,7 @@ class RoamingEngineTest {
 
         val latch = CountDownLatch(1)
         engine.startRoaming(config, 1.4) { latch.countDown() }
-        val received = latch.await(5, TimeUnit.SECONDS)
+        val received = latch.await(10, TimeUnit.SECONDS)
         kotlinx.coroutines.runBlocking { engine.stopRoaming() }
 
         assertTrue("startRoaming should emit after stop()", received)

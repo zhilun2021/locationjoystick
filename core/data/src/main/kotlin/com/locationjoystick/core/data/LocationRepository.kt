@@ -94,6 +94,12 @@ class LocationRepository
             _currentPosition.value = position
         }
 
+        /** Returns the current position as a [Flow]. Prefer [currentPosition] StateFlow for new code. */
+        fun observePosition(): Flow<LatLng?> = _currentPosition.asStateFlow()
+
+        /** Returns the mock location state as a [Flow]. Prefer [mockLocationState] StateFlow for new code. */
+        fun observeState(): Flow<MockLocationState> = _mockLocationState.asStateFlow()
+
         fun startSpoofing() {
             Log.d(TAG, "startSpoofing requested")
             if (_currentPosition.value == null) {

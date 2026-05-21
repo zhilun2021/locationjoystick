@@ -83,6 +83,7 @@ class RoamingRepositoryTest {
                 fakeRoamingEngine.startRoaming(
                     config = config,
                     speedMs = 1.4,
+                    onRouteUpdate = any(),
                     onPositionUpdate = any(),
                 )
             }
@@ -98,7 +99,7 @@ class RoamingRepositoryTest {
             repository.startRoaming(config, speedMs = 2.0)
 
             verify(exactly = 2) {
-                fakeRoamingEngine.startRoaming(any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
             }
 
             repository.stopRoaming()
@@ -110,9 +111,9 @@ class RoamingRepositoryTest {
             val config = createDefaultConfig()
             var capturedCallback: ((LatLng) -> Unit)? = null
             every {
-                fakeRoamingEngine.startRoaming(any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
             } answers {
-                capturedCallback = thirdArg()
+                capturedCallback = lastArg()
                 Job()
             }
 
@@ -136,7 +137,7 @@ class RoamingRepositoryTest {
             repository.stopRoaming()
 
             coVerifyOrder {
-                fakeRoamingEngine.startRoaming(any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
                 fakeRoamingEngine.stopRoaming()
             }
         }
@@ -166,7 +167,7 @@ class RoamingRepositoryTest {
 
             val job = Job()
             every {
-                fakeRoamingEngine.startRoaming(any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
             } returns job
 
             repository.startRoaming(config, speedMs = 1.4)

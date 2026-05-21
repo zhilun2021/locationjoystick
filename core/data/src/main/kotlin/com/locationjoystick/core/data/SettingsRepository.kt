@@ -133,4 +133,8 @@ class SettingsRepository
         fun getLastTeleportTime(): Flow<Long> = dataSource.getLastTeleportTime()
 
         suspend fun setLastTeleportTime(ms: Long) = dataSource.setLastTeleportTime(ms)
+
+        fun getMapFollowsLocation(): Flow<Boolean> = dataSource.getMapFollowsLocation()
+
+        suspend fun setMapFollowsLocation(enabled: Boolean) = dataSource.setMapFollowsLocation(enabled)
     }

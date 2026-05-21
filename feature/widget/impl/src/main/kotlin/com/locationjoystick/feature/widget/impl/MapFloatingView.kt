@@ -33,7 +33,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +47,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
@@ -94,15 +94,16 @@ internal fun MapFloatingView(
     onDismiss: () -> Unit,
     context: Context,
 ) {
-    val currentPosition by locationRepository.currentPosition.collectAsState()
-    val walkTarget by locationRepository.walkTarget.collectAsState()
-    val routeWaypoints by locationRepository.routeWaypoints.collectAsState()
-    val mockMode by locationRepository.currentMode.collectAsState()
+    val currentPosition by locationRepository.currentPosition.collectAsStateWithLifecycle()
+    val walkTarget by locationRepository.walkTarget.collectAsStateWithLifecycle()
+    val routeWaypoints by locationRepository.routeWaypoints.collectAsStateWithLifecycle()
+    val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
     val isRoaming = mockMode == com.locationjoystick.core.model.MockMode.ROAMING
     val isRouteReplay = mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY
-    val isActivityActive by locationRepository.isActivityActive.collectAsState(initial = false)
+    val isActivityActive by locationRepository.isActivityActive.collectAsStateWithLifecycle(initialValue = false)
     val favoritesFlow = remember { favoriteRepository.getFavorites() }
-    val favorites by favoritesFlow.collectAsState(initial = emptyList())
+    val favorites by favoritesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val spoofState by locationRepository.mockLocationState.collectAsStateWithLifecycle()
 
     val initialPosition = remember { locationRepository.currentPosition.value }
 
@@ -351,6 +352,43 @@ internal fun MapFloatingView(
                 ) {
                     Icon(Icons.Rounded.MyLocation, contentDescription = "Re-center on location")
                 }
+            }
+            FloatingActionButton(
+                onClick = {
+                    val isSpoofing = spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING
+                    if (isSpoofing) locationRepository.stopSpoofing() else locationRepository.startSpoofing()
+                },
+                containerColor =
+                    if (spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING) {
+                        MaterialTheme.colorScheme.errorContainer
+                    } else {
+                        MaterialTheme.colorScheme.primaryContainer
+                    },
+                contentColor =
+                    if (spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+            ) {
+                Icon(
+                    imageVector =
+                        if (spoofState ==
+                            com.locationjoystick.core.model.MockLocationState.RUNNING
+                        ) {
+                            LjIcons.Stop
+                        } else {
+                            LjIcons.PlayArrow
+                        },
+                    contentDescription =
+                        if (spoofState ==
+                            com.locationjoystick.core.model.MockLocationState.RUNNING
+                        ) {
+                            "Stop spoofing"
+                        } else {
+                            "Start spoofing"
+                        },
+                )
             }
             FloatingActionButton(
                 onClick = { showFavoritesPicker = true },

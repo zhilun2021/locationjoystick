@@ -12,6 +12,7 @@ data class SettingsUiState(
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val enabledWidgetFeatures: Set<WidgetFeature> = WidgetFeature.entries.toSet(),
     val rememberLastLocation: Boolean = true,
+    val mapFollowsLocation: Boolean = true,
     val jitterIdleRadiusMeters: Double = 0.0,
     val jitterMovingRadiusMeters: Double = 1.0,
     val jitterIntervalSeconds: Int = 3,

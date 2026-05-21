@@ -118,6 +118,27 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ### Release build
 
+Set the following environment variables before building (or in CI secrets). The build falls back to Google's test-account IDs if unset, which is fine for debug but will not serve real ads.
+
+| Variable | Description |
+|---|---|
+| `ADMOB_APP_ID` | Your AdMob application ID (e.g. `ca-app-pub-XXXXXXXXXXXXXXXX~NNNNNNNNNN`) |
+| `ADMOB_BANNER_ID` | Your AdMob banner ad unit ID (e.g. `ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN`) |
+
+```bash
+export ADMOB_APP_ID="ca-app-pub-..."
+export ADMOB_BANNER_ID="ca-app-pub-.../..."
+./gradlew assembleRelease
+```
+
+To build a release AAB for manual Play Store upload:
+
+```bash
+make bundle
+```
+
+AAB at `app/build/outputs/bundle/release/app-release.aab`.
+
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
@@ -197,7 +218,7 @@ PRs welcome. Before opening one:
 
 1. Read [AGENTS.md](AGENTS.md) — code standards, module conventions, architecture rules
 2. One feature or fix per PR
-3. `./gradlew lint && ./gradlew assembleDebug` must pass before submitting
+3. `make format && make lint && make test` must pass before submitting
 
 Adding new feature → open issue first.
 

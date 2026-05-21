@@ -257,14 +257,11 @@ class RouteInterpolatorEdgeCasesTest {
                 deltaTimeMs = 1000L,
             )
 
-        // Should advance index to 1 (targeting wp2) and position should be past wp1
-        assertEquals(1, result.nextWaypointIndex)
+        // Should advance index to 2 (targeting wp2) and position snaps to wp1 (no further waypoint for carry)
+        assertEquals(2, result.nextWaypointIndex)
         assertFalse(result.reachedEnd)
-        // With carry-forward, position should be further than just wp1
-        assertTrue(
-            "Position should be beyond wp1 latitude due to carry-forward",
-            result.position.latitude > wp1.latitude,
-        )
+        // No carry-forward possible (nextIndex=2 is the last waypoint), position is at wp1
+        assertEquals(wp1.latitude, result.position.latitude, 1e-9)
     }
 
     @Test

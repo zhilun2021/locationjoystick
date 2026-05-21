@@ -106,6 +106,12 @@ interface PreferencesDataSource {
 
     /** Sets the timestamp (epoch ms) of the last teleport action. */
     suspend fun setLastTeleportTime(ms: Long)
+
+    /** Gets whether the map camera should follow the spoofed location marker. */
+    fun getMapFollowsLocation(): Flow<Boolean>
+
+    /** Sets whether the map camera should follow the spoofed location marker. */
+    suspend fun setMapFollowsLocation(enabled: Boolean)
 }
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -154,6 +160,7 @@ class AppPreferencesDataSource
             val JITTER_MOVING_RADIUS_METERS = doublePreferencesKey("jitter_moving_radius_meters")
             val JITTER_INTERVAL_SECONDS = intPreferencesKey("jitter_interval_seconds")
             val LAST_TELEPORT_TIME_MS = longPreferencesKey("last_teleport_time_ms")
+            val MAP_FOLLOWS_LOCATION = booleanPreferencesKey("map_follows_location")
         }
 
         override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -361,6 +368,21 @@ class AppPreferencesDataSource
 
         override suspend fun setLastTeleportTime(ms: Long) {
             dataStore.edit { prefs -> prefs[Keys.LAST_TELEPORT_TIME_MS] = ms }
+        }
+
+        override fun getMapFollowsLocation(): Flow<Boolean> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading map follows location preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.MAP_FOLLOWS_LOCATION] ?: true }
+
+        override suspend fun setMapFollowsLocation(enabled: Boolean) {
+            dataStore.edit { prefs -> prefs[Keys.MAP_FOLLOWS_LOCATION] = enabled }
         }
 
         companion object {

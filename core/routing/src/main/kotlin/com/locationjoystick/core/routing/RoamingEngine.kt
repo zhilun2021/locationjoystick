@@ -51,9 +51,10 @@ class RoamingEngine
     constructor(
         private val osrmClient: OsrmClient,
         private val routeInterpolator: RouteInterpolator,
+        dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     ) : AutoCloseable {
         /** Coroutine scope for all roaming coroutines. Uses SupervisorJob so one failure doesn't cancel others. */
-        private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        private val engineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
         /** Serializes cancel+launch so concurrent startRoaming/stopRoaming calls can't leave a stale job. */
         private val jobMutex = Mutex()
@@ -92,8 +93,8 @@ class RoamingEngine
         fun startRoaming(
             config: RoamingConfig,
             speedMs: Double,
-            onPositionUpdate: (LatLng) -> Unit,
             onRouteUpdate: (List<LatLng>) -> Unit = {},
+            onPositionUpdate: (LatLng) -> Unit,
         ): Job {
             // Cancel any existing job then launch the new one under the mutex to prevent
             // a race where concurrent calls leave a stale cancelled job in activeJob.

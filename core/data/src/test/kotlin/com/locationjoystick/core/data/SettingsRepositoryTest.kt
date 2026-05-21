@@ -576,6 +576,10 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
 
     val jitterIntervalSecondsFlow = MutableStateFlow(AppPreferencesDataSource.DEFAULT_JITTER_INTERVAL_SECONDS)
 
+    val lastTeleportTimeFlow = MutableStateFlow(0L)
+
+    val mapFollowsLocationFlow = MutableStateFlow(true)
+
     override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> = speedProfilesFlow
 
     override suspend fun setWalkSpeed(ms: Double) {
@@ -656,5 +660,17 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
     override suspend fun setJitterIntervalSeconds(seconds: Int) {
         jitterIntervalSecondsFlow.value =
             seconds.coerceIn(AppPreferencesDataSource.MIN_JITTER_INTERVAL_SECONDS, AppPreferencesDataSource.MAX_JITTER_INTERVAL_SECONDS)
+    }
+
+    override fun getLastTeleportTime(): Flow<Long> = lastTeleportTimeFlow
+
+    override suspend fun setLastTeleportTime(ms: Long) {
+        lastTeleportTimeFlow.value = ms
+    }
+
+    override fun getMapFollowsLocation(): Flow<Boolean> = mapFollowsLocationFlow
+
+    override suspend fun setMapFollowsLocation(enabled: Boolean) {
+        mapFollowsLocationFlow.value = enabled
     }
 }
