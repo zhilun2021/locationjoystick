@@ -54,6 +54,40 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import kotlin.random.Random
 
+/**
+ * Immutable snapshot of all @Volatile service state, captured once at the start of each tick by
+ * [captureSnapshot] to avoid TOCTOU races between reading individual fields in [buildLocation].
+ *
+ * @property latitude Current spoofed latitude.
+ * @property longitude Current spoofed longitude.
+ * @property speedMs Current speed in m/s; 0 when stationary.
+ * @property bearing Current heading in degrees; only meaningful when [speedMs] > 0.
+ * @property lastNonZeroBearing The most recent bearing from a tick where [speedMs] was non-zero.
+ *   Used to hold the displayed heading when the device stops moving.
+ * @property mode Active [MockMode] at snapshot time.
+ * @property jitterIdleRadiusMeters Gaussian noise radius applied while stationary (TELEPORT mode).
+ * @property jitterMovingRadiusMeters Gaussian noise radius applied while moving.
+ * @property shouldApplyMovingJitter Pre-computed gate: true when the jitter interval has elapsed.
+ *   [buildLocation] uses this directly without any clock arithmetic.
+ * @property altitudeMeters Seed altitude for the Gaussian random walk this tick; written back from
+ *   [LocationFix.altitudeMeters] after each successful tick.
+ * @property warmupStartMs Wall-clock ms ([SystemClock.elapsedRealtime]) when [startSpoofing] was
+ *   called. Intentionally NOT reset on pause/resume so the warmup curve is continuous.
+ * @property spoofingStartMs Same instant as [warmupStartMs]; both set together in [startSpoofing]
+ *   and kept separate for semantic clarity.
+ * @property warmupEnabled Whether the accuracy warm-up envelope feature is active.
+ * @property bearingHoldEnabled Whether to hold the last non-zero bearing when stationary.
+ * @property altitudeEnabled Whether to simulate altitude with a Gaussian random walk.
+ * @property satelliteExtrasEnabled Whether to attach satellite count extras to each fix.
+ * @property suspendedMockingEnabled Whether the push/pause cycle feature is active.
+ * @property suspendedPhaseStartMs Timestamp of the last phase transition in the push/pause cycle.
+ * @property isSuspendedPhase True when currently in the pause window of the push/pause cycle;
+ *   [buildLocation] returns null for the entire duration of this phase.
+ * @property cachedSatelliteCount Slow-churn total satellite count, refreshed every
+ *   [AppConstants.RealismConstants.SATELLITE_UPDATE_INTERVAL_MS] ms by [captureSnapshot].
+ * @property cachedUsedInFixCount Slow-churn in-fix satellite count, updated alongside
+ *   [cachedSatelliteCount].
+ */
 internal data class LocationSnapshot(
     val latitude: Double,
     val longitude: Double,
@@ -78,6 +112,22 @@ internal data class LocationSnapshot(
     val cachedUsedInFixCount: Int,
 )
 
+/**
+ * Pure output of [buildLocation]: a GPS fix expressed in domain types, with no Android imports.
+ * Translated into an [android.location.Location] only inside [applyToProvider].
+ *
+ * @property latitude Spoofed latitude, possibly perturbed by jitter.
+ * @property longitude Spoofed longitude, possibly perturbed by jitter.
+ * @property altitudeMeters Result of the Gaussian altitude random walk for this tick.
+ * @property speedMs Speed in m/s to report to the provider.
+ * @property bearing Heading in degrees after bearing-hold logic is applied.
+ * @property accuracyMeters Horizontal accuracy, either from the warm-up envelope or perturbed fine accuracy.
+ * @property verticalAccuracyMeters Fixed vertical accuracy constant.
+ * @property bearingAccuracyDegrees Fixed bearing accuracy constant.
+ * @property speedAccuracyMps Fixed speed accuracy constant.
+ * @property satelliteCount Total visible satellite count, or null when satellite extras are disabled.
+ * @property usedInFixCount Satellites contributing to this fix, or null when satellite extras are disabled.
+ */
 internal data class LocationFix(
     val latitude: Double,
     val longitude: Double,
@@ -92,6 +142,7 @@ internal data class LocationFix(
     val usedInFixCount: Int?,
 )
 
+/** Adds bounded Gaussian noise to [base] accuracy, clamped to [[ACCURACY_MIN], [ACCURACY_MAX]]. */
 internal fun perturbAccuracy(
     base: Float,
     random: Random,
@@ -104,6 +155,17 @@ internal fun perturbAccuracy(
             ).toFloat()
     ).coerceIn(AppConstants.JitterConstants.ACCURACY_MIN, AppConstants.JitterConstants.ACCURACY_MAX)
 
+/**
+ * Pure, side-effect-free GPS fix builder. No Android imports; [random] is injectable for testing.
+ *
+ * Execution order: suspended-phase check → altitude Gaussian walk → bearing hold → position jitter
+ * → warm-up accuracy envelope → accuracy perturbation → satellite extras.
+ *
+ * @param state Immutable snapshot of all service state for this tick.
+ * @param nowMs [SystemClock.elapsedRealtime] at the start of the tick, used for the warm-up curve.
+ * @param random Source of randomness; pass [Random.Default] in production.
+ * @return A completed [LocationFix], or null when [state.isSuspendedPhase] is true (skip this tick).
+ */
 internal fun buildLocation(
     state: LocationSnapshot,
     nowMs: Long,
@@ -308,23 +370,32 @@ class MockLocationService : Service() {
         AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT
 
     // Per-tick realism state
+    /** Bearing from the last tick where speedMs > 0; held when the device is stationary. */
     @Volatile private var lastNonZeroBearing: Float = 0f
 
+    /** Seed altitude for the next tick's Gaussian walk; written back from LocationFix.altitudeMeters after each successful tick. */
     @Volatile private var currentAltitudeMeters: Double =
         AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS
 
+    /** Wall-clock ms when startSpoofing() was called; NOT reset on pause/resume. */
     @Volatile private var spoofingStartMs: Long = 0L
 
+    /** Same instant as spoofingStartMs; kept separate for semantic clarity. NOT reset on pause/resume. */
     @Volatile private var warmupStartMs: Long = 0L
 
+    /** Timestamp of the most recent push/pause phase transition. */
     @Volatile private var suspendedPhaseStartMs: Long = 0L
 
+    /** True while in the pause window of the push/pause cycle; buildLocation returns null during this phase. */
     @Volatile private var isSuspendedPhase: Boolean = false
 
+    /** Timestamp of the last satellite count refresh; controls the slow-churn update cadence. */
     @Volatile private var lastSatelliteUpdateMs: Long = 0L
 
+    /** Cached total visible satellite count; updated every SATELLITE_UPDATE_INTERVAL_MS. */
     @Volatile private var cachedSatelliteCount: Int = 0
 
+    /** Cached satellites-used-in-fix count; updated alongside cachedSatelliteCount. */
     @Volatile private var cachedUsedInFixCount: Int = 0
 
     override fun onCreate() {
@@ -420,6 +491,7 @@ class MockLocationService : Service() {
                 .catch { e -> Log.e(TAG, "jitterIntervalSeconds flow error", e) }
                 .collect { jitterIntervalSeconds = it }
         }
+        // Realism toggle flows — each updates a @Volatile field consumed by captureSnapshot() → buildLocation().
         serviceScope.launch {
             settingsRepository
                 .getRealismBearingHoldIdle()
@@ -851,6 +923,14 @@ class MockLocationService : Service() {
             }
     }
 
+    /**
+     * Advances the push/pause phase state machine before each tick.
+     *
+     * Mutates [isSuspendedPhase] and [suspendedPhaseStartMs] (@Volatile fields). Must be called
+     * before [captureSnapshot] so the snapshot reflects the current phase for [buildLocation].
+     * No-ops when suspended mocking is disabled or when route replay / walk-to is active (those
+     * modes must not drop ticks).
+     */
     private fun updateSuspendedPhase() {
         val now = SystemClock.elapsedRealtime()
         val mode = locationRepository.currentMode.value
@@ -875,6 +955,11 @@ class MockLocationService : Service() {
         }
     }
 
+    /**
+     * Freezes all @Volatile fields into an immutable [LocationSnapshot] to eliminate TOCTOU races
+     * in the tick loop. Also computes [LocationSnapshot.shouldApplyMovingJitter] and refreshes the
+     * slow-churn satellite counts when their interval has elapsed.
+     */
     private fun captureSnapshot(nowMs: Long): LocationSnapshot {
         val mode = locationRepository.currentMode.value
         val jitterIntervalMs = jitterIntervalSeconds * 1000L
@@ -922,6 +1007,10 @@ class MockLocationService : Service() {
         )
     }
 
+    /**
+     * Android adapter — the only place that touches [android.location.Location] APIs. Translates
+     * the pure [LocationFix] into a test provider location update.
+     */
     private fun applyToProvider(fix: LocationFix) {
         val loc =
             Location(LocationManager.GPS_PROVIDER).apply {

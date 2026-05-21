@@ -201,4 +201,58 @@ class BuildLocationTest {
         assertNull(fix!!.satelliteCount)
         assertNull(fix.usedInFixCount)
     }
+
+    @Test
+    fun `warmup accuracy after warmup period varies with random seed`() {
+        val warmupStart = 1000L
+        // 5 seconds past the end of warmup
+        val nowMs = warmupStart + AppConstants.RealismConstants.WARMUP_DURATION_SECONDS * 1000L + 5_000L
+        val snap = baseSnapshot(warmupEnabled = true, warmupStartMs = warmupStart)
+        val accuracies = (1..20).map { seed ->
+            buildLocation(snap, nowMs, Random(seed))!!.accuracyMeters
+        }
+        // All within the coerced accuracy range
+        accuracies.forEach { acc ->
+            assertTrue(
+                "Post-warmup accuracy $acc should be in [ACCURACY_MIN, ACCURACY_MAX]",
+                acc >= AppConstants.JitterConstants.ACCURACY_MIN && acc <= AppConstants.JitterConstants.ACCURACY_MAX,
+            )
+        }
+        // Values vary across seeds (perturbAccuracy is called, not the raw lerp value)
+        assertTrue("Post-warmup accuracy should vary across seeds", accuracies.toSet().size > 1)
+    }
+
+    @Test
+    fun `suspended null proportion matches push-pause duty cycle`() {
+        val pushMs = AppConstants.RealismConstants.SUSPENDED_PUSH_DURATION_MS
+        val pauseMs = AppConstants.RealismConstants.SUSPENDED_PAUSE_DURATION_MS
+        val tickMs = 1_000L
+        // Simulate 5 full cycles (external phase management, like updateSuspendedPhase())
+        val totalMs = (pushMs + pauseMs) * 5
+        var nullCount = 0
+        var totalCount = 0
+        var phaseStartMs = 0L
+        var isSuspendedPhase = false
+        var t = 0L
+        while (t < totalMs) {
+            val elapsed = t - phaseStartMs
+            if (!isSuspendedPhase && elapsed >= pushMs) {
+                isSuspendedPhase = true
+                phaseStartMs = t
+            } else if (isSuspendedPhase && elapsed >= pauseMs) {
+                isSuspendedPhase = false
+                phaseStartMs = t
+            }
+            val snap = baseSnapshot(suspendedMockingEnabled = true, isSuspendedPhase = isSuspendedPhase)
+            if (buildLocation(snap, t, Random(t.toInt())) == null) nullCount++
+            totalCount++
+            t += tickMs
+        }
+        val nullRatio = nullCount.toDouble() / totalCount
+        val expectedRatio = pauseMs.toDouble() / (pushMs + pauseMs)
+        assertTrue(
+            "Null ratio $nullRatio should be within 0.1 of expected $expectedRatio",
+            kotlin.math.abs(nullRatio - expectedRatio) < 0.1,
+        )
+    }
 }

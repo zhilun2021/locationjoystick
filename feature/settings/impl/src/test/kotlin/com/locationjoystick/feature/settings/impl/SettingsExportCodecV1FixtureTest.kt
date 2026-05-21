@@ -31,20 +31,9 @@ class SettingsExportCodecV1FixtureTest {
     }
 
     @Test
-    fun `v1 fixture missing realism keys fall back to defaults`() {
-        val result = SettingsExportCodec.parseExportData(v1Fixture)
-        assertEquals(AppConstants.RealismConstants.BEARING_HOLD_ON_IDLE_DEFAULT, result.settings.bearingHoldOnIdle)
-        assertEquals(AppConstants.RealismConstants.ALTITUDE_ENABLED_DEFAULT, result.settings.altitudeEnabled)
-        assertEquals(AppConstants.RealismConstants.WARMUP_ENABLED_DEFAULT, result.settings.warmupEnabled)
-        assertEquals(AppConstants.RealismConstants.SATELLITE_EXTRAS_ENABLED_DEFAULT, result.settings.satelliteExtrasEnabled)
-        assertEquals(AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT, result.settings.suspendedMockingEnabled)
-    }
-
-    @Test
-    fun `v2 round-trip preserves all realism fields`() {
+    fun `v1 round-trip preserves all realism fields`() {
         val original =
             SettingsExportCodec.parseExportData(v1Fixture).copy(
-                schemaVersion = 2,
                 settings =
                     SettingsExportCodec.parseExportData(v1Fixture).settings.copy(
                         bearingHoldOnIdle = false,
@@ -64,10 +53,21 @@ class SettingsExportCodecV1FixtureTest {
     }
 
     @Test
-    fun `version 3 throws`() {
-        val v3Json = v1Fixture.replace(""""schemaVersion": 1""", """"schemaVersion": 3""")
+    fun `version 0 throws`() {
+        val v0Json = v1Fixture.replace(""""schemaVersion": 1""", """"schemaVersion": 0""")
         try {
-            SettingsExportCodec.parseExportData(v3Json)
+            SettingsExportCodec.parseExportData(v0Json)
+            assertTrue("Should have thrown", false)
+        } catch (e: IllegalArgumentException) {
+            assertTrue(e.message?.contains("Unsupported") == true)
+        }
+    }
+
+    @Test
+    fun `version 2 throws`() {
+        val v2Json = v1Fixture.replace(""""schemaVersion": 1""", """"schemaVersion": 2""")
+        try {
+            SettingsExportCodec.parseExportData(v2Json)
             assertTrue("Should have thrown", false)
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message?.contains("Unsupported") == true)

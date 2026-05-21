@@ -101,7 +101,7 @@ object AppConstants {
     }
 
     object ExportConstants {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 1
         const val FILENAME_PREFIX = "locationjoystick-export"
         const val MIME_TYPE = "application/json"
         const val GPX_MIME_TYPE = "application/gpx+xml"

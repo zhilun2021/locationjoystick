@@ -116,7 +116,7 @@ internal object SettingsExportCodec {
     fun parseExportData(json: String): ExportData {
         val root = JSONObject(json)
         val schemaVersion = root.optInt("schemaVersion", 1)
-        if (schemaVersion !in 1..2) throw IllegalArgumentException("Unsupported schema version: $schemaVersion")
+        if (schemaVersion != 1) throw IllegalArgumentException("Unsupported schema version: $schemaVersion")
 
         val settingsObj = root.optJSONObject("settings") ?: JSONObject()
         val speedUnit =

@@ -682,14 +682,32 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
     private val realismSuspendedMockingEnabledFlow = MutableStateFlow(AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT)
 
     override fun getRealismBearingHoldIdle(): Flow<Boolean> = realismBearingHoldIdleFlow
+
     override fun getRealismAltitudeEnabled(): Flow<Boolean> = realismAltitudeEnabledFlow
+
     override fun getRealismWarmupEnabled(): Flow<Boolean> = realismWarmupEnabledFlow
+
     override fun getRealismSatelliteExtrasEnabled(): Flow<Boolean> = realismSatelliteExtrasEnabledFlow
+
     override fun getRealismSuspendedMockingEnabled(): Flow<Boolean> = realismSuspendedMockingEnabledFlow
 
-    override suspend fun setRealismBearingHoldIdle(enabled: Boolean) { realismBearingHoldIdleFlow.value = enabled }
-    override suspend fun setRealismAltitudeEnabled(enabled: Boolean) { realismAltitudeEnabledFlow.value = enabled }
-    override suspend fun setRealismWarmupEnabled(enabled: Boolean) { realismWarmupEnabledFlow.value = enabled }
-    override suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean) { realismSatelliteExtrasEnabledFlow.value = enabled }
-    override suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) { realismSuspendedMockingEnabledFlow.value = enabled }
+    override suspend fun setRealismBearingHoldIdle(enabled: Boolean) {
+        realismBearingHoldIdleFlow.value = enabled
+    }
+
+    override suspend fun setRealismAltitudeEnabled(enabled: Boolean) {
+        realismAltitudeEnabledFlow.value = enabled
+    }
+
+    override suspend fun setRealismWarmupEnabled(enabled: Boolean) {
+        realismWarmupEnabledFlow.value = enabled
+    }
+
+    override suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean) {
+        realismSatelliteExtrasEnabledFlow.value = enabled
+    }
+
+    override suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) {
+        realismSuspendedMockingEnabledFlow.value = enabled
+    }
 }
