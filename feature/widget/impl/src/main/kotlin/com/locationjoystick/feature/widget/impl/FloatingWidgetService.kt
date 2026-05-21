@@ -1007,7 +1007,9 @@ class FloatingWidgetService :
 
     private fun startWalkToFavorite(favorite: FavoriteLocation) {
         walkCoordinator.startWalk(favorite.position, serviceScope) { newPos, speedMs, bearing ->
-            startService(MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing))
+            startService(
+                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing),
+            )
         }
     }
 
@@ -1086,7 +1088,13 @@ class FloatingWidgetService :
                     onWalkTo = { pos ->
                         walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
                             startService(
-                                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing),
+                                MockLocationIntentBuilder.updatePosition(
+                                    this@FloatingWidgetService,
+                                    newPos.latitude,
+                                    newPos.longitude,
+                                    speedMs,
+                                    bearing,
+                                ),
                             )
                         }
                         moveAppToBack()
@@ -1105,7 +1113,13 @@ class FloatingWidgetService :
                         sendReplayCancel()
                         walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
                             startService(
-                                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing),
+                                MockLocationIntentBuilder.updatePosition(
+                                    this@FloatingWidgetService,
+                                    newPos.latitude,
+                                    newPos.longitude,
+                                    speedMs,
+                                    bearing,
+                                ),
                             )
                         }
                         moveAppToBack()

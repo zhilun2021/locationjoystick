@@ -114,15 +114,23 @@ interface PreferencesDataSource {
     suspend fun setMapFollowsLocation(enabled: Boolean)
 
     fun getRealismBearingHoldIdle(): Flow<Boolean>
+
     fun getRealismAltitudeEnabled(): Flow<Boolean>
+
     fun getRealismWarmupEnabled(): Flow<Boolean>
+
     fun getRealismSatelliteExtrasEnabled(): Flow<Boolean>
+
     fun getRealismSuspendedMockingEnabled(): Flow<Boolean>
 
     suspend fun setRealismBearingHoldIdle(enabled: Boolean)
+
     suspend fun setRealismAltitudeEnabled(enabled: Boolean)
+
     suspend fun setRealismWarmupEnabled(enabled: Boolean)
+
     suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean)
+
     suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean)
 }
 
