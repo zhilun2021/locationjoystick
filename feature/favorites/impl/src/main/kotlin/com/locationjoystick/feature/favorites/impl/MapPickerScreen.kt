@@ -45,6 +45,7 @@ import com.locationjoystick.core.map.geojson.buildMarkerGeoJson
 import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.overlay.OverlayService
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -68,12 +69,16 @@ fun MapPickerRoute(
     initialPosition: com.locationjoystick.core.model.LatLng? = null,
     onLocationPicked: (name: String, lat: Double, lon: Double) -> Unit,
     onBack: () -> Unit,
+    recentSearches: List<RecentSearch> = emptyList(),
+    onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     bottomBar: @Composable () -> Unit = {},
 ) {
     MapPickerScreen(
         initialPosition = initialPosition,
         onLocationPicked = onLocationPicked,
         onBack = onBack,
+        recentSearches = recentSearches,
+        onSearchCommitted = onSearchCommitted,
         bottomBar = bottomBar,
     )
 }
@@ -92,6 +97,8 @@ private fun MapPickerScreenPreview() {
 @Composable
 internal fun MapPickerScreen(
     initialPosition: com.locationjoystick.core.model.LatLng? = null,
+    recentSearches: List<RecentSearch> = emptyList(),
+    onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     onLocationPicked: (name: String, lat: Double, lon: Double) -> Unit,
     onBack: () -> Unit,
     bottomBar: @Composable () -> Unit = {},
@@ -257,6 +264,8 @@ internal fun MapPickerScreen(
                         val src = markerSource.value ?: return@NominatimSearchBar
                         src.setGeoJson(buildMarkerGeoJson(lat, lon))
                     },
+                    recentSearches = recentSearches,
+                    onSearchCommitted = onSearchCommitted,
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)

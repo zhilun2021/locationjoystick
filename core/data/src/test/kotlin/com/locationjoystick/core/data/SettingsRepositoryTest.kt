@@ -6,6 +6,7 @@ import com.locationjoystick.core.datastore.AppPreferencesDataSource
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
@@ -709,5 +710,21 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
 
     override suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) {
         realismSuspendedMockingEnabledFlow.value = enabled
+    }
+
+    val recentSearchesFlow = MutableStateFlow<List<RecentSearch>>(emptyList())
+
+    override fun getRecentSearches(): Flow<List<RecentSearch>> = recentSearchesFlow
+
+    override suspend fun addRecentSearch(
+        displayName: String,
+        lat: Double,
+        lon: Double,
+    ) {
+        val updated =
+            (listOf(RecentSearch(displayName, lat, lon)) + recentSearchesFlow.value)
+                .distinctBy { it.displayName }
+                .take(AppConstants.NominatimConstants.RECENT_SEARCHES_MAX_COUNT)
+        recentSearchesFlow.value = updated
     }
 }

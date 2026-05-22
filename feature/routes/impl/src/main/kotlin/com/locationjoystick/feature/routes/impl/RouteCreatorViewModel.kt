@@ -8,8 +8,10 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
 import com.locationjoystick.core.model.Waypoint
@@ -47,6 +49,7 @@ class RouteCreatorViewModel
         private val osrmClient: OsrmClient,
         private val locationRepository: LocationRepository,
         private val favoriteRepository: FavoriteRepository,
+        private val settingsRepository: SettingsRepository,
         savedStateHandle: SavedStateHandle,
     ) : ViewModel() {
         private val routeType =
@@ -66,6 +69,19 @@ class RouteCreatorViewModel
             favoriteRepository
                 .getFavorites()
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+        val recentSearches: StateFlow<List<RecentSearch>> =
+            settingsRepository
+                .getRecentSearches()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+        fun addRecentSearch(
+            displayName: String,
+            lat: Double,
+            lon: Double,
+        ) {
+            viewModelScope.launch { settingsRepository.addRecentSearch(displayName, lat, lon) }
+        }
 
         fun addWaypoint(latLng: LatLng) {
             val currentWaypoints = _state.value.waypoints

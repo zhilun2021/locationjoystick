@@ -22,11 +22,12 @@ class WalkCoordinatorTest {
     private lateinit var walkToEngine: WalkToEngine
     private lateinit var walkCoordinator: WalkCoordinator
 
-    private val walkProfile = SpeedProfile(
-        id = "walk",
-        name = "Walk",
-        speedMetersPerSecond = AppConstants.ProfileConstants.WALK_SPEED_MPS,
-    )
+    private val walkProfile =
+        SpeedProfile(
+            id = "walk",
+            name = "Walk",
+            speedMetersPerSecond = AppConstants.ProfileConstants.WALK_SPEED_MPS,
+        )
 
     @Before
     fun setUp() {

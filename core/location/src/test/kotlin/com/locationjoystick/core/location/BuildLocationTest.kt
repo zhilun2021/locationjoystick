@@ -208,9 +208,10 @@ class BuildLocationTest {
         // 5 seconds past the end of warmup
         val nowMs = warmupStart + AppConstants.RealismConstants.WARMUP_DURATION_SECONDS * 1000L + 5_000L
         val snap = baseSnapshot(warmupEnabled = true, warmupStartMs = warmupStart)
-        val accuracies = (1..20).map { seed ->
-            buildLocation(snap, nowMs, Random(seed))!!.accuracyMeters
-        }
+        val accuracies =
+            (1..20).map { seed ->
+                buildLocation(snap, nowMs, Random(seed))!!.accuracyMeters
+            }
         // All within the coerced accuracy range
         accuracies.forEach { acc ->
             assertTrue(

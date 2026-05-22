@@ -61,6 +61,7 @@ import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.overlay.OverlayService
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -90,18 +91,21 @@ fun RouteCreatorRoute(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val favorites by viewModel.favorites.collectAsStateWithLifecycle()
     val livePosition by viewModel.livePosition.collectAsStateWithLifecycle()
+    val recentSearches by viewModel.recentSearches.collectAsStateWithLifecycle()
 
     RouteCreatorScreen(
         state = state,
         initialPosition = viewModel.currentPosition,
         favorites = favorites,
         currentPosition = livePosition,
+        recentSearches = recentSearches,
         onAddWaypoint = viewModel::addWaypoint,
         onUndo = viewModel::undoLastWaypoint,
         onSaveRoute = { name ->
             viewModel.saveRoute(name)
             onRouteSaved()
         },
+        onSearchCommitted = viewModel::addRecentSearch,
         onBack = onBack,
         bottomBar = bottomBar,
     )
@@ -127,9 +131,11 @@ internal fun RouteCreatorScreen(
     initialPosition: LatLng? = null,
     favorites: List<FavoriteLocation> = emptyList(),
     currentPosition: LatLng? = null,
+    recentSearches: List<RecentSearch> = emptyList(),
     onAddWaypoint: (LatLng) -> Unit,
     onUndo: () -> Unit,
     onSaveRoute: (String) -> Unit,
+    onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     onBack: () -> Unit,
     bottomBar: @Composable () -> Unit = {},
 ) {
@@ -365,6 +371,8 @@ internal fun RouteCreatorScreen(
                             500,
                         )
                     },
+                    recentSearches = recentSearches,
+                    onSearchCommitted = onSearchCommitted,
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)

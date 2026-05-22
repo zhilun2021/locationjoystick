@@ -9,6 +9,7 @@ import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.model.FavoriteLocation
+import com.locationjoystick.core.model.RecentSearch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,11 @@ class FavoritesViewModel
                 initialValue = FavoritesUiState(isLoading = true),
             )
 
+        val recentSearches: StateFlow<List<RecentSearch>> =
+            settingsRepository
+                .getRecentSearches()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
         val currentPosition: com.locationjoystick.core.model.LatLng?
             get() = locationRepository.currentPosition.value
 
@@ -65,6 +71,14 @@ class FavoritesViewModel
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyMap(),
             )
+
+        fun addRecentSearch(
+            displayName: String,
+            lat: Double,
+            lon: Double,
+        ) {
+            viewModelScope.launch { settingsRepository.addRecentSearch(displayName, lat, lon) }
+        }
 
         fun teleportTo(favorite: FavoriteLocation) {
             viewModelScope.launch {

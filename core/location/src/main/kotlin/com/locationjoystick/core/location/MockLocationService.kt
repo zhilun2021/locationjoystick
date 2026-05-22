@@ -370,6 +370,7 @@ class MockLocationService : Service() {
         AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT
 
     // Per-tick realism state
+
     /** Bearing from the last tick where speedMs > 0; held when the device is stationary. */
     @Volatile private var lastNonZeroBearing: Float = 0f
 

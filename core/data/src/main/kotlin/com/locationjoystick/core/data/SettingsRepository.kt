@@ -6,6 +6,7 @@ import com.locationjoystick.core.datastore.toActiveSpeedProfile
 import com.locationjoystick.core.datastore.toKey
 import com.locationjoystick.core.datastore.toWidgetFeature
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
@@ -157,4 +158,12 @@ class SettingsRepository
         suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean) = dataSource.setRealismSatelliteExtrasEnabled(enabled)
 
         suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) = dataSource.setRealismSuspendedMockingEnabled(enabled)
+
+        fun getRecentSearches(): Flow<List<RecentSearch>> = dataSource.getRecentSearches()
+
+        suspend fun addRecentSearch(
+            displayName: String,
+            lat: Double,
+            lon: Double,
+        ) = dataSource.addRecentSearch(displayName, lat, lon)
     }

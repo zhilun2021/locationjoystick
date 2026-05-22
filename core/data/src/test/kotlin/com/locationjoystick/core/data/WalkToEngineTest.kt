@@ -23,11 +23,12 @@ class WalkToEngineTest {
     private lateinit var engine: WalkToEngine
 
     // A walk profile fast enough to cover test distances in one tick
-    private val walkProfile = SpeedProfile(
-        id = "walk",
-        name = "Walk",
-        speedMetersPerSecond = AppConstants.ProfileConstants.WALK_SPEED_MPS,
-    )
+    private val walkProfile =
+        SpeedProfile(
+            id = "walk",
+            name = "Walk",
+            speedMetersPerSecond = AppConstants.ProfileConstants.WALK_SPEED_MPS,
+        )
 
     @Before
     fun setUp() {
@@ -48,11 +49,14 @@ class WalkToEngineTest {
             locationRepository.setPositionInternal(current)
             locationRepository.setWalkTarget(target)
 
-            val expectedSpeedMs = (AppConstants.ProfileConstants.WALK_SPEED_MPS *
-                (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).let {
-                // advanceDistance = minOf(speed*interval, distance) ≈ speed*interval since dist >> advance
-                (it / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
-            }
+            val expectedSpeedMs =
+                (
+                    AppConstants.ProfileConstants.WALK_SPEED_MPS *
+                        (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
+                ).let {
+                    // advanceDistance = minOf(speed*interval, distance) ≈ speed*interval since dist >> advance
+                    (it / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
+                }
 
             var reportedSpeed: Float? = null
             var callCount = 0
@@ -91,12 +95,13 @@ class WalkToEngineTest {
             locationRepository.setPositionInternal(current)
             locationRepository.setWalkTarget(target)
 
-            val expectedBearing = calculateBearing(
-                current.latitude,
-                current.longitude,
-                target.latitude,
-                target.longitude,
-            ).toFloat()
+            val expectedBearing =
+                calculateBearing(
+                    current.latitude,
+                    current.longitude,
+                    target.latitude,
+                    target.longitude,
+                ).toFloat()
 
             var reportedBearing: Float? = null
             var callCount = 0

@@ -98,6 +98,7 @@ object AppConstants {
         const val SEARCH_DEBOUNCE_MS = 300L
         const val CONNECT_TIMEOUT_MS = 5000
         const val READ_TIMEOUT_MS = 5000
+        const val RECENT_SEARCHES_MAX_COUNT = 5
     }
 
     object ExportConstants {

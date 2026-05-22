@@ -69,6 +69,7 @@ import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -124,7 +125,15 @@ fun MapRoute(
     viewModel: MapViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    MapScreen(uiState = uiState, onOpenDrawer = onOpenDrawer, onAction = viewModel::onAction, bottomBar = bottomBar)
+    val recentSearches by viewModel.recentSearches.collectAsStateWithLifecycle()
+    MapScreen(
+        uiState = uiState,
+        recentSearches = recentSearches,
+        onOpenDrawer = onOpenDrawer,
+        onAction = viewModel::onAction,
+        onSearchCommitted = viewModel::addRecentSearch,
+        bottomBar = bottomBar,
+    )
 }
 
 @Composable
@@ -132,6 +141,8 @@ internal fun MapScreen(
     uiState: MapUiState,
     onOpenDrawer: () -> Unit,
     onAction: (MapAction) -> Unit,
+    recentSearches: List<RecentSearch> = emptyList(),
+    onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     bottomBar: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -459,6 +470,8 @@ internal fun MapScreen(
                         )
                         showSearch.value = false
                     },
+                    recentSearches = recentSearches,
+                    onSearchCommitted = onSearchCommitted,
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)

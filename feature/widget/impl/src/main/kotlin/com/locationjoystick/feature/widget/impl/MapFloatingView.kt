@@ -62,6 +62,7 @@ import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -93,6 +94,8 @@ internal fun MapFloatingView(
     onStopRoaming: () -> Unit,
     onDismiss: () -> Unit,
     context: Context,
+    recentSearches: List<RecentSearch> = emptyList(),
+    onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
 ) {
     val currentPosition by locationRepository.currentPosition.collectAsStateWithLifecycle()
     val walkTarget by locationRepository.walkTarget.collectAsStateWithLifecycle()
@@ -308,6 +311,8 @@ internal fun MapFloatingView(
                     )
                     showSearch = false
                 },
+                recentSearches = recentSearches,
+                onSearchCommitted = onSearchCommitted,
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter)

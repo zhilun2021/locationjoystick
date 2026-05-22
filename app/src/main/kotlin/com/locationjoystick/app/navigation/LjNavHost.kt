@@ -13,10 +13,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -234,6 +236,7 @@ fun LjNavHost(
                         navController.getBackStackEntry(FAVORITES_GRAPH)
                     }
                 val favoritesViewModel: FavoritesViewModel = hiltViewModel(parentEntry)
+                val recentSearches by favoritesViewModel.recentSearches.collectAsStateWithLifecycle()
                 MapPickerRoute(
                     initialPosition = favoritesViewModel.currentPosition,
                     onLocationPicked = { name, lat, lon ->
@@ -241,6 +244,8 @@ fun LjNavHost(
                         navController.navigateUp()
                     },
                     onBack = { navController.navigateUp() },
+                    recentSearches = recentSearches,
+                    onSearchCommitted = favoritesViewModel::addRecentSearch,
                     bottomBar = { LjBannerAd() },
                 )
             }

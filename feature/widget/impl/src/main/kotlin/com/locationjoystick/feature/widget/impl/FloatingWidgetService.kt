@@ -1136,6 +1136,10 @@ class FloatingWidgetService :
                     },
                     onDismiss = { hidePanelView() },
                     context = this@FloatingWidgetService,
+                    recentSearches = settingsRepository.getRecentSearches().collectAsState(initial = emptyList()).value,
+                    onSearchCommitted = { name, lat, lon ->
+                        serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }
+                    },
                 )
             }
         }

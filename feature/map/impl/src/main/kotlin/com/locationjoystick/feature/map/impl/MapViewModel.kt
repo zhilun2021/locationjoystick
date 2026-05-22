@@ -17,6 +17,7 @@ import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
@@ -24,12 +25,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -72,6 +75,11 @@ class MapViewModel
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
+
+        val recentSearches: StateFlow<List<RecentSearch>> =
+            settingsRepository
+                .getRecentSearches()
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
         private var latestRoamingDefaults: RoamingDefaults = RoamingDefaults()
 
@@ -405,6 +413,14 @@ class MapViewModel
                     }
                 }
             }
+        }
+
+        fun addRecentSearch(
+            displayName: String,
+            lat: Double,
+            lon: Double,
+        ) {
+            viewModelScope.launch { settingsRepository.addRecentSearch(displayName, lat, lon) }
         }
 
         private fun teleportTo(position: LatLng) {

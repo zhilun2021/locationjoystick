@@ -4,10 +4,15 @@ import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -20,12 +25,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.model.RecentSearch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -40,6 +47,8 @@ private const val TAG = "NominatimSearchBar"
 fun NominatimSearchBar(
     onLocationSelected: (lat: Double, lon: Double, displayName: String) -> Unit,
     modifier: Modifier = Modifier,
+    recentSearches: List<RecentSearch> = emptyList(),
+    onSearchCommitted: ((displayName: String, lat: Double, lon: Double) -> Unit)? = null,
 ) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<NominatimResult>>(emptyList()) }
@@ -88,7 +97,8 @@ fun NominatimSearchBar(
         }
     }
 
-    val showResults = results.isNotEmpty() || (query.length >= 2 && !isLoading)
+    val showRecent = query.isEmpty() && recentSearches.isNotEmpty()
+    val showResults = results.isNotEmpty() || (query.length >= 2 && !isLoading) || showRecent
 
     Column(
         modifier =
@@ -118,6 +128,42 @@ fun NominatimSearchBar(
 
         if (showResults) {
             HorizontalDivider()
+            if (showRecent) {
+                Text(
+                    text = "Recent",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                )
+                recentSearches.forEach { recent ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onLocationSelected(recent.lat, recent.lon, recent.displayName)
+                                    onSearchCommitted?.invoke(recent.displayName, recent.lat, recent.lon)
+                                    query = ""
+                                }.padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = recent.displayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    HorizontalDivider()
+                }
+            }
             if (results.isEmpty() && query.length >= 2 && !isLoading) {
                 Text(
                     text = "No results found",
@@ -140,6 +186,7 @@ fun NominatimSearchBar(
                             .fillMaxWidth()
                             .clickable {
                                 onLocationSelected(result.lat, result.lon, result.displayName)
+                                onSearchCommitted?.invoke(result.displayName, result.lat, result.lon)
                                 query = ""
                                 results = emptyList()
                             }.padding(horizontal = 16.dp, vertical = 12.dp),

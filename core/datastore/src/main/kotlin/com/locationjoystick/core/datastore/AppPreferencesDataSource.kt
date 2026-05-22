@@ -13,12 +13,15 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.WidgetFeature
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -132,6 +135,16 @@ interface PreferencesDataSource {
     suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean)
 
     suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean)
+
+    /** Gets the list of recently searched locations, newest first. */
+    fun getRecentSearches(): Flow<List<RecentSearch>>
+
+    /** Prepends a search to the recent list, deduplicates by displayName, and caps at max count. */
+    suspend fun addRecentSearch(
+        displayName: String,
+        lat: Double,
+        lon: Double,
+    )
 }
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -186,6 +199,7 @@ class AppPreferencesDataSource
             val REALISM_WARMUP_ENABLED = booleanPreferencesKey("realism_warmup_enabled")
             val REALISM_SATELLITE_EXTRAS_ENABLED = booleanPreferencesKey("realism_satellite_extras_enabled")
             val REALISM_SUSPENDED_MOCKING_ENABLED = booleanPreferencesKey("realism_suspended_mocking_enabled")
+            val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
         }
 
         override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -485,6 +499,35 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] = enabled }
         }
 
+        override fun getRecentSearches(): Flow<List<RecentSearch>> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading recent searches", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs ->
+                    val raw = prefs[Keys.RECENT_SEARCHES] ?: return@map emptyList()
+                    deserializeRecentSearches(raw)
+                }
+
+        override suspend fun addRecentSearch(
+            displayName: String,
+            lat: Double,
+            lon: Double,
+        ) {
+            dataStore.edit { prefs ->
+                val current = deserializeRecentSearches(prefs[Keys.RECENT_SEARCHES] ?: "[]")
+                val updated =
+                    (listOf(RecentSearch(displayName, lat, lon)) + current)
+                        .distinctBy { it.displayName }
+                        .take(AppConstants.NominatimConstants.RECENT_SEARCHES_MAX_COUNT)
+                prefs[Keys.RECENT_SEARCHES] = serializeRecentSearches(updated)
+            }
+        }
+
         companion object {
             const val DATASTORE_FILE_NAME = AppConstants.DataStoreConstants.FILE_NAME
 
@@ -522,6 +565,39 @@ class AppPreferencesDataSource
     }
 
 private const val TAG = "AppPreferencesDataSource"
+
+private fun serializeRecentSearches(searches: List<RecentSearch>): String {
+    val array = JSONArray()
+    searches.forEach { search ->
+        array.put(
+            JSONObject().apply {
+                put("displayName", search.displayName)
+                put("lat", search.lat)
+                put("lon", search.lon)
+            },
+        )
+    }
+    return array.toString()
+}
+
+private fun deserializeRecentSearches(raw: String): List<RecentSearch> =
+    try {
+        val array = JSONArray(raw)
+        (0 until array.length()).mapNotNull { i ->
+            try {
+                val obj = array.getJSONObject(i)
+                RecentSearch(
+                    displayName = obj.getString("displayName"),
+                    lat = obj.getDouble("lat"),
+                    lon = obj.getDouble("lon"),
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
 
 data class SpeedProfilePreferences(
     val walkSpeedMs: Double,
