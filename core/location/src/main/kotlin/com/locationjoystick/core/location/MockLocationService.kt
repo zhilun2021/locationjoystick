@@ -300,6 +300,7 @@ class MockLocationService : Service() {
         const val EXTRA_SPEED_MS = AppConstants.ServiceConstants.EXTRA_SPEED_MS
         const val EXTRA_WAYPOINT_LAT = AppConstants.ServiceConstants.EXTRA_WAYPOINT_LAT
         const val EXTRA_WAYPOINT_LON = AppConstants.ServiceConstants.EXTRA_WAYPOINT_LON
+        const val EXTRA_IS_EPHEMERAL = AppConstants.ServiceConstants.EXTRA_IS_EPHEMERAL
     }
 
     inner class LocalBinder : Binder() {
@@ -608,10 +609,20 @@ class MockLocationService : Service() {
             }
 
             ACTION_ROUTE_REPLAY_START -> {
-                val routeId = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return START_STICKY
-                val isBackward = intent.getBooleanExtra(EXTRA_IS_BACKWARD, false)
+                val isEphemeral = intent.getBooleanExtra(EXTRA_IS_EPHEMERAL, false)
                 val speedMs = intent.getDoubleExtra(EXTRA_SPEED_MS, AppConstants.LocationConstants.DEFAULT_REPLAY_SPEED_MS)
-                handleReplayStart(routeId, isBackward, speedMs)
+                if (isEphemeral) {
+                    val lats = intent.getDoubleArrayExtra(AppConstants.ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LAT)
+                    val lons = intent.getDoubleArrayExtra(AppConstants.ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LON)
+                    if (lats != null && lons != null && lats.size >= 2 && lats.size == lons.size) {
+                        val waypoints = lats.zip(lons.toTypedArray()).map { (lat, lon) -> LatLng(lat, lon) }
+                        handleEphemeralReplayStart(waypoints, speedMs)
+                    }
+                } else {
+                    val routeId = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return START_STICKY
+                    val isBackward = intent.getBooleanExtra(EXTRA_IS_BACKWARD, false)
+                    handleReplayStart(routeId, isBackward, speedMs)
+                }
             }
 
             ACTION_ROUTE_REPLAY_PAUSE -> {
@@ -784,6 +795,54 @@ class MockLocationService : Service() {
 
             // If pause was requested during walk-to-start (before engine launched),
             // ensure the engine is paused now that it has been initialized.
+            if (_state.value == MockLocationState.PAUSED) {
+                routeReplayEngine.pause()
+            }
+        }
+    }
+
+    private fun handleEphemeralReplayStart(
+        waypoints: List<LatLng>,
+        speedMs: Double,
+    ) {
+        serviceScope.launch {
+            // Ensure roaming is stopped before starting route replay.
+            if (locationRepository.currentMode.value == MockMode.ROAMING) {
+                roamingRepository.stopRoaming()
+            }
+            if (waypoints.size < 2) return@launch
+
+            val startPos = waypoints.first()
+            currentSpeedMs = speedMs.toFloat()
+            currentBearing = 0.0f
+
+            // Set mode BEFORE state so the state observer correctly skips the background update loop.
+            locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
+            // Ephemeral: do NOT persist route id or route waypoints in repository.
+            _state.value = MockLocationState.RUNNING
+            locationRepository.startSpoofing()
+
+            walkToPosition(startPos, speedMs)
+
+            routeReplayEngine.start(
+                waypoints = waypoints,
+                speedMs = speedMs,
+                isLooping = false,
+                onPositionUpdate = { pos ->
+                    currentLat = pos.latitude
+                    currentLon = pos.longitude
+                    try {
+                        locationRepository.setPositionInternal(pos)
+                        pushLocationUpdate()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Position update failed during ephemeral replay", e)
+                    }
+                },
+                onComplete = {
+                    locationRepository.setMockMode(MockMode.TELEPORT)
+                },
+            )
+
             if (_state.value == MockLocationState.PAUSED) {
                 routeReplayEngine.pause()
             }

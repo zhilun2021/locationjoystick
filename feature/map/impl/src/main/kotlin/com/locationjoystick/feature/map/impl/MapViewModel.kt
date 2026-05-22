@@ -290,8 +290,11 @@ class MapViewModel
 
                 MapAction.StopWalk -> {
                     walkCoordinator.cancel()
+                    if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
+                        context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
+                    }
                     _uiState.update {
-                        it.copy(walkTarget = null, walkStart = null, isWalkPaused = false)
+                        it.copy(walkTarget = null, walkStart = null, isWalkPaused = false, ephemeralWaypoints = emptyList())
                     }
                 }
 
@@ -412,6 +415,40 @@ class MapViewModel
                         roamingRepository.stopRoaming()
                     }
                 }
+
+                is MapAction.AddEphemeralWaypoint -> {
+                    val state = _uiState.value
+                    val currentWaypoints = state.ephemeralWaypoints
+
+                    if (currentWaypoints.isEmpty()) {
+                        // First "Add next point" — transition from WalkCoordinator to RouteReplayEngine
+                        val initial =
+                            listOf(
+                                state.walkStart ?: state.currentPosition ?: action.position,
+                                state.walkTarget ?: action.position,
+                                action.position,
+                            )
+                        walkCoordinator.cancel()
+                        startEphemeralReplay(initial)
+                        _uiState.update {
+                            it.copy(
+                                walkTarget = null,
+                                walkStart = null,
+                                ephemeralWaypoints = initial,
+                                pendingTapPosition = null,
+                            )
+                        }
+                    } else {
+                        // Already in ephemeral replay — just append
+                        appendEphemeralWaypoint(action.position)
+                        _uiState.update {
+                            it.copy(
+                                ephemeralWaypoints = currentWaypoints + action.position,
+                                pendingTapPosition = null,
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -449,6 +486,19 @@ class MapViewModel
         }
 
         private fun appendWaypointToRoute(position: LatLng) {
+            context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
+        }
+
+        private fun startEphemeralReplay(waypoints: List<LatLng>) {
+            viewModelScope.launch {
+                val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                context.startService(
+                    MockLocationIntentBuilder.startEphemeralReplay(context, waypoints, speedMs),
+                )
+            }
+        }
+
+        private fun appendEphemeralWaypoint(position: LatLng) {
             context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
         }
 

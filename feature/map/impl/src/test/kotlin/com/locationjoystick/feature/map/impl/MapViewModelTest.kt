@@ -15,6 +15,7 @@ import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.Route
+import com.locationjoystick.core.model.SpeedProfile
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -90,6 +91,8 @@ class MapViewModelTest {
                     activeProfileId = "walk",
                 ),
             )
+        every { settingsRepository.getActiveSpeedProfile() } returns
+            flowOf(SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = 1.39))
 
         viewModel =
             MapViewModel(
@@ -431,5 +434,113 @@ class MapViewModelTest {
 
             // Cancel the walk job to prevent infinite loop in test
             viewModel.onAction(MapAction.StopWalk)
+        }
+
+    // Ephemeral waypoint tests
+
+    @Test
+    fun `addEphemeralWaypoint_firstPoint_cancelsCoordinatorAndBuildsThreePointList`() =
+        runTest {
+            val currentPos = LatLng(48.8, 2.3)
+            val walkTarget = LatLng(48.9, 2.4)
+            val newPoint = LatLng(49.0, 2.5)
+
+            every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
+            viewModel.onAction(MapAction.AddEphemeralWaypoint(newPoint))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify { walkCoordinator.cancel() }
+
+            val state = viewModel.uiState.value
+            assertNull(state.walkTarget)
+            assertEquals(3, state.ephemeralWaypoints.size)
+            assertEquals(currentPos, state.ephemeralWaypoints[0])
+            assertEquals(walkTarget, state.ephemeralWaypoints[1])
+            assertEquals(newPoint, state.ephemeralWaypoints[2])
+        }
+
+    @Test
+    fun `addEphemeralWaypoint_secondPoint_appendsToExistingList`() =
+        runTest {
+            val currentPos = LatLng(48.8, 2.3)
+            val walkTarget = LatLng(48.9, 2.4)
+            val firstExtra = LatLng(49.0, 2.5)
+            val secondExtra = LatLng(49.1, 2.6)
+
+            every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
+            viewModel.onAction(MapAction.AddEphemeralWaypoint(firstExtra))
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(3, viewModel.uiState.value.ephemeralWaypoints.size)
+
+            viewModel.onAction(MapAction.AddEphemeralWaypoint(secondExtra))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(4, state.ephemeralWaypoints.size)
+            assertEquals(secondExtra, state.ephemeralWaypoints.last())
+        }
+
+    @Test
+    fun `stopWalk_clearsEphemeralWaypoints`() =
+        runTest {
+            val currentPos = LatLng(48.8, 2.3)
+            val walkTarget = LatLng(48.9, 2.4)
+            val extra = LatLng(49.0, 2.5)
+
+            every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
+            viewModel.onAction(MapAction.AddEphemeralWaypoint(extra))
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(3, viewModel.uiState.value.ephemeralWaypoints.size)
+
+            viewModel.onAction(MapAction.StopWalk)
+
+            val state = viewModel.uiState.value
+            assertEquals(emptyList<LatLng>(), state.ephemeralWaypoints)
+            assertNull(state.walkTarget)
         }
 }

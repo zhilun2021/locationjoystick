@@ -1128,6 +1128,10 @@ class FloatingWidgetService :
                         sendAppendWaypoint(pos)
                         moveAppToBack()
                     },
+                    onAddEphemeralWaypoint = { pos ->
+                        sendAddEphemeralWaypoint(pos)
+                        moveAppToBack()
+                    },
                     onStartRoaming = { startRoamingWithDefaults() },
                     onStopRoaming = {
                         serviceScope.launch {
@@ -1193,6 +1197,35 @@ class FloatingWidgetService :
             startService(MockLocationIntentBuilder.appendWaypoint(this, pos))
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send append waypoint", e)
+        }
+    }
+
+    private fun sendAddEphemeralWaypoint(pos: com.locationjoystick.core.model.LatLng) {
+        try {
+            val currentMode = locationRepository.currentMode.value
+            val walkTargetVal = locationRepository.walkTarget.value
+            if (currentMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY) {
+                // Already in replay (ephemeral or saved route) — just append
+                startService(MockLocationIntentBuilder.appendWaypoint(this, pos))
+            } else if (walkTargetVal != null) {
+                // First "Add next point" from walk — transition to ephemeral replay
+                val currentPos = locationRepository.currentPosition.value
+                val initial =
+                    listOf(
+                        currentPos ?: pos,
+                        walkTargetVal,
+                        pos,
+                    )
+                walkCoordinator.cancel()
+                serviceScope.launch {
+                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                    startService(
+                        MockLocationIntentBuilder.startEphemeralReplay(this@FloatingWidgetService, initial, speedMs),
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send add ephemeral waypoint", e)
         }
     }
 

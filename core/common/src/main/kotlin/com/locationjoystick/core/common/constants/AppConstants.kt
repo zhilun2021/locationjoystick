@@ -91,6 +91,10 @@ object AppConstants {
         const val EMPTY_MAP_STYLE_URI = "asset://empty.json"
         const val OSM_SOURCE_ID = "osm-source"
         const val OSM_LAYER_ID = "osm-layer"
+        const val EPHEMERAL_ROUTE_SOURCE_ID = "ephemeral-route-source"
+        const val EPHEMERAL_ROUTE_LAYER_ID = "ephemeral-route-layer"
+        const val EPHEMERAL_ENDPOINTS_SOURCE_ID = "ephemeral-endpoints-source"
+        const val EPHEMERAL_ENDPOINTS_LAYER_ID = "ephemeral-endpoints-layer"
     }
 
     object NominatimConstants {
@@ -151,6 +155,9 @@ object AppConstants {
         const val EXTRA_WAYPOINT_LON = "extra_waypoint_lon"
         const val EXTRA_LAT = "lat"
         const val EXTRA_LON = "lon"
+        const val EXTRA_IS_EPHEMERAL = "extra_is_ephemeral"
+        const val EXTRA_EPHEMERAL_WAYPOINTS_LAT = "extra_ephemeral_waypoints_lat"
+        const val EXTRA_EPHEMERAL_WAYPOINTS_LON = "extra_ephemeral_waypoints_lon"
         const val ACTION_OVERLAY_SHOW = "com.locationjoystick.action.OVERLAY_SHOW"
         const val ACTION_OVERLAY_HIDE = "com.locationjoystick.action.OVERLAY_HIDE"
     }

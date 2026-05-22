@@ -88,6 +88,10 @@ import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private val OSM_SOURCE_ID = AppConstants.MapConstants.OSM_SOURCE_ID
 private val OSM_LAYER_ID = AppConstants.MapConstants.OSM_LAYER_ID
+private val EPHEMERAL_ROUTE_SOURCE_ID = AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID
+private val EPHEMERAL_ROUTE_LAYER_ID = AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID
+private val EPHEMERAL_ENDPOINTS_SOURCE_ID = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID
+private val EPHEMERAL_ENDPOINTS_LAYER_ID = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID
 
 private fun fadeInScale(): EnterTransition =
     fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
@@ -160,6 +164,8 @@ internal fun MapScreen(
     val tracedSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val remainingSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val endpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val ephemeralRouteSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val ephemeralEndpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
 
@@ -379,6 +385,32 @@ internal fun MapScreen(
                                         ),
                                 )
                                 endpointsSource.value = endpointsSrc
+
+                                val ephemeralRouteSrc = GeoJsonSource(EPHEMERAL_ROUTE_SOURCE_ID, emptyGeoJson())
+                                style.addSource(ephemeralRouteSrc)
+                                style.addLayerBelow(
+                                    LineLayer(EPHEMERAL_ROUTE_LAYER_ID, EPHEMERAL_ROUTE_SOURCE_ID)
+                                        .withProperties(
+                                            PropertyFactory.lineColor(Color(0xFF7B61FF).toArgb()),
+                                            PropertyFactory.lineWidth(3f),
+                                            PropertyFactory.lineDasharray(arrayOf(4f, 4f)),
+                                        ),
+                                    MapLibreLayerIds.TRACE_TRACED,
+                                )
+                                ephemeralRouteSource.value = ephemeralRouteSrc
+
+                                val ephemeralEndpointsSrc = GeoJsonSource(EPHEMERAL_ENDPOINTS_SOURCE_ID, emptyGeoJson())
+                                style.addSource(ephemeralEndpointsSrc)
+                                style.addLayer(
+                                    CircleLayer(EPHEMERAL_ENDPOINTS_LAYER_ID, EPHEMERAL_ENDPOINTS_SOURCE_ID)
+                                        .withProperties(
+                                            PropertyFactory.circleRadius(6f),
+                                            PropertyFactory.circleColor(Color(0xFF7B61FF).toArgb()),
+                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                            PropertyFactory.circleStrokeWidth(2f),
+                                        ),
+                                )
+                                ephemeralEndpointsSource.value = ephemeralEndpointsSrc
                             }
 
                             map.addOnMapClickListener { latLng ->
@@ -420,6 +452,8 @@ internal fun MapScreen(
                     val tracedSrc = tracedSource.value ?: return@AndroidView
                     val remainingSrc = remainingSource.value ?: return@AndroidView
                     val endpointsSrc = endpointsSource.value ?: return@AndroidView
+                    val ephemeralRouteSrc = ephemeralRouteSource.value ?: return@AndroidView
+                    val ephemeralEndpointsSrc = ephemeralEndpointsSource.value ?: return@AndroidView
                     val position = uiState.currentPosition
 
                     src.setGeoJson(buildPositionGeoJson(position))
@@ -447,6 +481,16 @@ internal fun MapScreen(
                         tracedSrc.setGeoJson(emptyGeoJson())
                         remainingSrc.setGeoJson(emptyGeoJson())
                         endpointsSrc.setGeoJson(emptyGeoJson())
+                    }
+
+                    // Ephemeral route preview polyline
+                    val ephemeralPts = uiState.ephemeralWaypoints
+                    if (ephemeralPts.size >= 2) {
+                        ephemeralRouteSrc.setGeoJson(buildLineGeoJson(ephemeralPts))
+                        ephemeralEndpointsSrc.setGeoJson(buildPointsGeoJson(ephemeralPts))
+                    } else {
+                        ephemeralRouteSrc.setGeoJson(emptyGeoJson())
+                        ephemeralEndpointsSrc.setGeoJson(emptyGeoJson())
                     }
 
                     if (isFollowingCamera.value && position != null) {
@@ -497,6 +541,7 @@ internal fun MapScreen(
         PendingTapSheet(
             position = pending,
             isRouteReplay = uiState.isRouteReplay,
+            isWalkActive = uiState.walkTarget != null || uiState.ephemeralWaypoints.isNotEmpty(),
             cooldownState = uiState.cooldownState,
             onAction = onAction,
         )
@@ -564,6 +609,7 @@ private fun FavoritesPickerSheet(
 private fun PendingTapSheet(
     position: com.locationjoystick.core.model.LatLng,
     isRouteReplay: Boolean,
+    isWalkActive: Boolean,
     cooldownState: CooldownState,
     onAction: (MapAction) -> Unit,
 ) {
@@ -638,6 +684,15 @@ private fun PendingTapSheet(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text("Walk here")
+                }
+                if (isWalkActive) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { onAction(MapAction.AddEphemeralWaypoint(position)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Add next point")
+                    }
                 }
             }
             Spacer(Modifier.height(4.dp))

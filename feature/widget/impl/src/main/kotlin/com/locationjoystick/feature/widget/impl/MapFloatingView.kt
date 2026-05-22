@@ -55,6 +55,7 @@ import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
+import com.locationjoystick.core.map.geojson.buildLineGeoJson
 import com.locationjoystick.core.map.geojson.buildPointsGeoJson
 import com.locationjoystick.core.map.geojson.buildPositionGeoJson
 import com.locationjoystick.core.map.geojson.buildRouteTraceGeoJson
@@ -90,6 +91,7 @@ internal fun MapFloatingView(
     onStopRouteAndTeleport: (LatLng) -> Unit,
     onStopRouteAndWalkTo: (LatLng) -> Unit,
     onFinishRouteAndWalkTo: (LatLng) -> Unit,
+    onAddEphemeralWaypoint: (LatLng) -> Unit,
     onStartRoaming: () -> Unit,
     onStopRoaming: () -> Unit,
     onDismiss: () -> Unit,
@@ -103,6 +105,7 @@ internal fun MapFloatingView(
     val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
     val isRoaming = mockMode == com.locationjoystick.core.model.MockMode.ROAMING
     val isRouteReplay = mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY
+    val isWalkActive = walkTarget != null
     val isActivityActive by locationRepository.isActivityActive.collectAsStateWithLifecycle(initialValue = false)
     val favoritesFlow = remember { favoriteRepository.getFavorites() }
     val favorites by favoritesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -130,6 +133,8 @@ internal fun MapFloatingView(
     val tracedSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val remainingSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val endpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val ephemeralRouteSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val ephemeralEndpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -234,6 +239,38 @@ internal fun MapFloatingView(
                             )
                             endpointsSource.value = endpointsSrc
 
+                            val ephemeralRouteSrc =
+                                GeoJsonSource(AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID, emptyGeoJson())
+                            style.addSource(ephemeralRouteSrc)
+                            style.addLayerBelow(
+                                LineLayer(
+                                    AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID,
+                                    AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID,
+                                ).withProperties(
+                                    PropertyFactory.lineColor(android.graphics.Color.parseColor("#7B61FF")),
+                                    PropertyFactory.lineWidth(3f),
+                                    PropertyFactory.lineDasharray(arrayOf(4f, 4f)),
+                                ),
+                                MapLibreLayerIds.TRACE_TRACED,
+                            )
+                            ephemeralRouteSource.value = ephemeralRouteSrc
+
+                            val ephemeralEndpointsSrc =
+                                GeoJsonSource(AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID, emptyGeoJson())
+                            style.addSource(ephemeralEndpointsSrc)
+                            style.addLayer(
+                                CircleLayer(
+                                    AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID,
+                                    AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID,
+                                ).withProperties(
+                                    PropertyFactory.circleRadius(6f),
+                                    PropertyFactory.circleColor(android.graphics.Color.parseColor("#7B61FF")),
+                                    PropertyFactory.circleStrokeColor(android.graphics.Color.WHITE),
+                                    PropertyFactory.circleStrokeWidth(2f),
+                                ),
+                            )
+                            ephemeralEndpointsSource.value = ephemeralEndpointsSrc
+
                             val src =
                                 GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
                             style.addSource(src)
@@ -267,6 +304,8 @@ internal fun MapFloatingView(
                 val tracedSrc = tracedSource.value ?: return@AndroidView
                 val remainingSrc = remainingSource.value ?: return@AndroidView
                 val endpointsSrc = endpointsSource.value ?: return@AndroidView
+                val ephemeralRouteSrc = ephemeralRouteSource.value ?: return@AndroidView
+                val ephemeralEndpointsSrc = ephemeralEndpointsSource.value ?: return@AndroidView
                 val position = currentPosition
 
                 src.setGeoJson(buildPositionGeoJson(position))
@@ -291,6 +330,13 @@ internal fun MapFloatingView(
                     remainingSrc.setGeoJson(empty)
                     endpointsSrc.setGeoJson(empty)
                 }
+
+                // Ephemeral route preview polyline (shown when isWalkActive and ephemeral points are chained)
+                // We don't track ephemeralWaypoints locally in the widget — the ephemeral preview
+                // is inherently driven by routeWaypoints once the engine starts, so just clear
+                // ephemeral sources here (they're unused in the widget for now).
+                ephemeralRouteSrc.setGeoJson(emptyGeoJson())
+                ephemeralEndpointsSrc.setGeoJson(emptyGeoJson())
 
                 if (isFollowingCamera.value && position != null) {
                     mapRef.value?.animateCamera(
@@ -497,6 +543,16 @@ internal fun MapFloatingView(
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text("Walk here") }
+                    if (isWalkActive) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = {
+                                onAddEphemeralWaypoint(tap)
+                                pendingTap = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Add next point") }
+                    }
                 }
                 Spacer(Modifier.height(4.dp))
                 TextButton(

@@ -16,6 +16,8 @@ object MapLibreSourceIds {
     const val ROUTE_WAYPOINTS = "waypoints-source"
     const val MARKER = "marker-source"
     const val CURRENT_POS = "current-pos-source"
+    val EPHEMERAL_ROUTE: String = AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID
+    val EPHEMERAL_ENDPOINTS: String = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID
 }
 
 /**
@@ -31,4 +33,6 @@ object MapLibreLayerIds {
     const val ROUTE_WAYPOINTS = "waypoints-layer"
     const val MARKER = "marker-layer"
     const val CURRENT_POS = "current-pos-layer"
+    val EPHEMERAL_ROUTE: String = AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID
+    val EPHEMERAL_ENDPOINTS: String = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID
 }

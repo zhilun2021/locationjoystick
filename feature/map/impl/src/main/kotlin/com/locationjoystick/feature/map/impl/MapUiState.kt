@@ -30,6 +30,7 @@ data class MapUiState(
     val walkStart: LatLng? = null,
     val isWalkPaused: Boolean = false,
     val isRouteReplay: Boolean = false,
+    val ephemeralWaypoints: List<LatLng> = emptyList(),
     val showRoamingSheet: Boolean = false,
     val roamingDraft: RoamingDraft? = null,
     val isRoaming: Boolean = false,
