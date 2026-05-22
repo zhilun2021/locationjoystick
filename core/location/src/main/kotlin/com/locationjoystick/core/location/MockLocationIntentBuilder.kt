@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import com.locationjoystick.core.common.constants.AppConstants.ServiceConstants
 import com.locationjoystick.core.model.LatLng
-import java.lang.IllegalArgumentException
 
 /**
  * Compile-safe factory for all intents targeting [MockLocationService].
@@ -99,19 +98,15 @@ object MockLocationIntentBuilder {
         waypoints: List<LatLng>,
         speedMs: Double,
     ): Intent {
-        if (waypoints.size < 2) throw IllegalArgumentException("Ephemeral replay requires at least 2 waypoints")
+        require(waypoints.size >= 2) { "Ephemeral replay requires at least 2 waypoints" }
         return Intent(context, MockLocationService::class.java).apply {
             action = MockLocationService.ACTION_ROUTE_REPLAY_START
             putExtra(MockLocationService.EXTRA_IS_EPHEMERAL, true)
             putExtra(MockLocationService.EXTRA_SPEED_MS, speedMs)
-            putExtra(
-                ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LAT,
-                waypoints.map { it.latitude }.toDoubleArray(),
-            )
-            putExtra(
-                ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LON,
-                waypoints.map { it.longitude }.toDoubleArray(),
-            )
+            putExtra(ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS, waypoints.encodeToString())
         }
     }
+
+    /** Encodes waypoints as a compact string: "lat,lon;lat,lon;..." */
+    private fun List<LatLng>.encodeToString(): String = joinToString(";") { "${it.latitude},${it.longitude}" }
 }

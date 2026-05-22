@@ -67,6 +67,7 @@ import com.locationjoystick.core.map.geojson.buildRouteTraceGeoJson
 import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
+import com.locationjoystick.core.map.maplibre.addEphemeralRouteLayers
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.RecentSearch
@@ -85,13 +86,6 @@ import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
 import org.maplibre.android.geometry.LatLng as MapLatLng
-
-private val OSM_SOURCE_ID = AppConstants.MapConstants.OSM_SOURCE_ID
-private val OSM_LAYER_ID = AppConstants.MapConstants.OSM_LAYER_ID
-private val EPHEMERAL_ROUTE_SOURCE_ID = AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID
-private val EPHEMERAL_ROUTE_LAYER_ID = AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID
-private val EPHEMERAL_ENDPOINTS_SOURCE_ID = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID
-private val EPHEMERAL_ENDPOINTS_LAYER_ID = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID
 
 private fun fadeInScale(): EnterTransition =
     fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
@@ -330,12 +324,12 @@ internal fun MapScreen(
                             map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
                                 style.addSource(
                                     RasterSource(
-                                        OSM_SOURCE_ID,
+                                        MapLibreSourceIds.OSM,
                                         TileSet("2.2.0", AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
                                         256,
                                     ),
                                 )
-                                style.addLayer(RasterLayer(OSM_LAYER_ID, OSM_SOURCE_ID))
+                                style.addLayer(RasterLayer(MapLibreLayerIds.OSM, MapLibreSourceIds.OSM))
 
                                 val src = GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
                                 style.addSource(src)
@@ -386,31 +380,9 @@ internal fun MapScreen(
                                 )
                                 endpointsSource.value = endpointsSrc
 
-                                val ephemeralRouteSrc = GeoJsonSource(EPHEMERAL_ROUTE_SOURCE_ID, emptyGeoJson())
-                                style.addSource(ephemeralRouteSrc)
-                                style.addLayerBelow(
-                                    LineLayer(EPHEMERAL_ROUTE_LAYER_ID, EPHEMERAL_ROUTE_SOURCE_ID)
-                                        .withProperties(
-                                            PropertyFactory.lineColor(Color(0xFF7B61FF).toArgb()),
-                                            PropertyFactory.lineWidth(3f),
-                                            PropertyFactory.lineDasharray(arrayOf(4f, 4f)),
-                                        ),
-                                    MapLibreLayerIds.TRACE_TRACED,
-                                )
-                                ephemeralRouteSource.value = ephemeralRouteSrc
-
-                                val ephemeralEndpointsSrc = GeoJsonSource(EPHEMERAL_ENDPOINTS_SOURCE_ID, emptyGeoJson())
-                                style.addSource(ephemeralEndpointsSrc)
-                                style.addLayer(
-                                    CircleLayer(EPHEMERAL_ENDPOINTS_LAYER_ID, EPHEMERAL_ENDPOINTS_SOURCE_ID)
-                                        .withProperties(
-                                            PropertyFactory.circleRadius(6f),
-                                            PropertyFactory.circleColor(Color(0xFF7B61FF).toArgb()),
-                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
-                                            PropertyFactory.circleStrokeWidth(2f),
-                                        ),
-                                )
-                                ephemeralEndpointsSource.value = ephemeralEndpointsSrc
+                                val ephemeralSrcs = style.addEphemeralRouteLayers()
+                                ephemeralRouteSource.value = ephemeralSrcs.routeSource
+                                ephemeralEndpointsSource.value = ephemeralSrcs.endpointsSource
                             }
 
                             map.addOnMapClickListener { latLng ->
@@ -468,7 +440,7 @@ internal fun MapScreen(
                         remainingSrc.setGeoJson(remainingGeoJson)
                         endpointsSrc.setGeoJson(buildPointsGeoJson(uiState.routeTrace))
                     } else if (uiState.walkStart != null && uiState.walkTarget != null && position != null) {
-                        val walkPoints = listOf(uiState.walkStart, uiState.walkTarget)
+                        val walkPoints = listOfNotNull(uiState.walkStart, uiState.walkTarget)
                         val (tracedGeoJson, remainingGeoJson) =
                             buildRouteTraceGeoJson(
                                 walkPoints,
@@ -541,7 +513,7 @@ internal fun MapScreen(
         PendingTapSheet(
             position = pending,
             isRouteReplay = uiState.isRouteReplay,
-            isWalkActive = uiState.walkTarget != null || uiState.ephemeralWaypoints.isNotEmpty(),
+            isWalkActive = uiState.isWalkActive,
             cooldownState = uiState.cooldownState,
             onAction = onAction,
         )

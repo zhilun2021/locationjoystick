@@ -10,6 +10,7 @@ import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
+import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
@@ -49,6 +50,7 @@ class MapViewModelTest {
     private lateinit var preferencesDataSource: PreferencesDataSource
     private lateinit var walkCoordinator: WalkCoordinator
     private lateinit var teleportUseCase: TeleportUseCase
+    private lateinit var ephemeralReplayController: EphemeralReplayController
     private lateinit var viewModel: MapViewModel
 
     private val walkTargetFlow = MutableStateFlow<LatLng?>(null)
@@ -67,6 +69,7 @@ class MapViewModelTest {
         preferencesDataSource = mockk(relaxed = true)
         walkCoordinator = mockk(relaxed = true)
         teleportUseCase = mockk(relaxed = true)
+        ephemeralReplayController = mockk(relaxed = true)
 
         every { locationRepository.currentPosition } returns MutableStateFlow(null)
         every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.IDLE)
@@ -105,6 +108,7 @@ class MapViewModelTest {
                 preferencesDataSource,
                 walkCoordinator,
                 teleportUseCase,
+                ephemeralReplayController,
             )
     }
 
@@ -141,6 +145,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -167,6 +172,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -196,6 +202,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -246,6 +253,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -273,6 +281,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -301,6 +310,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -328,6 +338,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -361,6 +372,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -446,6 +458,8 @@ class MapViewModelTest {
             val newPoint = LatLng(49.0, 2.5)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns
+                listOf(currentPos, walkTarget, newPoint)
             viewModel =
                 MapViewModel(
                     context,
@@ -457,14 +471,13 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
             viewModel.onAction(MapAction.AddEphemeralWaypoint(newPoint))
             testDispatcher.scheduler.advanceUntilIdle()
-
-            verify { walkCoordinator.cancel() }
 
             val state = viewModel.uiState.value
             assertNull(state.walkTarget)
@@ -481,8 +494,12 @@ class MapViewModelTest {
             val walkTarget = LatLng(48.9, 2.4)
             val firstExtra = LatLng(49.0, 2.5)
             val secondExtra = LatLng(49.1, 2.6)
+            val list3 = listOf(currentPos, walkTarget, firstExtra)
+            val list4 = listOf(currentPos, walkTarget, firstExtra, secondExtra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returnsMany
+                listOf(list3, list4)
             viewModel =
                 MapViewModel(
                     context,
@@ -494,6 +511,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -518,6 +536,8 @@ class MapViewModelTest {
             val extra = LatLng(49.0, 2.5)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns
+                listOf(currentPos, walkTarget, extra)
             viewModel =
                 MapViewModel(
                     context,
@@ -529,6 +549,7 @@ class MapViewModelTest {
                     preferencesDataSource,
                     walkCoordinator,
                     teleportUseCase,
+                    ephemeralReplayController,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 

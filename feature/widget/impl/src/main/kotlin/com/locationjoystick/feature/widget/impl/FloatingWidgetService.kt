@@ -85,6 +85,7 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.LjTheme
+import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.FavoriteLocation
@@ -164,6 +165,8 @@ class FloatingWidgetService :
     @Inject lateinit var roamingRepository: com.locationjoystick.core.data.RoamingRepository
 
     @Inject lateinit var walkCoordinator: WalkCoordinator
+
+    @Inject lateinit var ephemeralReplayController: EphemeralReplayController
 
     private var composeView: ComposeView? = null
     private var panelComposeView: ComposeView? = null
@@ -1201,31 +1204,19 @@ class FloatingWidgetService :
     }
 
     private fun sendAddEphemeralWaypoint(pos: com.locationjoystick.core.model.LatLng) {
-        try {
-            val currentMode = locationRepository.currentMode.value
-            val walkTargetVal = locationRepository.walkTarget.value
-            if (currentMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY) {
-                // Already in replay (ephemeral or saved route) — just append
-                startService(MockLocationIntentBuilder.appendWaypoint(this, pos))
-            } else if (walkTargetVal != null) {
-                // First "Add next point" from walk — transition to ephemeral replay
-                val currentPos = locationRepository.currentPosition.value
-                val initial =
-                    listOf(
-                        currentPos ?: pos,
-                        walkTargetVal,
-                        pos,
-                    )
-                walkCoordinator.cancel()
-                serviceScope.launch {
-                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                    startService(
-                        MockLocationIntentBuilder.startEphemeralReplay(this@FloatingWidgetService, initial, speedMs),
-                    )
-                }
+        serviceScope.launch {
+            try {
+                ephemeralReplayController.addWaypoint(
+                    newPoint = pos,
+                    currentWaypoints = emptyList(), // widget doesn't track local ephemeral list
+                    walkStart = locationRepository.currentPosition.value,
+                    walkTarget = locationRepository.walkTarget.value,
+                    context = this@FloatingWidgetService,
+                    launchIntent = { startService(it) },
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to send add ephemeral waypoint", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send add ephemeral waypoint", e)
         }
     }
 

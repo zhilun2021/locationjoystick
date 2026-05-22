@@ -612,12 +612,18 @@ class MockLocationService : Service() {
                 val isEphemeral = intent.getBooleanExtra(EXTRA_IS_EPHEMERAL, false)
                 val speedMs = intent.getDoubleExtra(EXTRA_SPEED_MS, AppConstants.LocationConstants.DEFAULT_REPLAY_SPEED_MS)
                 if (isEphemeral) {
-                    val lats = intent.getDoubleArrayExtra(AppConstants.ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LAT)
-                    val lons = intent.getDoubleArrayExtra(AppConstants.ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS_LON)
-                    if (lats != null && lons != null && lats.size >= 2 && lats.size == lons.size) {
-                        val waypoints = lats.zip(lons.toTypedArray()).map { (lat, lon) -> LatLng(lat, lon) }
-                        handleEphemeralReplayStart(waypoints, speedMs)
-                    }
+                    val encoded = intent.getStringExtra(AppConstants.ServiceConstants.EXTRA_EPHEMERAL_WAYPOINTS)
+                    val waypoints =
+                        encoded
+                            ?.split(";")
+                            ?.mapNotNull { seg ->
+                                val parts = seg.split(",")
+                                val lat = parts.getOrNull(0)?.toDoubleOrNull() ?: return@mapNotNull null
+                                val lon = parts.getOrNull(1)?.toDoubleOrNull() ?: return@mapNotNull null
+                                LatLng(lat, lon)
+                            }?.takeIf { it.size >= 2 }
+                            ?: return START_STICKY
+                    handleEphemeralReplayStart(waypoints, speedMs)
                 } else {
                     val routeId = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return START_STICKY
                     val isBackward = intent.getBooleanExtra(EXTRA_IS_BACKWARD, false)
@@ -740,51 +746,79 @@ class MockLocationService : Service() {
 
     fun getCurrentPosition(): LatLng = LatLng(currentLat, currentLon)
 
+    /**
+     * Shared engine for both named-route and ephemeral replay.
+     *
+     * @param waypoints Ordered list of positions to replay (≥2).
+     * @param speedMs Playback speed in m/s.
+     * @param isLooping Whether to loop at the end.
+     * @param persistMetadata If non-null, invoked before replay starts to persist route metadata
+     *   (route id, direction, waypoints) into the repository. Pass null for ephemeral replay.
+     * @param onComplete Invoked on the service scope when the replay engine signals completion.
+     */
+    private suspend fun startReplayWithWaypoints(
+        waypoints: List<LatLng>,
+        speedMs: Double,
+        isLooping: Boolean,
+        persistMetadata: (suspend () -> Unit)? = null,
+        onComplete: suspend () -> Unit = { locationRepository.setMockMode(MockMode.TELEPORT) },
+    ) {
+        if (locationRepository.currentMode.value == MockMode.ROAMING) roamingRepository.stopRoaming()
+        if (waypoints.size < 2) return
+
+        currentSpeedMs = speedMs.toFloat()
+        currentBearing = 0.0f
+
+        // Set mode BEFORE state so the state observer sees ROUTE_REPLAY and
+        // correctly skips starting the background update loop.
+        locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
+        persistMetadata?.invoke()
+        // Trigger RUNNING after mode is set.
+        _state.value = MockLocationState.RUNNING
+        locationRepository.startSpoofing()
+
+        walkToPosition(waypoints.first(), speedMs)
+
+        routeReplayEngine.start(
+            waypoints = waypoints,
+            speedMs = speedMs,
+            isLooping = isLooping,
+            onPositionUpdate = { pos ->
+                currentLat = pos.latitude
+                currentLon = pos.longitude
+                try {
+                    locationRepository.setPositionInternal(pos)
+                    pushLocationUpdate()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Position update failed during replay", e)
+                }
+            },
+            onComplete = { serviceScope.launch { onComplete() } },
+        )
+
+        // If pause was requested during walk-to-start (before engine launched),
+        // ensure the engine is paused now that it has been initialized.
+        if (_state.value == MockLocationState.PAUSED) routeReplayEngine.pause()
+    }
+
     private fun handleReplayStart(
         routeId: String,
         isBackward: Boolean,
         speedMs: Double,
     ) {
         serviceScope.launch {
-            // Ensure roaming is stopped before starting route replay — they must not run concurrently.
-            if (locationRepository.currentMode.value == MockMode.ROAMING) {
-                roamingRepository.stopRoaming()
-            }
             val route = routeRepository.getRouteWithWaypoints(routeId).first() ?: return@launch
             if (route.waypoints.size < 2) return@launch
+            val latLngs = (if (isBackward) route.waypoints.reversed() else route.waypoints).map { it.position }
 
-            val ordered = if (isBackward) route.waypoints.reversed() else route.waypoints
-            val latLngs = ordered.map { it.position }
-            val startPos = latLngs.first()
-
-            currentSpeedMs = speedMs.toFloat()
-            currentBearing = 0.0f
-
-            // Set mode BEFORE state so the state observer sees ROUTE_REPLAY and
-            // correctly skips starting the background update loop.
-            locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
-            locationRepository.setActiveRouteId(routeId)
-            locationRepository.setIsReplayBackward(isBackward)
-            locationRepository.setRouteWaypoints(latLngs)
-            // Trigger RUNNING after mode is set.
-            _state.value = MockLocationState.RUNNING
-            locationRepository.startSpoofing()
-
-            walkToPosition(startPos, speedMs)
-
-            routeReplayEngine.start(
+            startReplayWithWaypoints(
                 waypoints = latLngs,
                 speedMs = speedMs,
                 isLooping = route.isLooping,
-                onPositionUpdate = { pos ->
-                    currentLat = pos.latitude
-                    currentLon = pos.longitude
-                    try {
-                        locationRepository.setPositionInternal(pos)
-                        pushLocationUpdate()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Position update failed during route replay", e)
-                    }
+                persistMetadata = {
+                    locationRepository.setActiveRouteId(routeId)
+                    locationRepository.setIsReplayBackward(isBackward)
+                    locationRepository.setRouteWaypoints(latLngs)
                 },
                 onComplete = {
                     locationRepository.setRouteWaypoints(null)
@@ -792,12 +826,6 @@ class MockLocationService : Service() {
                     locationRepository.setMockMode(MockMode.TELEPORT)
                 },
             )
-
-            // If pause was requested during walk-to-start (before engine launched),
-            // ensure the engine is paused now that it has been initialized.
-            if (_state.value == MockLocationState.PAUSED) {
-                routeReplayEngine.pause()
-            }
         }
     }
 
@@ -806,46 +834,12 @@ class MockLocationService : Service() {
         speedMs: Double,
     ) {
         serviceScope.launch {
-            // Ensure roaming is stopped before starting route replay.
-            if (locationRepository.currentMode.value == MockMode.ROAMING) {
-                roamingRepository.stopRoaming()
-            }
-            if (waypoints.size < 2) return@launch
-
-            val startPos = waypoints.first()
-            currentSpeedMs = speedMs.toFloat()
-            currentBearing = 0.0f
-
-            // Set mode BEFORE state so the state observer correctly skips the background update loop.
-            locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
-            // Ephemeral: do NOT persist route id or route waypoints in repository.
-            _state.value = MockLocationState.RUNNING
-            locationRepository.startSpoofing()
-
-            walkToPosition(startPos, speedMs)
-
-            routeReplayEngine.start(
+            startReplayWithWaypoints(
                 waypoints = waypoints,
                 speedMs = speedMs,
                 isLooping = false,
-                onPositionUpdate = { pos ->
-                    currentLat = pos.latitude
-                    currentLon = pos.longitude
-                    try {
-                        locationRepository.setPositionInternal(pos)
-                        pushLocationUpdate()
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Position update failed during ephemeral replay", e)
-                    }
-                },
-                onComplete = {
-                    locationRepository.setMockMode(MockMode.TELEPORT)
-                },
+                persistMetadata = null,
             )
-
-            if (_state.value == MockLocationState.PAUSED) {
-                routeReplayEngine.pause()
-            }
         }
     }
 

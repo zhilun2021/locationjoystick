@@ -14,6 +14,7 @@ import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.datastore.PreferencesDataSource
+import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
@@ -72,6 +73,7 @@ class MapViewModel
         private val preferencesDataSource: PreferencesDataSource,
         private val walkCoordinator: WalkCoordinator,
         private val teleportUseCase: TeleportUseCase,
+        private val ephemeralReplayController: EphemeralReplayController,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
@@ -222,8 +224,7 @@ class MapViewModel
                         it.copy(
                             pendingTapPosition = null,
                             routeTrace = null,
-                            walkTarget = null,
-                            walkStart = null,
+                            walkMode = WalkMode.Idle,
                         )
                     }
                 }
@@ -294,7 +295,7 @@ class MapViewModel
                         context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
                     }
                     _uiState.update {
-                        it.copy(walkTarget = null, walkStart = null, isWalkPaused = false, ephemeralWaypoints = emptyList())
+                        it.copy(walkMode = WalkMode.Idle, isWalkPaused = false)
                     }
                 }
 
@@ -418,32 +419,19 @@ class MapViewModel
 
                 is MapAction.AddEphemeralWaypoint -> {
                     val state = _uiState.value
-                    val currentWaypoints = state.ephemeralWaypoints
-
-                    if (currentWaypoints.isEmpty()) {
-                        // First "Add next point" — transition from WalkCoordinator to RouteReplayEngine
-                        val initial =
-                            listOf(
-                                state.walkStart ?: state.currentPosition ?: action.position,
-                                state.walkTarget ?: action.position,
-                                action.position,
-                            )
-                        walkCoordinator.cancel()
-                        startEphemeralReplay(initial)
+                    viewModelScope.launch {
+                        val result =
+                            ephemeralReplayController.addWaypoint(
+                                newPoint = action.position,
+                                currentWaypoints = state.ephemeralWaypoints,
+                                walkStart = state.walkStart,
+                                walkTarget = state.walkTarget,
+                                context = context,
+                                launchIntent = { context.startService(it) },
+                            ) ?: return@launch
                         _uiState.update {
                             it.copy(
-                                walkTarget = null,
-                                walkStart = null,
-                                ephemeralWaypoints = initial,
-                                pendingTapPosition = null,
-                            )
-                        }
-                    } else {
-                        // Already in ephemeral replay — just append
-                        appendEphemeralWaypoint(action.position)
-                        _uiState.update {
-                            it.copy(
-                                ephemeralWaypoints = currentWaypoints + action.position,
+                                walkMode = WalkMode.EphemeralReplay(result),
                                 pendingTapPosition = null,
                             )
                         }
@@ -469,8 +457,7 @@ class MapViewModel
         private fun walkTo(position: LatLng) {
             _uiState.update {
                 it.copy(
-                    walkTarget = position,
-                    walkStart = it.currentPosition,
+                    walkMode = WalkMode.Walking(target = position, start = it.currentPosition),
                     routeTrace = null,
                 )
             }
@@ -486,19 +473,6 @@ class MapViewModel
         }
 
         private fun appendWaypointToRoute(position: LatLng) {
-            context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
-        }
-
-        private fun startEphemeralReplay(waypoints: List<LatLng>) {
-            viewModelScope.launch {
-                val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                context.startService(
-                    MockLocationIntentBuilder.startEphemeralReplay(context, waypoints, speedMs),
-                )
-            }
-        }
-
-        private fun appendEphemeralWaypoint(position: LatLng) {
             context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
         }
 

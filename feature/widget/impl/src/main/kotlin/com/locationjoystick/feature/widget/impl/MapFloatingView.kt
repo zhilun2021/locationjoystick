@@ -62,6 +62,7 @@ import com.locationjoystick.core.map.geojson.buildRouteTraceGeoJson
 import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
+import com.locationjoystick.core.map.maplibre.addEphemeralRouteLayers
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
 import org.maplibre.android.MapLibre
@@ -105,7 +106,7 @@ internal fun MapFloatingView(
     val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
     val isRoaming = mockMode == com.locationjoystick.core.model.MockMode.ROAMING
     val isRouteReplay = mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY
-    val isWalkActive = walkTarget != null
+    val isWalkActive = walkTarget != null || isRouteReplay
     val isActivityActive by locationRepository.isActivityActive.collectAsStateWithLifecycle(initialValue = false)
     val favoritesFlow = remember { favoriteRepository.getFavorites() }
     val favorites by favoritesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
@@ -239,37 +240,9 @@ internal fun MapFloatingView(
                             )
                             endpointsSource.value = endpointsSrc
 
-                            val ephemeralRouteSrc =
-                                GeoJsonSource(AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID, emptyGeoJson())
-                            style.addSource(ephemeralRouteSrc)
-                            style.addLayerBelow(
-                                LineLayer(
-                                    AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID,
-                                    AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID,
-                                ).withProperties(
-                                    PropertyFactory.lineColor(android.graphics.Color.parseColor("#7B61FF")),
-                                    PropertyFactory.lineWidth(3f),
-                                    PropertyFactory.lineDasharray(arrayOf(4f, 4f)),
-                                ),
-                                MapLibreLayerIds.TRACE_TRACED,
-                            )
-                            ephemeralRouteSource.value = ephemeralRouteSrc
-
-                            val ephemeralEndpointsSrc =
-                                GeoJsonSource(AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID, emptyGeoJson())
-                            style.addSource(ephemeralEndpointsSrc)
-                            style.addLayer(
-                                CircleLayer(
-                                    AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID,
-                                    AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID,
-                                ).withProperties(
-                                    PropertyFactory.circleRadius(6f),
-                                    PropertyFactory.circleColor(android.graphics.Color.parseColor("#7B61FF")),
-                                    PropertyFactory.circleStrokeColor(android.graphics.Color.WHITE),
-                                    PropertyFactory.circleStrokeWidth(2f),
-                                ),
-                            )
-                            ephemeralEndpointsSource.value = ephemeralEndpointsSrc
+                            val ephemeralSrcs = style.addEphemeralRouteLayers()
+                            ephemeralRouteSource.value = ephemeralSrcs.routeSource
+                            ephemeralEndpointsSource.value = ephemeralSrcs.endpointsSource
 
                             val src =
                                 GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())

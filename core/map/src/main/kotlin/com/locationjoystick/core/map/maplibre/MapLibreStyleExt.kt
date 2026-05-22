@@ -14,6 +14,7 @@ import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
 
 // Canonical colours
+private val COLOR_EPHEMERAL = Color(0xFF7B61FF).toArgb()
 private val COLOR_POSITION = Color(0xFF1E88E5).toArgb()
 private val COLOR_POSITION_STROKE = Color(0xFFFFFFFF).toArgb()
 private val COLOR_ROUTE_LINE = Color(0xFFFF9800).toArgb()
@@ -212,4 +213,45 @@ fun Style.addCreatorLayers(currentPosGeoJson: String? = null): CreatorLayerSourc
         segmentsSource = segSrc,
         waypointsSource = wpSrc,
     )
+}
+
+/**
+ * Data class holding sources added by [Style.addEphemeralRouteLayers].
+ */
+data class EphemeralRouteLayerSources(
+    val routeSource: GeoJsonSource,
+    val endpointsSource: GeoJsonSource,
+)
+
+/**
+ * Adds the ephemeral-route dashed line and its endpoint circles.
+ * The line is inserted below [MapLibreLayerIds.TRACE_TRACED] so traced segments
+ * always render on top.
+ */
+fun Style.addEphemeralRouteLayers(): EphemeralRouteLayerSources {
+    val routeSrc = GeoJsonSource(MapLibreSourceIds.EPHEMERAL_ROUTE, emptyGeoJson())
+    addSource(routeSrc)
+    addLayerBelow(
+        LineLayer(MapLibreLayerIds.EPHEMERAL_ROUTE, MapLibreSourceIds.EPHEMERAL_ROUTE)
+            .withProperties(
+                PropertyFactory.lineColor(COLOR_EPHEMERAL),
+                PropertyFactory.lineWidth(3f),
+                PropertyFactory.lineDasharray(arrayOf(4f, 4f)),
+            ),
+        MapLibreLayerIds.TRACE_TRACED,
+    )
+
+    val endpointsSrc = GeoJsonSource(MapLibreSourceIds.EPHEMERAL_ENDPOINTS, emptyGeoJson())
+    addSource(endpointsSrc)
+    addLayer(
+        CircleLayer(MapLibreLayerIds.EPHEMERAL_ENDPOINTS, MapLibreSourceIds.EPHEMERAL_ENDPOINTS)
+            .withProperties(
+                PropertyFactory.circleRadius(6f),
+                PropertyFactory.circleColor(COLOR_EPHEMERAL),
+                PropertyFactory.circleStrokeColor(COLOR_POSITION_STROKE),
+                PropertyFactory.circleStrokeWidth(2f),
+            ),
+    )
+
+    return EphemeralRouteLayerSources(routeSource = routeSrc, endpointsSource = endpointsSrc)
 }
