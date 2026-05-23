@@ -28,17 +28,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.SpeedUnit
 import kotlin.math.roundToInt
 
-private val SPEED_PROFILES = listOf("walk", "run", "bike")
-private val SPEED_PROFILE_LABELS = mapOf("walk" to "Walk", "run" to "Run", "bike" to "Bike")
-
-private const val RADIUS_MIN = 1_000f
-private const val RADIUS_MAX = 100_000f
-private const val DISTANCE_MIN = 50f
-private const val DISTANCE_MAX = 50_000f
+private val SPEED_PROFILES = listOf(
+    AppConstants.ProfileConstants.PROFILE_ID_WALK,
+    AppConstants.ProfileConstants.PROFILE_ID_RUN,
+    AppConstants.ProfileConstants.PROFILE_ID_BIKE,
+)
+private val SPEED_PROFILE_LABELS = mapOf(
+    AppConstants.ProfileConstants.PROFILE_ID_WALK to "Walk",
+    AppConstants.ProfileConstants.PROFILE_ID_RUN to "Run",
+    AppConstants.ProfileConstants.PROFILE_ID_BIKE to "Bike",
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

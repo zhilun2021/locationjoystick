@@ -1,14 +1,11 @@
 package com.locationjoystick.feature.settings.impl
 
-import com.locationjoystick.core.model.AppSettings
 import com.locationjoystick.core.model.ExportData
 import com.locationjoystick.core.model.FavoriteLocation
-import com.locationjoystick.core.model.JoystickStyle
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
 import com.locationjoystick.core.model.SpeedProfile
-import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.Waypoint
 import com.locationjoystick.core.model.WidgetFeature
 import org.junit.Assert.assertEquals
@@ -20,27 +17,6 @@ import org.robolectric.RobolectricTestRunner
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
-
-private fun minimalExportData(): ExportData =
-    ExportData(
-        schemaVersion = 1,
-        exportedAt = 0L,
-        settings =
-            AppSettings(
-                activeSpeedProfileId = "walk",
-                joystickStyle = JoystickStyle.FLOATING,
-                enabledWidgetFeatures = emptyList(),
-                mapFollowsLocation = true,
-                useRoadSnappingByDefault = false,
-                speedUnit = SpeedUnit.KMH,
-            ),
-        speedProfiles = emptyList(),
-        routes = emptyList(),
-        favoriteLocations = emptyList(),
-        jitterIdleRadius = 0.0,
-        jitterMovingRadius = 1.0,
-        jitterIntervalSeconds = 3,
-    )
 
 private fun route(
     id: String = "r1",

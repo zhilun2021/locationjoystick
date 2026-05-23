@@ -194,12 +194,62 @@ class BuildLocationTest {
     }
 
     @Test
+    fun `satellite count from snapshot is used verbatim in fix`() {
+        val snap = baseSnapshot(satelliteExtrasEnabled = true, cachedSatelliteCount = 13, cachedUsedInFixCount = 9)
+        val fix = buildLocation(snap, 1000L, Random(1))!!
+        assertEquals(13, fix.satelliteCount)
+        assertEquals(9, fix.usedInFixCount)
+    }
+
+    @Test
     fun `satellite extras null when disabled`() {
         val snap = baseSnapshot(satelliteExtrasEnabled = false)
         val fix = buildLocation(snap, 1000L, Random(1))
         assertNotNull(fix)
         assertNull(fix!!.satelliteCount)
         assertNull(fix.usedInFixCount)
+    }
+
+    @Test
+    fun `moving jitter applied when shouldApplyMovingJitter is true and speed is positive`() {
+        val snap =
+            baseSnapshot(
+                mode = MockMode.JOYSTICK,
+                speedMs = 1.4f,
+                jitterMovingRadiusMeters = 5.0,
+                jitterIdleRadiusMeters = 0.0,
+                shouldApplyMovingJitter = true,
+            )
+        val deviations =
+            (1..40).map { seed ->
+                val fix = buildLocation(snap, 1000L, Random(seed))!!
+                val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
+                val dlon =
+                    (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
+                        kotlin.math.cos(Math.toRadians(snap.latitude))
+                kotlin.math.sqrt(dlat * dlat + dlon * dlon)
+            }
+        assertTrue("Moving jitter must produce non-zero deviation", deviations.any { it > 0.0 })
+        assertTrue("Moving jitter deviation must not exceed 2×radius", deviations.all { it <= 2 * 5.0 * 2 })
+    }
+
+    @Test
+    fun `moving jitter not applied when shouldApplyMovingJitter is false`() {
+        val snap =
+            baseSnapshot(
+                mode = MockMode.JOYSTICK,
+                speedMs = 1.4f,
+                jitterMovingRadiusMeters = 5.0,
+                jitterIdleRadiusMeters = 0.0,
+                shouldApplyMovingJitter = false,
+            )
+        val fix = buildLocation(snap, 1000L, Random(1))!!
+        val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
+        val dlon =
+            (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
+                kotlin.math.cos(Math.toRadians(snap.latitude))
+        val deviation = kotlin.math.sqrt(dlat * dlat + dlon * dlon)
+        assertEquals("Moving jitter must not be applied when flag is false", 0.0, deviation, 1e-9)
     }
 
     @Test

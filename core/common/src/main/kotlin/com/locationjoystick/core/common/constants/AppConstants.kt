@@ -75,6 +75,10 @@ object AppConstants {
         const val DEFAULT_DISTANCE_METERS = 1_000.0
         const val DEFAULT_FOLLOW_ROADS = true
         const val DEFAULT_RETURN_TO_START = true
+        const val RADIUS_MIN_METERS = 1_000.0
+        const val RADIUS_MAX_METERS = 100_000.0
+        const val DISTANCE_MIN_METERS = 50.0
+        const val DISTANCE_MAX_METERS = 50_000.0
     }
 
     object OsrmConstants {
@@ -88,9 +92,13 @@ object AppConstants {
         const val DEFAULT_LON = 2.3522
         const val DEFAULT_ZOOM = 15.0
         const val OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        const val TILESET_VERSION = "2.2.0"
+        const val OSM_MAX_ZOOM = 19f
         const val EMPTY_MAP_STYLE_URI = "asset://empty.json"
         const val OSM_SOURCE_ID = "osm-source"
         const val OSM_LAYER_ID = "osm-layer"
+        const val PANEL_OSM_SOURCE_ID = "panel-osm-source"
+        const val PANEL_OSM_LAYER_ID = "panel-osm-layer"
         const val EPHEMERAL_ROUTE_SOURCE_ID = "ephemeral-route-source"
         const val EPHEMERAL_ROUTE_LAYER_ID = "ephemeral-route-layer"
         const val EPHEMERAL_ENDPOINTS_SOURCE_ID = "ephemeral-endpoints-source"
@@ -217,6 +225,10 @@ object AppConstants {
         const val SIZE_DP = 90
         const val STEP_SECONDS = 0.1
         const val STEP_MS = 100L
+        const val KNOB_RADIUS_FRACTION = 0.25f
+        const val DEADZONE_FRACTION = 0.15f
+        const val DRAG_HANDLE_FRACTION = 0.28f
+        const val OUTER_ALPHA = 80
     }
 
     object WidgetConstants {
@@ -234,5 +246,29 @@ object AppConstants {
     object AppInfo {
         const val GITHUB_URL = "https://github.com/shortcuts/locationjoystick"
         const val GITHUB_ISSUES_URL = "https://github.com/shortcuts/locationjoystick/issues"
+    }
+
+    object UnitConversionConstants {
+        const val METERS_PER_MILE = 1609.344
+        const val FEET_PER_METER = 3.28084
+    }
+
+    object MapColorConstants {
+        const val ENDPOINT_CIRCLE_COLOR = 0xFF1E88E5L
+        const val ENDPOINT_STROKE_COLOR = 0xFFFFFFFFL
+        const val ROUTE_LINE_COLOR = 0xFFFF9800L
+        const val ACTIVE_BUTTON_COLOR = 0xFF43A047L
+    }
+
+    object AnimationConstants {
+        const val MAP_CAMERA_DURATION_MS = 500
+        const val SPRING_DAMPING_RATIO = 0.85f
+        const val SPRING_STIFFNESS = 400f
+        const val SCALE_IN_INITIAL = 0.95f
+    }
+
+    object TimeConstants {
+        const val SECONDS_PER_HOUR = 3600
+        const val SECONDS_PER_MINUTE = 60
     }
 }

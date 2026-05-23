@@ -832,10 +832,11 @@ class FloatingWidgetService :
                 Log.w(TAG, "Service destroyed before favorites panel could be shown")
                 return@launch
             }
+            panelComposeView = panel
             try {
                 windowManager.addView(panel, panelLayoutParams())
-                panelComposeView = panel
             } catch (e: Exception) {
+                panelComposeView = null
                 Log.e(TAG, "Failed to show favorites panel", e)
             }
         }
@@ -872,10 +873,11 @@ class FloatingWidgetService :
                 Log.w(TAG, "Service destroyed before routes panel could be shown")
                 return@launch
             }
+            panelComposeView = panel
             try {
                 windowManager.addView(panel, panelLayoutParams())
-                panelComposeView = panel
             } catch (e: Exception) {
+                panelComposeView = null
                 Log.e(TAG, "Failed to show routes panel", e)
             }
         }
@@ -1027,20 +1029,17 @@ class FloatingWidgetService :
     }
 
     private fun toggleJoystick() {
-        val svc = joystickService
-        if (svc != null) {
-            try {
-                svc.toggleOverlay()
-                serviceScope.launch {
-                    delay(100L)
-                    syncJoystickState()
-                }
-                Log.d(TAG, "Toggled joystick overlay visibility")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to toggle joystick overlay", e)
+        val svc =
+            joystickService ?: run {
+                Log.w(TAG, "Cannot toggle joystick: service not bound")
+                return
             }
-        } else {
-            Log.w(TAG, "Cannot toggle joystick: service not bound")
+        try {
+            svc.toggleOverlay()
+            syncJoystickState()
+            Log.d(TAG, "Toggled joystick overlay visibility")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to toggle joystick overlay", e)
         }
     }
 
@@ -1079,94 +1078,101 @@ class FloatingWidgetService :
     }
 
     private fun showMapFloatingView() {
-        val panel =
-            ComposeView(this@FloatingWidgetService).apply {
-                setViewTreeLifecycleOwner(this@FloatingWidgetService)
-                setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
+        serviceScope.launch {
+            val panel =
+                ComposeView(this@FloatingWidgetService).apply {
+                    setViewTreeLifecycleOwner(this@FloatingWidgetService)
+                    setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
+                }
+            panel.setContent {
+                LjTheme {
+                    MapFloatingView(
+                        locationRepository = locationRepository,
+                        favoriteRepository = favoriteRepository,
+                        onTeleport = { pos ->
+                            val svc = mockLocationService
+                            if (svc != null) {
+                                svc.updatePosition(pos.latitude, pos.longitude)
+                            } else {
+                                locationRepository.updatePosition(pos)
+                            }
+                            moveAppToBack()
+                        },
+                        onWalkTo = { pos ->
+                            walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
+                                startService(
+                                    MockLocationIntentBuilder.updatePosition(
+                                        this@FloatingWidgetService,
+                                        newPos.latitude,
+                                        newPos.longitude,
+                                        speedMs,
+                                        bearing,
+                                    ),
+                                )
+                            }
+                            moveAppToBack()
+                        },
+                        onStopRouteAndTeleport = { pos ->
+                            sendReplayCancel()
+                            val svc = mockLocationService
+                            if (svc != null) {
+                                svc.updatePosition(pos.latitude, pos.longitude)
+                            } else {
+                                locationRepository.updatePosition(pos)
+                            }
+                            moveAppToBack()
+                        },
+                        onStopRouteAndWalkTo = { pos ->
+                            sendReplayCancel()
+                            walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
+                                startService(
+                                    MockLocationIntentBuilder.updatePosition(
+                                        this@FloatingWidgetService,
+                                        newPos.latitude,
+                                        newPos.longitude,
+                                        speedMs,
+                                        bearing,
+                                    ),
+                                )
+                            }
+                            moveAppToBack()
+                        },
+                        onFinishRouteAndWalkTo = { pos ->
+                            sendAppendWaypoint(pos)
+                            moveAppToBack()
+                        },
+                        onAddEphemeralWaypoint = { pos ->
+                            sendAddEphemeralWaypoint(pos)
+                            moveAppToBack()
+                        },
+                        onStartRoaming = { startRoamingWithDefaults() },
+                        onStopRoaming = {
+                            serviceScope.launch {
+                                roamingRepository.stopRoaming()
+                            }
+                        },
+                        onDismiss = { hidePanelView() },
+                        context = this@FloatingWidgetService,
+                        recentSearches = settingsRepository.getRecentSearches().collectAsState(initial = emptyList()).value,
+                        onSearchCommitted = { name, lat, lon ->
+                            serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }
+                        },
+                    )
+                }
             }
-        panel.setContent {
-            LjTheme {
-                MapFloatingView(
-                    locationRepository = locationRepository,
-                    favoriteRepository = favoriteRepository,
-                    onTeleport = { pos ->
-                        val svc = mockLocationService
-                        if (svc != null) {
-                            svc.updatePosition(pos.latitude, pos.longitude)
-                        } else {
-                            locationRepository.updatePosition(pos)
-                        }
-                        moveAppToBack()
-                    },
-                    onWalkTo = { pos ->
-                        walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
-                            startService(
-                                MockLocationIntentBuilder.updatePosition(
-                                    this@FloatingWidgetService,
-                                    newPos.latitude,
-                                    newPos.longitude,
-                                    speedMs,
-                                    bearing,
-                                ),
-                            )
-                        }
-                        moveAppToBack()
-                    },
-                    onStopRouteAndTeleport = { pos ->
-                        sendReplayCancel()
-                        val svc = mockLocationService
-                        if (svc != null) {
-                            svc.updatePosition(pos.latitude, pos.longitude)
-                        } else {
-                            locationRepository.updatePosition(pos)
-                        }
-                        moveAppToBack()
-                    },
-                    onStopRouteAndWalkTo = { pos ->
-                        sendReplayCancel()
-                        walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
-                            startService(
-                                MockLocationIntentBuilder.updatePosition(
-                                    this@FloatingWidgetService,
-                                    newPos.latitude,
-                                    newPos.longitude,
-                                    speedMs,
-                                    bearing,
-                                ),
-                            )
-                        }
-                        moveAppToBack()
-                    },
-                    onFinishRouteAndWalkTo = { pos ->
-                        sendAppendWaypoint(pos)
-                        moveAppToBack()
-                    },
-                    onAddEphemeralWaypoint = { pos ->
-                        sendAddEphemeralWaypoint(pos)
-                        moveAppToBack()
-                    },
-                    onStartRoaming = { startRoamingWithDefaults() },
-                    onStopRoaming = {
-                        serviceScope.launch {
-                            roamingRepository.stopRoaming()
-                        }
-                    },
-                    onDismiss = { hidePanelView() },
-                    context = this@FloatingWidgetService,
-                    recentSearches = settingsRepository.getRecentSearches().collectAsState(initial = emptyList()).value,
-                    onSearchCommitted = { name, lat, lon ->
-                        serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }
-                    },
-                )
+            hidePanelView()
+            if (!isActive) {
+                Log.w(TAG, "Service destroyed before map panel could be shown")
+                return@launch
             }
-        }
-        hidePanelView()
-        try {
-            windowManager.addView(panel, panelLayoutParams())
             panelComposeView = panel
-            Log.d(TAG, "Opened map panel")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to show map panel", e)
+            try {
+                windowManager.addView(panel, panelLayoutParams())
+                Log.d(TAG, "Opened map panel")
+            } catch (e: Exception) {
+                panelComposeView = null
+                Log.e(TAG, "Failed to show map panel", e)
+            }
         }
     }
 

@@ -2,7 +2,6 @@ package com.locationjoystick.feature.settings.impl
 
 import android.content.Context
 import android.net.Uri
-import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -29,10 +28,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
-import org.json.JSONObject
-import java.io.ByteArrayInputStream
-import java.util.zip.GZIPInputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -58,7 +53,7 @@ class SettingsViewModel
         val qrImportReady: SharedFlow<ExportData> = _qrImportReady
 
         private val _qrChunksReady = MutableSharedFlow<QrChunker.ChunkResult>(extraBufferCapacity = 1)
-        internal val qrChunksReady: SharedFlow<QrChunker.ChunkResult> = _qrChunksReady
+        val qrChunksReady: SharedFlow<QrChunker.ChunkResult> = _qrChunksReady
 
         private data class RepoRealismChunk(
             val mapFollowsLocation: Boolean,
@@ -798,55 +793,8 @@ class SettingsViewModel
             }
         }
 
-        private fun decodeChunkContent(encoded: String): List<ChunkContent> {
-            val decoded = Base64.decode(encoded, Base64.DEFAULT)
-            val decompressed = GZIPInputStream(ByteArrayInputStream(decoded)).readBytes()
-            val json = String(decompressed, Charsets.UTF_8)
-            return parseChunkContent(json)
-        }
-
-        private fun parseChunkContent(json: String): List<ChunkContent> {
-            val array = JSONArray(json)
-            return (0 until array.length()).map { idx ->
-                val obj = array.getJSONObject(idx)
-                val type = obj.getString("type")
-                when (type) {
-                    "settings" -> {
-                        val wrapped =
-                            JSONObject().apply {
-                                put("settings", obj.getJSONObject("payload"))
-                                put("schemaVersion", AppConstants.ExportConstants.SCHEMA_VERSION)
-                            }
-                        val exportData = SettingsExportCodec.parseExportData(wrapped.toString())
-                        ChunkContent.Settings(exportData.settings)
-                    }
-
-                    "routes" -> {
-                        val wrapped =
-                            JSONObject().apply {
-                                put("routes", obj.getJSONArray("payload"))
-                                put("schemaVersion", AppConstants.ExportConstants.SCHEMA_VERSION)
-                            }
-                        val exportData = SettingsExportCodec.parseExportData(wrapped.toString())
-                        ChunkContent.Routes(exportData.routes)
-                    }
-
-                    "favorites" -> {
-                        val wrapped =
-                            JSONObject().apply {
-                                put("favoriteLocations", obj.getJSONArray("payload"))
-                                put("schemaVersion", AppConstants.ExportConstants.SCHEMA_VERSION)
-                            }
-                        val exportData = SettingsExportCodec.parseExportData(wrapped.toString())
-                        ChunkContent.Favorites(exportData.favoriteLocations)
-                    }
-
-                    else -> {
-                        error("Unknown chunk type: $type")
-                    }
-                }
-            }
-        }
+        private fun decodeChunkContent(encoded: String): List<ChunkContent> =
+            decodeChunkEnvelope(ChunkEnvelope(session = "", chunk = 0, total = 0, d = encoded))
 
         private fun mergeChunks(allContent: List<ChunkContent>): ExportData = mergeChunkContents(allContent)
 

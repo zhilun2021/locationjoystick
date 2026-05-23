@@ -46,11 +46,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicReference
 import javax.inject.Inject
 import kotlin.random.Random
 
@@ -141,6 +143,47 @@ internal data class LocationFix(
     val satelliteCount: Int?,
     val usedInFixCount: Int?,
 )
+
+/** Atomic push/pause phase state for suspended mocking. */
+internal data class SuspendedPhaseState(
+    val isActive: Boolean,
+    val startMs: Long,
+)
+
+/**
+ * Pure transition function for the suspended-mocking push/pause state machine.
+ *
+ * Returns the next [SuspendedPhaseState] given the current state and clock. No side effects.
+ * Disabled or mode-gated: resets isActive to false (startMs updated to now).
+ */
+internal fun advanceSuspendedPhase(
+    current: SuspendedPhaseState,
+    now: Long,
+    enabled: Boolean,
+    mode: MockMode,
+    random: Random,
+): SuspendedPhaseState {
+    if (!enabled || mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO) {
+        return SuspendedPhaseState(isActive = false, startMs = now)
+    }
+    val elapsed = now - current.startMs
+    return when {
+        !current.isActive && elapsed >= AppConstants.RealismConstants.SUSPENDED_PUSH_DURATION_MS -> {
+            SuspendedPhaseState(isActive = true, startMs = now)
+        }
+
+        current.isActive -> {
+            val pauseDur =
+                AppConstants.RealismConstants.SUSPENDED_PAUSE_DURATION_MS +
+                    random.nextLong(0, AppConstants.RealismConstants.SUSPENDED_PAUSE_JITTER_MS)
+            if (elapsed >= pauseDur) SuspendedPhaseState(isActive = false, startMs = now) else current
+        }
+
+        else -> {
+            current
+        }
+    }
+}
 
 /** Adds bounded Gaussian noise to [base] accuracy, clamped to [[ACCURACY_MIN], [ACCURACY_MAX]]. */
 internal fun perturbAccuracy(
@@ -385,11 +428,8 @@ class MockLocationService : Service() {
     /** Same instant as spoofingStartMs; kept separate for semantic clarity. NOT reset on pause/resume. */
     @Volatile private var warmupStartMs: Long = 0L
 
-    /** Timestamp of the most recent push/pause phase transition. */
-    @Volatile private var suspendedPhaseStartMs: Long = 0L
-
-    /** True while in the pause window of the push/pause cycle; buildLocation returns null during this phase. */
-    @Volatile private var isSuspendedPhase: Boolean = false
+    /** Atomically-updated push/pause phase state; avoids torn reads between isActive and startMs. */
+    private val suspendedPhase = AtomicReference(SuspendedPhaseState(isActive = false, startMs = 0L))
 
     /** Timestamp of the last satellite count refresh; controls the slow-churn update cadence. */
     @Volatile private var lastSatelliteUpdateMs: Long = 0L
@@ -408,120 +448,156 @@ class MockLocationService : Service() {
 
     private fun observeLocationState() {
         serviceScope.launch {
-            _state.collect { state ->
-                when (state) {
-                    MockLocationState.RUNNING -> {
-                        updateJobMutex.withLock {
-                            if (updateJob == null) {
-                                // Route replay drives its own position updates via the onPositionUpdate
-                                // callback — starting a background loop here would cause duplicate pushes.
-                                // Skip the loop when replay mode is already active.
-                                val mode = locationRepository.currentMode.value
-                                if (mode != MockMode.ROUTE_REPLAY) {
-                                    setupTestProvider()
-                                    startUpdateLoop()
-                                    Log.i(TAG, "State changed to RUNNING - started update loop")
-                                } else {
-                                    setupTestProvider()
-                                    Log.i(TAG, "State changed to RUNNING (route replay) - skipped update loop")
+            _state
+                .catch { e -> Log.e(TAG, "state observer error — service control flow dead", e) }
+                .collect { state ->
+                    when (state) {
+                        MockLocationState.RUNNING -> {
+                            updateJobMutex.withLock {
+                                if (updateJob == null) {
+                                    // Route replay drives its own position updates via the onPositionUpdate
+                                    // callback — starting a background loop here would cause duplicate pushes.
+                                    // Skip the loop when replay mode is already active.
+                                    val mode = locationRepository.currentMode.value
+                                    if (mode != MockMode.ROUTE_REPLAY) {
+                                        setupTestProvider()
+                                        startUpdateLoop()
+                                        Log.i(TAG, "State changed to RUNNING - started update loop")
+                                    } else {
+                                        setupTestProvider()
+                                        Log.i(TAG, "State changed to RUNNING (route replay) - skipped update loop")
+                                    }
                                 }
                             }
-                        }
-                        if (Settings.canDrawOverlays(this@MockLocationService)) {
-                            startService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
-                            startService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
-                            Log.i(TAG, "Overlay services started")
-                        } else {
-                            Log.i(TAG, "SYSTEM_ALERT_WINDOW not granted — skipping overlay start")
-                        }
-                    }
-
-                    MockLocationState.IDLE, MockLocationState.ERROR -> {
-                        updateJobMutex.withLock {
-                            if (updateJob != null) {
-                                updateJob?.cancel()
-                                updateJob = null
-                                removeTestProvider()
-                                Log.i(TAG, "State changed to IDLE/ERROR - stopped update loop")
+                            if (Settings.canDrawOverlays(this@MockLocationService)) {
+                                startService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
+                                startService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
+                                Log.i(TAG, "Overlay services started")
+                            } else {
+                                Log.i(TAG, "SYSTEM_ALERT_WINDOW not granted — skipping overlay start")
                             }
                         }
-                        stopService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
-                        stopService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
-                        Log.i(TAG, "Overlay services stopped")
-                    }
 
-                    MockLocationState.PAUSED -> {
-                        updateJobMutex.withLock {
-                            if (updateJob != null) {
-                                updateJob?.cancel()
-                                updateJob = null
-                                Log.i(TAG, "State changed to PAUSED - paused update loop")
+                        MockLocationState.IDLE, MockLocationState.ERROR -> {
+                            updateJobMutex.withLock {
+                                if (updateJob != null) {
+                                    updateJob?.cancel()
+                                    updateJob = null
+                                    removeTestProvider()
+                                    Log.i(TAG, "State changed to IDLE/ERROR - stopped update loop")
+                                }
                             }
+                            stopService(Intent().setClassName(packageName, JOYSTICK_SERVICE_CLASS))
+                            stopService(Intent().setClassName(packageName, WIDGET_SERVICE_CLASS))
+                            Log.i(TAG, "Overlay services stopped")
                         }
-                        // Overlays remain visible during pause
+
+                        MockLocationState.PAUSED -> {
+                            updateJobMutex.withLock {
+                                if (updateJob != null) {
+                                    updateJob?.cancel()
+                                    updateJob = null
+                                    Log.i(TAG, "State changed to PAUSED - paused update loop")
+                                }
+                            }
+                            // Overlays remain visible during pause
+                        }
                     }
                 }
-            }
         }
         serviceScope.launch {
-            try {
-                locationRepository.currentPosition.collect { position ->
+            locationRepository.currentPosition
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "currentPosition flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
+                .collect { position ->
                     if (position != null) {
                         currentLat = position.latitude
                         currentLon = position.longitude
                     }
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "currentPosition flow error", e)
-            }
         }
         serviceScope.launch {
             settingsRepository
                 .getJitterIdleRadius()
-                .catch { e -> Log.e(TAG, "jitterIdleRadius flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "jitterIdleRadius flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { jitterIdleRadiusMeters = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getJitterMovingRadius()
-                .catch { e -> Log.e(TAG, "jitterMovingRadius flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "jitterMovingRadius flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { jitterMovingRadiusMeters = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getJitterIntervalSeconds()
-                .catch { e -> Log.e(TAG, "jitterIntervalSeconds flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "jitterIntervalSeconds flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { jitterIntervalSeconds = it }
         }
         // Realism toggle flows — each updates a @Volatile field consumed by captureSnapshot() → buildLocation().
         serviceScope.launch {
             settingsRepository
                 .getRealismBearingHoldIdle()
-                .catch { e -> Log.e(TAG, "bearingHoldEnabled flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "bearingHoldEnabled flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { bearingHoldEnabled = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getRealismAltitudeEnabled()
-                .catch { e -> Log.e(TAG, "altitudeEnabled flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "altitudeEnabled flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { altitudeEnabled = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getRealismWarmupEnabled()
-                .catch { e -> Log.e(TAG, "warmupEnabled flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "warmupEnabled flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { warmupEnabled = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getRealismSatelliteExtrasEnabled()
-                .catch { e -> Log.e(TAG, "satelliteExtrasEnabled flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "satelliteExtrasEnabled flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { satelliteExtrasEnabled = it }
         }
         serviceScope.launch {
             settingsRepository
                 .getRealismSuspendedMockingEnabled()
-                .catch { e -> Log.e(TAG, "suspendedMockingEnabled flow error", e) }
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "suspendedMockingEnabled flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }
                 .collect { suspendedMockingEnabled = it }
         }
     }
@@ -661,9 +737,8 @@ class MockLocationService : Service() {
     override fun onBind(intent: Intent?): IBinder = binder
 
     override fun onDestroy() {
-        // Don't call stopSpoofing() here — it calls stopSelf() which re-triggers onDestroy,
-        // and the serviceScope.launch inside raced with the cancel below. Do cleanup directly.
-        updateJob?.cancel()
+        // Don't call stopSpoofing() here — it calls stopSelf() which re-triggers onDestroy.
+        // serviceScope.cancel() below cancels updateJob (child of the scope) automatically.
         updateJob = null
         removeTestProvider()
         locationRepository.stopSpoofing()
@@ -696,8 +771,7 @@ class MockLocationService : Service() {
         currentAltitudeMeters = AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS
         spoofingStartMs = now
         warmupStartMs = now
-        isSuspendedPhase = false
-        suspendedPhaseStartMs = now
+        suspendedPhase.set(SuspendedPhaseState(isActive = false, startMs = now))
         locationRepository.setPositionInternal(LatLng(lat, lon))
         locationRepository.setMockMode(MockMode.TELEPORT)
 
@@ -733,8 +807,10 @@ class MockLocationService : Service() {
     }
 
     fun stopSpoofing() {
+        // Cancel immediately (idempotent); null assignment deferred under mutex so the
+        // RUNNING observer can't start a new loop between our cancel and the null write.
         updateJob?.cancel()
-        updateJob = null
+        serviceScope.launch { updateJobMutex.withLock { updateJob = null } }
         removeTestProvider()
         _state.value = MockLocationState.IDLE
         locationRepository.setMockMode(MockMode.TELEPORT)
@@ -988,24 +1064,11 @@ class MockLocationService : Service() {
     private fun updateSuspendedPhase() {
         val now = SystemClock.elapsedRealtime()
         val mode = locationRepository.currentMode.value
-        if (!suspendedMockingEnabled || mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO) {
-            isSuspendedPhase = false
-            return
-        }
-        val elapsed = now - suspendedPhaseStartMs
-        if (!isSuspendedPhase && elapsed >= AppConstants.RealismConstants.SUSPENDED_PUSH_DURATION_MS) {
-            isSuspendedPhase = true
-            suspendedPhaseStartMs = now
-            Log.i(TAG, "Realism: suspended phase=PAUSED dur=${elapsed}ms")
-        } else if (isSuspendedPhase) {
-            val pauseDur =
-                AppConstants.RealismConstants.SUSPENDED_PAUSE_DURATION_MS +
-                    Random.nextLong(0, AppConstants.RealismConstants.SUSPENDED_PAUSE_JITTER_MS)
-            if (elapsed >= pauseDur) {
-                isSuspendedPhase = false
-                suspendedPhaseStartMs = now
-                Log.i(TAG, "Realism: suspended phase=PUSHING dur=${elapsed}ms")
-            }
+        val current = suspendedPhase.get()
+        val next = advanceSuspendedPhase(current, now, suspendedMockingEnabled, mode, Random.Default)
+        if (next !== current) {
+            suspendedPhase.set(next)
+            Log.i(TAG, "Realism: suspended phase=${if (next.isActive) "PAUSED" else "PUSHING"}")
         }
     }
 
@@ -1018,6 +1081,7 @@ class MockLocationService : Service() {
         val mode = locationRepository.currentMode.value
         val jitterIntervalMs = jitterIntervalSeconds * 1000L
         val shouldApplyMovingJitter = (nowMs - lastJitterTimestampMs) >= jitterIntervalMs
+        val suspendedPhaseSnapshot = suspendedPhase.get()
 
         // Slow satellite churn
         if (satelliteExtrasEnabled &&
@@ -1054,8 +1118,8 @@ class MockLocationService : Service() {
             altitudeEnabled = altitudeEnabled,
             satelliteExtrasEnabled = satelliteExtrasEnabled,
             suspendedMockingEnabled = suspendedMockingEnabled,
-            suspendedPhaseStartMs = suspendedPhaseStartMs,
-            isSuspendedPhase = isSuspendedPhase,
+            suspendedPhaseStartMs = suspendedPhaseSnapshot.startMs,
+            isSuspendedPhase = suspendedPhaseSnapshot.isActive,
             cachedSatelliteCount = cachedSatelliteCount,
             cachedUsedInFixCount = cachedUsedInFixCount,
         )
@@ -1065,7 +1129,10 @@ class MockLocationService : Service() {
      * Android adapter — the only place that touches [android.location.Location] APIs. Translates
      * the pure [LocationFix] into a test provider location update.
      */
-    private fun applyToProvider(fix: LocationFix) {
+    private fun applyToProvider(
+        fix: LocationFix,
+        nowNanos: Long,
+    ) {
         val loc =
             Location(LocationManager.GPS_PROVIDER).apply {
                 latitude = fix.latitude
@@ -1075,7 +1142,7 @@ class MockLocationService : Service() {
                 speed = fix.speedMs
                 bearing = fix.bearing
                 time = System.currentTimeMillis()
-                elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
+                elapsedRealtimeNanos = nowNanos
                 verticalAccuracyMeters = fix.verticalAccuracyMeters
                 bearingAccuracyDegrees = fix.bearingAccuracyDegrees
                 speedAccuracyMetersPerSecond = fix.speedAccuracyMps
@@ -1093,7 +1160,8 @@ class MockLocationService : Service() {
         if (!providerAdded) return
         try {
             updateSuspendedPhase()
-            val nowMs = SystemClock.elapsedRealtime()
+            val nowNanos = SystemClock.elapsedRealtimeNanos()
+            val nowMs = nowNanos / 1_000_000L
             val snapshot = captureSnapshot(nowMs)
             val fix = buildLocation(snapshot, nowMs, Random.Default) ?: return
             currentAltitudeMeters = fix.altitudeMeters
@@ -1101,7 +1169,7 @@ class MockLocationService : Service() {
             if (snapshot.shouldApplyMovingJitter && snapshot.mode != MockMode.TELEPORT) {
                 lastJitterTimestampMs = nowMs
             }
-            applyToProvider(fix)
+            applyToProvider(fix, nowNanos)
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Failed to push location update", e)
         } catch (e: Exception) {

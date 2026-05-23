@@ -17,11 +17,13 @@ Key files: `:core:location/MockLocationService.kt`, `:core:data/LocationReposito
 
 ## Internal Architecture
 
-Each tick, `captureSnapshot()` reads all `@Volatile` fields into immutable `LocationSnapshot`. Eliminates TOCTOU races in `buildLocation`.
+Each tick, `captureSnapshot()` reads all `@Volatile` fields into immutable `LocationSnapshot`. Eliminates TOCTOU races in `buildLocation`. Both `nowMs` and `nowNanos` are captured together at tick start and passed through — never re-read from the clock inside `applyToProvider`.
 
 Pure function `buildLocation(state, nowMs, random)` takes snapshot, returns `LocationFix` (or `null` during suspended-phase). No Android imports — `Random` injected for deterministic tests.
 
-`applyToProvider()` translates `LocationFix` → `android.location.Location`, pushes to `LocationManager`.
+`applyToProvider(fix, nowNanos)` translates `LocationFix` → `android.location.Location`, pushes to `LocationManager`. Receives captured `nowNanos` to guarantee monotonic `elapsedRealtimeNanos` consistent with the position computed in `buildLocation`.
+
+Suspended-phase state is held in `AtomicReference<SuspendedPhaseState>` (an `internal data class(isActive, startMs)`). Transitions are computed by `advanceSuspendedPhase(current, now, enabled, mode, random)` — a pure function extracted to `:core:location` top-level for direct unit testing (see `SuspendedPhaseTest`).
 
 Execution order inside `buildLocation`:
 1. Suspended-phase check
@@ -44,6 +46,6 @@ Defaults: `bearingHoldOnIdle = true`, `satelliteExtrasEnabled = true`. Others de
 | Altitude drift | `altitudeEnabled` | Gaussian random walk (σ = `RealismConstants.ALTITUDE_SIGMA_METERS`, drift = `ALTITUDE_DRIFT_PER_SECOND_METERS`) clamped within `±ALTITUDE_CLAMP_RADIUS_METERS` of `DEFAULT_ALTITUDE_METERS`. |
 | Warm-up envelope | `warmupEnabled` | Accuracy degrades at start, converges over `RealismConstants.WARMUP_DURATION_MS` (≈ 30 s). `warmupStartMs` set once in `startSpoofing`, never reset on pause/resume. |
 | Satellite extras | `satelliteExtrasEnabled` | Attaches `Bundle` extras with slow-churning total + in-fix satellite counts. Refreshed every `RealismConstants.SATELLITE_UPDATE_INTERVAL_MS`. |
-| Suspended mocking | `suspendedMockingEnabled` | Push/pause cycle: pushes for `RealismConstants.SUSPENDED_PUSH_DURATION_MS`, skips for `RealismConstants.SUSPENDED_PAUSE_DURATION_MS`. Auto-disabled in `ROUTE_REPLAY` mode. |
+| Suspended mocking | `suspendedMockingEnabled` | Push/pause cycle: pushes for `RealismConstants.SUSPENDED_PUSH_DURATION_MS`, skips for `RealismConstants.SUSPENDED_PAUSE_DURATION_MS` + random jitter up to `SUSPENDED_PAUSE_JITTER_MS`. Auto-disabled in `ROUTE_REPLAY` and `WALK_TO` modes. |
 
 All realism tuning values in `AppConstants.RealismConstants`.

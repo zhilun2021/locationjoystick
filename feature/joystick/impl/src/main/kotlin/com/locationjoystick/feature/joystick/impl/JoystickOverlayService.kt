@@ -118,7 +118,8 @@ class JoystickOverlayService : OverlayService() {
     override fun onCreate() {
         super.onCreate()
         overlayHelper.registerOverlayVisibilityReceiver(this, this)
-        overlayHelper.bindTrackedService(this, Intent(this, MockLocationService::class.java), serviceConnection)
+        val bound = overlayHelper.bindTrackedService(this, Intent(this, MockLocationService::class.java), serviceConnection)
+        if (!bound) Log.e(TAG, "Failed to bind MockLocationService — position vector updates will be skipped")
         serviceScope.launch {
             settingsRepository.getActiveSpeedProfile().collect { profile ->
                 _cachedProfile.value = profile

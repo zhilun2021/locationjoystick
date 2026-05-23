@@ -90,17 +90,17 @@ import org.maplibre.android.style.sources.TileSet
 import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private fun fadeInScale(): EnterTransition =
-    fadeIn(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+    fadeIn(animationSpec = spring(dampingRatio = AppConstants.AnimationConstants.SPRING_DAMPING_RATIO, stiffness = AppConstants.AnimationConstants.SPRING_STIFFNESS)) +
         scaleIn(
             initialScale = 0.95f,
-            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+            animationSpec = spring(dampingRatio = AppConstants.AnimationConstants.SPRING_DAMPING_RATIO, stiffness = AppConstants.AnimationConstants.SPRING_STIFFNESS),
         )
 
 private fun fadeOutScale(): ExitTransition =
-    fadeOut(animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f)) +
+    fadeOut(animationSpec = spring(dampingRatio = AppConstants.AnimationConstants.SPRING_DAMPING_RATIO, stiffness = AppConstants.AnimationConstants.SPRING_STIFFNESS)) +
         scaleOut(
             targetScale = 0.95f,
-            animationSpec = spring(dampingRatio = 0.85f, stiffness = 400f),
+            animationSpec = spring(dampingRatio = AppConstants.AnimationConstants.SPRING_DAMPING_RATIO, stiffness = AppConstants.AnimationConstants.SPRING_STIFFNESS),
         )
 
 fun NavGraphBuilder.mapScreen(
@@ -327,7 +327,7 @@ internal fun MapScreen(
                                 style.addSource(
                                     RasterSource(
                                         MapLibreSourceIds.OSM,
-                                        TileSet("2.2.0", AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
+                                        TileSet(AppConstants.MapConstants.TILESET_VERSION, AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = AppConstants.MapConstants.OSM_MAX_ZOOM },
                                         256,
                                     ),
                                 )
@@ -339,8 +339,8 @@ internal fun MapScreen(
                                     CircleLayer(MapLibreLayerIds.POSITION, MapLibreSourceIds.POSITION)
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
-                                            PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
-                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                            PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
+                                            PropertyFactory.circleStrokeColor(Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb()),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),
                                 )
@@ -351,7 +351,7 @@ internal fun MapScreen(
                                 style.addLayer(
                                     LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
                                         .withProperties(
-                                            PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                            PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
                                             PropertyFactory.lineWidth(4f),
                                             PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
                                         ),
@@ -363,7 +363,7 @@ internal fun MapScreen(
                                 style.addLayer(
                                     LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
                                         .withProperties(
-                                            PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                            PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
                                             PropertyFactory.lineWidth(4f),
                                         ),
                                 )
@@ -375,8 +375,8 @@ internal fun MapScreen(
                                     CircleLayer(MapLibreLayerIds.ENDPOINTS, MapLibreSourceIds.ENDPOINTS)
                                         .withProperties(
                                             PropertyFactory.circleRadius(8f),
-                                            PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
-                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                            PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
+                                            PropertyFactory.circleStrokeColor(Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb()),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),
                                 )
@@ -621,9 +621,9 @@ private fun PendingTapSheet(
                     val distKm = cooldownState.distanceMeters / 1000.0
                     val distLabel = if (distKm >= 1.0) "%.1f km".format(distKm) else "%.0f m".format(cooldownState.distanceMeters)
                     val remaining = cooldownState.remainingSeconds
-                    val hours = remaining / 3600
-                    val minutes = (remaining % 3600) / 60
-                    val seconds = remaining % 60
+                    val hours = remaining / AppConstants.TimeConstants.SECONDS_PER_HOUR
+                    val minutes = (remaining % AppConstants.TimeConstants.SECONDS_PER_HOUR) / AppConstants.TimeConstants.SECONDS_PER_MINUTE
+                    val seconds = remaining % AppConstants.TimeConstants.SECONDS_PER_MINUTE
                     val timeLabel =
                         when {
                             hours > 0 -> "%dh %dm".format(hours, minutes)
@@ -772,7 +772,7 @@ private fun MapFab(
 ) {
     FloatingActionButton(
         onClick = if (isSpoofing) onStop else onStart,
-        containerColor = if (isSpoofing) MaterialTheme.colorScheme.error else Color(0xFF43A047),
+        containerColor = if (isSpoofing) MaterialTheme.colorScheme.error else Color(AppConstants.MapColorConstants.ACTIVE_BUTTON_COLOR),
         contentColor = if (isSpoofing) MaterialTheme.colorScheme.onError else Color.White,
     ) {
         Icon(

@@ -30,7 +30,7 @@ fun Style.Builder.addOsmRasterLayer(): Style.Builder {
     withSource(
         RasterSource(
             MapLibreSourceIds.OSM,
-            TileSet("2.2.0", AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
+            TileSet(AppConstants.MapConstants.TILESET_VERSION, AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = AppConstants.MapConstants.OSM_MAX_ZOOM },
             256,
         ),
     )

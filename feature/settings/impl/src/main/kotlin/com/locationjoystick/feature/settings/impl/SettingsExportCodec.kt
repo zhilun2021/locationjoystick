@@ -115,8 +115,12 @@ internal object SettingsExportCodec {
 
     fun parseExportData(json: String): ExportData {
         val root = JSONObject(json)
-        val schemaVersion = root.optInt("schemaVersion", 1)
-        if (schemaVersion != 1) throw IllegalArgumentException("Unsupported schema version: $schemaVersion")
+        val schemaVersion = root.optInt("schemaVersion", AppConstants.ExportConstants.SCHEMA_VERSION)
+        if (schemaVersion !=
+            AppConstants.ExportConstants.SCHEMA_VERSION
+        ) {
+            throw IllegalArgumentException("Unsupported schema version: $schemaVersion")
+        }
 
         val settingsObj = root.optJSONObject("settings") ?: JSONObject()
         val speedUnit =
@@ -240,8 +244,8 @@ internal object SettingsExportCodec {
             routes = routes,
             favoriteLocations = favorites,
             jitterIdleRadius = root.optDouble("jitterIdleRadius", AppConstants.JitterConstants.DEFAULT_IDLE_RADIUS_METERS),
-            jitterMovingRadius = root.optDouble("jitterMovingRadius", 1.0),
-            jitterIntervalSeconds = root.optInt("jitterIntervalSeconds", 3),
+            jitterMovingRadius = root.optDouble("jitterMovingRadius", AppConstants.JitterConstants.DEFAULT_MOVING_RADIUS_METERS),
+            jitterIntervalSeconds = root.optInt("jitterIntervalSeconds", AppConstants.JitterConstants.DEFAULT_INTERVAL_SECONDS),
         )
     }
 }

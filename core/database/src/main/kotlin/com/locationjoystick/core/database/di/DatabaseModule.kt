@@ -2,6 +2,7 @@ package com.locationjoystick.core.database.di
 
 import android.content.Context
 import androidx.room.Room
+import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.database.LjDatabase
 import com.locationjoystick.core.database.dao.FavoriteDao
 import com.locationjoystick.core.database.dao.RouteDao
@@ -25,7 +26,7 @@ object DatabaseModule {
             .databaseBuilder(
                 context,
                 LjDatabase::class.java,
-                LjDatabase.DATABASE_NAME,
+                AppConstants.DatabaseConstants.DATABASE_NAME,
             ).addMigrations(LjDatabase.MIGRATION_1_2)
             .build()
 

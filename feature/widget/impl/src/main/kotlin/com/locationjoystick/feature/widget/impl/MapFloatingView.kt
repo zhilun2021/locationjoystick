@@ -80,8 +80,8 @@ import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
 import org.maplibre.android.geometry.LatLng as MapLatLng
 
-private const val MAP_FLOATING_VIEW_OSM_SOURCE = "panel-osm-source"
-private const val MAP_FLOATING_VIEW_OSM_LAYER = "panel-osm-layer"
+private val MAP_FLOATING_VIEW_OSM_SOURCE = AppConstants.MapConstants.PANEL_OSM_SOURCE_ID
+private val MAP_FLOATING_VIEW_OSM_LAYER = AppConstants.MapConstants.PANEL_OSM_LAYER_ID
 
 @Composable
 internal fun MapFloatingView(
@@ -195,7 +195,7 @@ internal fun MapFloatingView(
                             style.addSource(
                                 RasterSource(
                                     MAP_FLOATING_VIEW_OSM_SOURCE,
-                                    TileSet("2.2.0", AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = 19f },
+                                    TileSet(AppConstants.MapConstants.TILESET_VERSION, AppConstants.MapConstants.OSM_TILE_URL).apply { maxZoom = AppConstants.MapConstants.OSM_MAX_ZOOM },
                                     256,
                                 ),
                             )
@@ -207,7 +207,7 @@ internal fun MapFloatingView(
                             style.addLayer(
                                 LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
                                     .withProperties(
-                                        PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                        PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
                                         PropertyFactory.lineWidth(3f),
                                         PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
                                     ),
@@ -220,7 +220,7 @@ internal fun MapFloatingView(
                             style.addLayer(
                                 LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
                                     .withProperties(
-                                        PropertyFactory.lineColor(Color(0xFFFF9800).toArgb()),
+                                        PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
                                         PropertyFactory.lineWidth(3f),
                                     ),
                             )
