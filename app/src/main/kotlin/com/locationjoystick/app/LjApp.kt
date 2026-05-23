@@ -58,7 +58,7 @@ fun LjApp(
                     val current = navController.currentDestination?.route
                     // Skip redirect for screens that may launch sub-activities (file pickers, etc.)
                     val skipRedirect =
-                        current == IDLE_ROUTE || current == ONBOARDING_ROUTE || current == SETTINGS_ROUTE || current == INFO_ROUTE
+                        current == IDLE_ROUTE || current == ONBOARDING_ROUTE || current == SETTINGS_ROUTE || current == ABOUT_ROUTE
                     if (!skipRedirect) {
                         navController.navigate(IDLE_ROUTE) {
                             popUpTo(IDLE_ROUTE) { inclusive = false }

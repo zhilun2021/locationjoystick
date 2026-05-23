@@ -84,7 +84,7 @@ fun RoamingSheet(
                     radiusText = text
                     text.toDoubleOrNull()?.let { v ->
                         val meters = if (isMph) v * 1609.344 else v
-                        onAction(MapAction.UpdateRoamingRadius(meters.coerceIn(RADIUS_MIN.toDouble(), RADIUS_MAX.toDouble())))
+                        onAction(MapAction.UpdateRoamingRadius(meters.coerceIn(AppConstants.RoamingConstants.RADIUS_MIN_METERS, AppConstants.RoamingConstants.RADIUS_MAX_METERS)))
                     }
                 },
                 label = { Text(if (isMph) "Radius (mi)" else "Radius (m)") },
@@ -110,7 +110,7 @@ fun RoamingSheet(
                     distanceText = text
                     text.toDoubleOrNull()?.let { v ->
                         val meters = if (isMph) v * 1609.344 else v
-                        onAction(MapAction.UpdateRoamingDistance(meters.coerceIn(DISTANCE_MIN.toDouble(), DISTANCE_MAX.toDouble())))
+                        onAction(MapAction.UpdateRoamingDistance(meters.coerceIn(AppConstants.RoamingConstants.DISTANCE_MIN_METERS, AppConstants.RoamingConstants.DISTANCE_MAX_METERS)))
                     }
                 },
                 label = { Text(if (isMph) "Route distance (mi)" else "Route distance (m)") },
