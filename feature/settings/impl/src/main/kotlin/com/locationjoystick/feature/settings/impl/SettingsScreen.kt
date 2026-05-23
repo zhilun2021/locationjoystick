@@ -448,28 +448,14 @@ internal fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         JitterInput(
-                            value =
-                                if (isMph) {
-                                    (uiState.jitterIdleRadiusMeters * 3.28084).roundToInt()
-                                } else {
-                                    uiState.jitterIdleRadiusMeters
-                                        .toInt()
-                                },
-                            onValueChange = {
-                                onSetJitterIdleRadius(if (isMph) it / 3.28084 else it.toDouble())
-                            },
+                            value = if (isMph) uiState.jitterIdleRadiusMeters * 3.28084 else uiState.jitterIdleRadiusMeters,
+                            onValueChange = { onSetJitterIdleRadius(if (isMph) it / 3.28084 else it) },
                             label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         JitterInput(
-                            value =
-                                if (isMph) {
-                                    (uiState.jitterMovingRadiusMeters * 3.28084).roundToInt()
-                                } else {
-                                    uiState.jitterMovingRadiusMeters
-                                        .toInt()
-                                },
-                            onValueChange = { onSetJitterMovingRadius(if (isMph) it / 3.28084 else it.toDouble()) },
+                            value = if (isMph) uiState.jitterMovingRadiusMeters * 3.28084 else uiState.jitterMovingRadiusMeters,
+                            onValueChange = { onSetJitterMovingRadius(if (isMph) it / 3.28084 else it) },
                             label = if (isMph) "Moving radius (ft)" else "Moving radius (m)",
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -1051,6 +1037,43 @@ private fun SpeedProfileInput(
             )
         }
     }
+}
+
+@Composable
+private fun formatJitterDouble(d: Double): String {
+    val rounded = (d * 100).roundToInt() / 100.0
+    return if (rounded % 1.0 == 0.0) rounded.toInt().toString() else rounded.toString()
+}
+
+@Composable
+private fun JitterInput(
+    value: Double,
+    onValueChange: (Double) -> Unit,
+    label: String,
+) {
+    var localValue by remember { mutableStateOf(formatJitterDouble(value)) }
+    var lastSentValue by remember { mutableStateOf(value) }
+
+    LaunchedEffect(value) {
+        if (value != lastSentValue) {
+            localValue = formatJitterDouble(value)
+            lastSentValue = value
+        }
+    }
+
+    OutlinedTextField(
+        value = localValue,
+        onValueChange = { v ->
+            localValue = v
+            v.toDoubleOrNull()?.let {
+                onValueChange(it)
+                lastSentValue = it
+            }
+        },
+        label = { Text(label) },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

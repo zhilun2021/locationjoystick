@@ -24,10 +24,10 @@ import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.AppIcon
 import com.locationjoystick.core.designsystem.component.LjScaffold
 
-internal const val INFO_ROUTE = "info"
+internal const val ABOUT_ROUTE = "about"
 
 @Composable
-internal fun InfoScreen(
+internal fun AboutScreen(
     onNavigateBack: () -> Unit,
     bottomBar: @Composable () -> Unit = {},
 ) {

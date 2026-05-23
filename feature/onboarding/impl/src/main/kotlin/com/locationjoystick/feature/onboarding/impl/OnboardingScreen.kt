@@ -188,19 +188,17 @@ internal fun OnboardingScreen(
 
             OnboardingStepCard(
                 title = "Mock location app",
-                description = "In Developer Options → Select mock location app, choose locationjoystick. Tap \"Check again\" after.",
+                description = "In Developer Options → Select mock location app, choose locationjoystick.",
                 isGranted = uiState.mockLocationEnabled,
                 icon = Icons.Rounded.DeveloperMode,
                 actionLabel = "Open Developer Options",
                 isOptional = false,
-                extraActionLabel = "Check again",
                 onAction = {
                     context.startActivity(
                         Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                     )
                 },
-                onExtraAction = onCheckPermissions,
             )
 
             Spacer(modifier = Modifier.height(32.dp))

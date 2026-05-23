@@ -463,22 +463,17 @@ internal fun MapScreen(
 
                     src.setGeoJson(buildPositionGeoJson(position))
 
-                    if (uiState.routeTrace != null && position != null) {
-                        val (tracedGeoJson, remainingGeoJson) =
-                            buildRouteTraceGeoJson(
-                                uiState.routeTrace,
-                                position,
-                            )
+                    val traceWaypoints =
+                        uiState.routeTrace
+                            ?: uiState.ephemeralWaypoints.takeIf { it.size >= 2 }
+                    if (traceWaypoints != null && position != null) {
+                        val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(traceWaypoints, position)
                         tracedSrc.setGeoJson(tracedGeoJson)
                         remainingSrc.setGeoJson(remainingGeoJson)
-                        endpointsSrc.setGeoJson(buildPointsGeoJson(uiState.routeTrace))
+                        endpointsSrc.setGeoJson(buildPointsGeoJson(traceWaypoints))
                     } else if (uiState.walkStart != null && uiState.walkTarget != null && position != null) {
                         val walkPoints = listOfNotNull(uiState.walkStart, uiState.walkTarget)
-                        val (tracedGeoJson, remainingGeoJson) =
-                            buildRouteTraceGeoJson(
-                                walkPoints,
-                                position,
-                            )
+                        val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(walkPoints, position)
                         tracedSrc.setGeoJson(tracedGeoJson)
                         remainingSrc.setGeoJson(remainingGeoJson)
                         endpointsSrc.setGeoJson(buildPointsGeoJson(walkPoints))
@@ -593,7 +588,7 @@ private fun FavoritesPickerSheet(
                 favorite = target,
                 onSetLocation = { onAction(MapAction.SetLocationTo(target.position)) },
                 onGoToLocation = { onAction(MapAction.WalkStraightTo(target.position)) },
-                onBack = { onAction(MapAction.DeselectFavorite) },
+                onDismiss = { onAction(MapAction.CloseFavoritesPicker) },
             )
         }
     }
@@ -716,7 +711,7 @@ private fun FavoriteTargetDetail(
     favorite: FavoriteLocation,
     onSetLocation: () -> Unit,
     onGoToLocation: () -> Unit,
-    onBack: () -> Unit,
+    onDismiss: () -> Unit,
 ) {
     Column(
         modifier =
@@ -751,10 +746,10 @@ private fun FavoriteTargetDetail(
             Text("Walk To Location")
         }
         TextButton(
-            onClick = onBack,
-            modifier = Modifier.padding(top = 8.dp),
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         ) {
-            Text("← Back")
+            Text("Do nothing")
         }
     }
 }

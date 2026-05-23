@@ -24,9 +24,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.locationjoystick.app.IDLE_ROUTE
-import com.locationjoystick.app.INFO_ROUTE
+import com.locationjoystick.app.ABOUT_ROUTE
+import com.locationjoystick.app.AboutScreen
 import com.locationjoystick.app.IdleScreen
-import com.locationjoystick.app.InfoScreen
 import com.locationjoystick.app.LjBannerAd
 import com.locationjoystick.core.common.util.isMockLocationEnabled
 import com.locationjoystick.core.common.util.isOverlayPermissionGranted
@@ -127,8 +127,8 @@ fun LjNavHost(
                 onNavigateToSettings = {
                     navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
                 },
-                onNavigateToInfo = {
-                    navController.navigate(INFO_ROUTE) { launchSingleTop = true }
+                onNavigateToAbout = {
+                    navController.navigate(ABOUT_ROUTE) { launchSingleTop = true }
                 },
                 bottomBar = { LjBannerAd() },
             )
@@ -266,13 +266,13 @@ fun LjNavHost(
         }
 
         composable(
-            route = INFO_ROUTE,
+            route = ABOUT_ROUTE,
             enterTransition = { fadeInScale() },
             exitTransition = { fadeOutScale() },
             popEnterTransition = { fadeInScale() },
             popExitTransition = { fadeOutScale() },
         ) {
-            InfoScreen(onNavigateBack = { navController.navigateUp() }, bottomBar = { LjBannerAd() })
+            AboutScreen(onNavigateBack = { navController.navigateUp() }, bottomBar = { LjBannerAd() })
         }
     }
 }

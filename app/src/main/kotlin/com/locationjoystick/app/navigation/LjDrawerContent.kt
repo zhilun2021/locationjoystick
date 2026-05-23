@@ -26,7 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.locationjoystick.app.IDLE_ROUTE
-import com.locationjoystick.app.INFO_ROUTE
+import com.locationjoystick.app.ABOUT_ROUTE
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.routes.api.ROUTES_ROUTE
@@ -107,7 +107,7 @@ fun LjDrawerContent(
             label = { Text("About") },
             selected = false,
             onClick = {
-                navController.navigate(INFO_ROUTE) {
+                navController.navigate(ABOUT_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
                     launchSingleTop = true
                     restoreState = true

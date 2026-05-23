@@ -45,7 +45,7 @@ internal fun IdleScreen(
     onNavigateToRoutes: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToInfo: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     bottomBar: @Composable () -> Unit = {},
 ) {
     val isWide = LocalConfiguration.current.screenWidthDp >= 600
@@ -101,7 +101,7 @@ internal fun IdleScreen(
                         onNavigateToSettings,
                     )
                 }
-                item { IdleDestinationCard(LjIcons.Info, "About", "App info, credits, and license.", onNavigateToInfo) }
+                item { IdleDestinationCard(LjIcons.Info, "About", "App info, credits, and license.", onNavigateToAbout) }
             }
         } else {
             Column(
@@ -160,7 +160,7 @@ internal fun IdleScreen(
                     icon = LjIcons.Info,
                     title = "About",
                     description = "App info, credits, and license.",
-                    onClick = onNavigateToInfo,
+                    onClick = onNavigateToAbout,
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
