@@ -2,7 +2,9 @@ package com.locationjoystick.app.smoke
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.locationjoystick.app.MainActivity
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.model.LatLng
@@ -43,5 +45,14 @@ class FavoritesSmokeTest {
     @Test
     fun seeded_favorite_is_visible() {
         composeRule.onNodeWithText("Smoke Favorite").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigate_to_map_picker() {
+        composeRule.onNodeWithContentDescription("Add options").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("from map").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Pick Location").assertIsDisplayed()
     }
 }

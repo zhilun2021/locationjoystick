@@ -87,4 +87,22 @@ class IdleSmokeTest {
         composeRule.navigateViaDrawer("Settings")
         composeRule.onNodeWithText("Settings").assertIsDisplayed()
     }
+
+    @Test
+    fun navigate_to_routes_via_drawer() {
+        composeRule.navigateViaDrawer("Routes")
+        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigate_to_favorites_via_drawer() {
+        composeRule.navigateViaDrawer("Favorites")
+        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigate_to_about_via_drawer() {
+        composeRule.navigateViaDrawer("About")
+        composeRule.onNodeWithText("About").assertIsDisplayed()
+    }
 }

@@ -30,4 +30,11 @@ class RouteCreatorSmokeTest {
     fun route_creator_screen_loads() {
         composeRule.onNodeWithText("New route").assertIsDisplayed()
     }
+
+    @Test
+    fun navigate_back_from_creator() {
+        composeRule.onNodeWithContentDescription("Open navigation menu").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+    }
 }

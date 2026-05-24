@@ -2,7 +2,9 @@ package com.locationjoystick.app.smoke
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.locationjoystick.app.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -25,5 +27,12 @@ class MapSmokeTest {
     @Test
     fun map_screen_loads() {
         composeRule.onNodeWithText("Map").assertIsDisplayed()
+    }
+
+    @Test
+    fun map_screen_opens_drawer() {
+        composeRule.onNodeWithContentDescription("Open navigation menu").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Routes").assertIsDisplayed()
     }
 }

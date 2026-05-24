@@ -58,4 +58,11 @@ class RouteDetailSmokeTest {
     fun route_detail_screen_loads() {
         composeRule.onNodeWithText("Detail Smoke Route").assertIsDisplayed()
     }
+
+    @Test
+    fun navigate_back_from_detail() {
+        composeRule.onNodeWithContentDescription("Open navigation menu").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+    }
 }
