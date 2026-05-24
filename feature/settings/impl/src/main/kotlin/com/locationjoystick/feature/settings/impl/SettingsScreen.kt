@@ -329,16 +329,39 @@ internal fun SettingsScreen(
                         val isMph = uiState.speedUnit == SpeedUnit.MPH
                         SpeedProfilesSection(uiState, onSetWalkSpeed, onSetRunSpeed, onSetBikeSpeed, onSetSpeedUnit, convertMsToDisplay)
                         Spacer(modifier = Modifier.height(24.dp))
-                        GpsJitterSection(uiState, isMph, onSetJitterIdleRadius, onSetJitterMovingRadius, onSetJitterIntervalSeconds, onSetJitterIdleIntervalSeconds)
+                        GpsJitterSection(
+                            uiState,
+                            isMph,
+                            onSetJitterIdleRadius,
+                            onSetJitterMovingRadius,
+                            onSetJitterIntervalSeconds,
+                            onSetJitterIdleIntervalSeconds,
+                        )
                         Spacer(modifier = Modifier.height(24.dp))
-                        GpsRealismSection(uiState, onSetRealismBearingHoldIdle, onSetRealismAltitudeEnabled, onSetRealismWarmupEnabled, onSetRealismSatelliteExtrasEnabled, onSetRealismSuspendedMockingEnabled)
+                        GpsRealismSection(
+                            uiState,
+                            onSetRealismBearingHoldIdle,
+                            onSetRealismAltitudeEnabled,
+                            onSetRealismWarmupEnabled,
+                            onSetRealismSatelliteExtrasEnabled,
+                            onSetRealismSuspendedMockingEnabled,
+                        )
                         Spacer(modifier = Modifier.height(24.dp))
                         MapSection(uiState, onSetRememberLastLocation, onSetMapFollowsLocation)
                         FloatingWidgetSection(uiState, onSetWidgetFeatures)
                         Spacer(modifier = Modifier.height(24.dp))
                         RoamingSection(roamingDefaults, isMph, onUpdateRoamingDefaults)
                         Spacer(modifier = Modifier.height(24.dp))
-                        DataManagementSection(uiState, onExport, onImport, onImportGpsJoystick, onImportYamla, onQrShare, onQrScan, onDiscardChanges)
+                        DataManagementSection(
+                            uiState,
+                            onExport,
+                            onImport,
+                            onImportGpsJoystick,
+                            onImportYamla,
+                            onQrShare,
+                            onQrScan,
+                            onDiscardChanges,
+                        )
                     }
                 }
             }

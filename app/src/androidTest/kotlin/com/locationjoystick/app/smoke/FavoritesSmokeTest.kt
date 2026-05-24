@@ -18,8 +18,11 @@ import javax.inject.Inject
 
 @HiltAndroidTest
 class FavoritesSmokeTest {
-    @get:Rule(order = 0) val hiltRule = HiltAndroidRule(this)
-    @get:Rule(order = 1) val composeRule = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Inject lateinit var favoriteRepository: FavoriteRepository
 

@@ -229,33 +229,61 @@ class SettingsViewModel
             _draft.update { it.copy(bikeSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
         }
 
-        fun setSpeedUnit(unit: SpeedUnit) { _draft.update { it.copy(speedUnit = unit) } }
+        fun setSpeedUnit(unit: SpeedUnit) {
+            _draft.update { it.copy(speedUnit = unit) }
+        }
 
-        fun setWidgetFeatures(features: Set<WidgetFeature>) { _draft.update { it.copy(widgetFeatures = features) } }
+        fun setWidgetFeatures(features: Set<WidgetFeature>) {
+            _draft.update { it.copy(widgetFeatures = features) }
+        }
 
-        fun setRememberLastLocation(enabled: Boolean) { _draft.update { it.copy(rememberLastLocation = enabled) } }
+        fun setRememberLastLocation(enabled: Boolean) {
+            _draft.update { it.copy(rememberLastLocation = enabled) }
+        }
 
-        fun setMapFollowsLocation(enabled: Boolean) { _draft.update { it.copy(mapFollowsLocation = enabled) } }
+        fun setMapFollowsLocation(enabled: Boolean) {
+            _draft.update { it.copy(mapFollowsLocation = enabled) }
+        }
 
-        fun setJitterIdleRadius(meters: Double) { _draft.update { it.copy(jitterIdleRadius = meters) } }
+        fun setJitterIdleRadius(meters: Double) {
+            _draft.update { it.copy(jitterIdleRadius = meters) }
+        }
 
-        fun setJitterMovingRadius(meters: Double) { _draft.update { it.copy(jitterMovingRadius = meters) } }
+        fun setJitterMovingRadius(meters: Double) {
+            _draft.update { it.copy(jitterMovingRadius = meters) }
+        }
 
-        fun setJitterIntervalSeconds(seconds: Int) { _draft.update { it.copy(jitterIntervalSeconds = seconds) } }
+        fun setJitterIntervalSeconds(seconds: Int) {
+            _draft.update { it.copy(jitterIntervalSeconds = seconds) }
+        }
 
-        fun setJitterIdleIntervalSeconds(seconds: Int) { _draft.update { it.copy(jitterIdleIntervalSeconds = seconds) } }
+        fun setJitterIdleIntervalSeconds(seconds: Int) {
+            _draft.update { it.copy(jitterIdleIntervalSeconds = seconds) }
+        }
 
-        fun updateRoamingDefaults(defaults: RoamingDefaults) { _draft.update { it.copy(roamingDefaults = defaults) } }
+        fun updateRoamingDefaults(defaults: RoamingDefaults) {
+            _draft.update { it.copy(roamingDefaults = defaults) }
+        }
 
-        fun setRealismBearingHoldIdle(v: Boolean) { _draft.update { it.copy(realismBearingHoldIdle = v) } }
+        fun setRealismBearingHoldIdle(v: Boolean) {
+            _draft.update { it.copy(realismBearingHoldIdle = v) }
+        }
 
-        fun setRealismAltitudeEnabled(v: Boolean) { _draft.update { it.copy(realismAltitudeEnabled = v) } }
+        fun setRealismAltitudeEnabled(v: Boolean) {
+            _draft.update { it.copy(realismAltitudeEnabled = v) }
+        }
 
-        fun setRealismWarmupEnabled(v: Boolean) { _draft.update { it.copy(realismWarmupEnabled = v) } }
+        fun setRealismWarmupEnabled(v: Boolean) {
+            _draft.update { it.copy(realismWarmupEnabled = v) }
+        }
 
-        fun setRealismSatelliteExtrasEnabled(v: Boolean) { _draft.update { it.copy(realismSatelliteExtrasEnabled = v) } }
+        fun setRealismSatelliteExtrasEnabled(v: Boolean) {
+            _draft.update { it.copy(realismSatelliteExtrasEnabled = v) }
+        }
 
-        fun setRealismSuspendedMockingEnabled(v: Boolean) { _draft.update { it.copy(realismSuspendedMockingEnabled = v) } }
+        fun setRealismSuspendedMockingEnabled(v: Boolean) {
+            _draft.update { it.copy(realismSuspendedMockingEnabled = v) }
+        }
 
         fun saveChanges() {
             viewModelScope.launch {
@@ -275,8 +303,16 @@ class SettingsViewModel
                 if (d.realismBearingHoldIdle != null) settingsRepository.setRealismBearingHoldIdle(d.realismBearingHoldIdle)
                 if (d.realismAltitudeEnabled != null) settingsRepository.setRealismAltitudeEnabled(d.realismAltitudeEnabled)
                 if (d.realismWarmupEnabled != null) settingsRepository.setRealismWarmupEnabled(d.realismWarmupEnabled)
-                if (d.realismSatelliteExtrasEnabled != null) settingsRepository.setRealismSatelliteExtrasEnabled(d.realismSatelliteExtrasEnabled)
-                if (d.realismSuspendedMockingEnabled != null) settingsRepository.setRealismSuspendedMockingEnabled(d.realismSuspendedMockingEnabled)
+                if (d.realismSatelliteExtrasEnabled !=
+                    null
+                ) {
+                    settingsRepository.setRealismSatelliteExtrasEnabled(d.realismSatelliteExtrasEnabled)
+                }
+                if (d.realismSuspendedMockingEnabled !=
+                    null
+                ) {
+                    settingsRepository.setRealismSuspendedMockingEnabled(d.realismSuspendedMockingEnabled)
+                }
                 _draft.value = DraftState()
             }
         }

@@ -19,8 +19,11 @@ import javax.inject.Inject
 
 @HiltAndroidTest
 class RoutesSmokeTest {
-    @get:Rule(order = 0) val hiltRule = HiltAndroidRule(this)
-    @get:Rule(order = 1) val composeRule = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
+
+    @get:Rule(order = 1)
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Inject lateinit var routeRepository: RouteRepository
 
@@ -32,10 +35,11 @@ class RoutesSmokeTest {
                 Route(
                     id = "smoke-route-1",
                     name = "Smoke Test Route",
-                    waypoints = listOf(
-                        Waypoint(id = "wp1", position = LatLng(48.8566, 2.3522), orderIndex = 0),
-                        Waypoint(id = "wp2", position = LatLng(48.8600, 2.3600), orderIndex = 1),
-                    ),
+                    waypoints =
+                        listOf(
+                            Waypoint(id = "wp1", position = LatLng(48.8566, 2.3522), orderIndex = 0),
+                            Waypoint(id = "wp2", position = LatLng(48.8600, 2.3600), orderIndex = 1),
+                        ),
                     isLooping = false,
                     routeType = RouteType.STRAIGHT,
                     createdAt = System.currentTimeMillis(),

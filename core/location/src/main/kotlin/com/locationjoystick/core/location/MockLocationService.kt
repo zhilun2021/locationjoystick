@@ -272,13 +272,18 @@ class MockLocationService : Service() {
         observeSetting("suspendedMockingEnabled", settingsRepository.getRealismSuspendedMockingEnabled()) { suspendedMockingEnabled = it }
     }
 
-    private fun <T> observeSetting(tag: String, flow: Flow<T>, assign: (T) -> Unit) {
+    private fun <T> observeSetting(
+        tag: String,
+        flow: Flow<T>,
+        assign: (T) -> Unit,
+    ) {
         serviceScope.launch {
-            flow.retryWhen { cause, attempt ->
-                Log.e(TAG, "$tag flow error (attempt $attempt)", cause)
-                delay(1_000L)
-                true
-            }.collect(assign)
+            flow
+                .retryWhen { cause, attempt ->
+                    Log.e(TAG, "$tag flow error (attempt $attempt)", cause)
+                    delay(1_000L)
+                    true
+                }.collect(assign)
         }
     }
 

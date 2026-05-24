@@ -127,7 +127,9 @@ internal fun advanceSuspendedPhase(
             if (elapsed >= pauseDur) SuspendedPhaseState(isActive = false, startMs = now) else current
         }
 
-        else -> current
+        else -> {
+            current
+        }
     }
 }
 
@@ -210,14 +212,18 @@ internal fun buildLocation(
     val (outLat, outLon) =
         when {
             state.mode == MockMode.TELEPORT && state.shouldApplyIdleJitter &&
-                state.jitterIdleRadiusMeters > 0.0 ->
+                state.jitterIdleRadiusMeters > 0.0 -> {
                 gaussianLatLonOffset(state.latitude, state.longitude, state.jitterIdleRadiusMeters, random)
+            }
 
             state.mode != MockMode.TELEPORT && state.shouldApplyMovingJitter &&
-                state.jitterMovingRadiusMeters > 0.0 ->
+                state.jitterMovingRadiusMeters > 0.0 -> {
                 gaussianLatLonOffset(state.latitude, state.longitude, state.jitterMovingRadiusMeters, random)
+            }
 
-            else -> Pair(state.latitude, state.longitude)
+            else -> {
+                Pair(state.latitude, state.longitude)
+            }
         }
 
     // Accuracy with warm-up envelope
