@@ -42,6 +42,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -259,87 +260,25 @@ class MockLocationService : Service() {
                     }
                 }
         }
+        // Jitter and realism settings — each updates a @Volatile field consumed by captureSnapshot().
+        observeSetting("jitterIdleRadius", settingsRepository.getJitterIdleRadius()) { jitterIdleRadiusMeters = it }
+        observeSetting("jitterMovingRadius", settingsRepository.getJitterMovingRadius()) { jitterMovingRadiusMeters = it }
+        observeSetting("jitterIntervalSeconds", settingsRepository.getJitterIntervalSeconds()) { jitterIntervalSeconds = it }
+        observeSetting("jitterIdleIntervalSeconds", settingsRepository.getJitterIdleIntervalSeconds()) { jitterIdleIntervalSeconds = it }
+        observeSetting("bearingHoldEnabled", settingsRepository.getRealismBearingHoldIdle()) { bearingHoldEnabled = it }
+        observeSetting("altitudeEnabled", settingsRepository.getRealismAltitudeEnabled()) { altitudeEnabled = it }
+        observeSetting("warmupEnabled", settingsRepository.getRealismWarmupEnabled()) { warmupEnabled = it }
+        observeSetting("satelliteExtrasEnabled", settingsRepository.getRealismSatelliteExtrasEnabled()) { satelliteExtrasEnabled = it }
+        observeSetting("suspendedMockingEnabled", settingsRepository.getRealismSuspendedMockingEnabled()) { suspendedMockingEnabled = it }
+    }
+
+    private fun <T> observeSetting(tag: String, flow: Flow<T>, assign: (T) -> Unit) {
         serviceScope.launch {
-            settingsRepository
-                .getJitterIdleRadius()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "jitterIdleRadius flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { jitterIdleRadiusMeters = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getJitterMovingRadius()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "jitterMovingRadius flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { jitterMovingRadiusMeters = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getJitterIntervalSeconds()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "jitterIntervalSeconds flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { jitterIntervalSeconds = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getJitterIdleIntervalSeconds()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "jitterIdleIntervalSeconds flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { jitterIdleIntervalSeconds = it }
-        }
-        // Realism toggle flows — each updates a @Volatile field consumed by captureSnapshot() → buildLocation().
-        serviceScope.launch {
-            settingsRepository
-                .getRealismBearingHoldIdle()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "bearingHoldEnabled flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { bearingHoldEnabled = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getRealismAltitudeEnabled()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "altitudeEnabled flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { altitudeEnabled = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getRealismWarmupEnabled()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "warmupEnabled flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { warmupEnabled = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getRealismSatelliteExtrasEnabled()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "satelliteExtrasEnabled flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { satelliteExtrasEnabled = it }
-        }
-        serviceScope.launch {
-            settingsRepository
-                .getRealismSuspendedMockingEnabled()
-                .retryWhen { cause, attempt ->
-                    Log.e(TAG, "suspendedMockingEnabled flow error (attempt $attempt)", cause)
-                    delay(1_000L)
-                    true
-                }.collect { suspendedMockingEnabled = it }
+            flow.retryWhen { cause, attempt ->
+                Log.e(TAG, "$tag flow error (attempt $attempt)", cause)
+                delay(1_000L)
+                true
+            }.collect(assign)
         }
     }
 
