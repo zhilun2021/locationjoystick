@@ -45,61 +45,69 @@ class WalkToEngine
             target: LatLng,
             onPositionUpdate: suspend (LatLng, Float, Float) -> Unit,
             onArrival: suspend () -> Unit,
-        ): Job =
-            launch {
+        ): Job = launchWalkAlongRoute(listOf(target), onPositionUpdate, onArrival)
+
+        fun CoroutineScope.launchWalkAlongRoute(
+            waypoints: List<LatLng>,
+            onPositionUpdate: suspend (LatLng, Float, Float) -> Unit,
+            onArrival: suspend () -> Unit,
+        ): Job {
+            require(waypoints.isNotEmpty()) { "Waypoints must not be empty" }
+            val finalTarget = waypoints.last()
+            return launch {
                 try {
-                    while (true) {
-                        if (locationRepository.walkTarget.value == null) break
-                        if (locationRepository.isWalkPaused.value) {
+                    for (waypoint in waypoints) {
+                        while (true) {
+                            if (locationRepository.walkTarget.value == null) return@launch
+                            if (locationRepository.isWalkPaused.value) {
+                                delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+                                continue
+                            }
+                            val current = locationRepository.currentPosition.value
+                            if (current == null) {
+                                Log.w(TAG, "No current position; stopping walk")
+                                return@launch
+                            }
+
+                            val distanceM = haversineDistance(current, waypoint)
+                            if (distanceM < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) break
+
+                            val speedMs =
+                                settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                            val bearing =
+                                calculateBearing(
+                                    current.latitude,
+                                    current.longitude,
+                                    waypoint.latitude,
+                                    waypoint.longitude,
+                                )
+                            val advanceDistance =
+                                minOf(
+                                    speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0),
+                                    distanceM,
+                                )
+                            val actualSpeedMs = (advanceDistance / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
+                            val (newLat, newLon) =
+                                advancePosition(
+                                    current.latitude,
+                                    current.longitude,
+                                    bearing,
+                                    advanceDistance,
+                                )
+                            onPositionUpdate(LatLng(newLat, newLon), actualSpeedMs, bearing.toFloat())
+
                             delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                            continue
                         }
-                        val current = locationRepository.currentPosition.value
-                        if (current == null) {
-                            Log.w(TAG, "No current position; stopping walk")
-                            break
-                        }
-
-                        val distanceM = haversineDistance(current, target)
-                        if (distanceM < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) {
-                            Log.d(TAG, "Reached target; stopping walk")
-                            onArrival()
-                            break
-                        }
-
-                        val speedMs =
-                            settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                        val bearing =
-                            calculateBearing(
-                                current.latitude,
-                                current.longitude,
-                                target.latitude,
-                                target.longitude,
-                            )
-                        val advanceDistance =
-                            minOf(
-                                speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0),
-                                distanceM,
-                            )
-                        val actualSpeedMs = (advanceDistance / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
-                        val (newLat, newLon) =
-                            advancePosition(
-                                current.latitude,
-                                current.longitude,
-                                bearing,
-                                advanceDistance,
-                            )
-                        onPositionUpdate(LatLng(newLat, newLon), actualSpeedMs, bearing.toFloat())
-
-                        delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
                     }
+                    Log.d(TAG, "Reached final target; stopping walk")
+                    onArrival()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Walk to $target interrupted", e)
+                    Log.e(TAG, "Walk along route to $finalTarget interrupted", e)
                 } finally {
-                    // Only clear walk target if this coroutine owns it.
-                    if (locationRepository.walkTarget.value == target) {
+                    if (locationRepository.walkTarget.value == finalTarget) {
                         locationRepository.setWalkTarget(null)
                     }
                 }
             }
+        }
     }

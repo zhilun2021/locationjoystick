@@ -685,6 +685,16 @@ private fun PendingTapSheet(
                 ) {
                     Text("Walk here")
                 }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = {
+                        onAction(MapAction.WalkViaRoadsTo(position))
+                        onAction(MapAction.ClearPendingTap)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Walk here via roads")
+                }
                 if (isWalkActive) {
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(

@@ -74,6 +74,7 @@ class MapViewModel
         private val walkCoordinator: WalkCoordinator,
         private val teleportUseCase: TeleportUseCase,
         private val ephemeralReplayController: EphemeralReplayController,
+        private val osrmClient: com.locationjoystick.core.routing.OsrmClient,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
@@ -213,6 +214,10 @@ class MapViewModel
 
                 is MapAction.LongPressTapToWalk -> {
                     walkTo(action.position)
+                }
+
+                is MapAction.WalkViaRoadsTo -> {
+                    walkViaRoads(action.position)
                 }
 
                 MapAction.StartSpoofing -> {
@@ -480,6 +485,36 @@ class MapViewModel
                 context.startService(
                     MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
                 )
+            }
+        }
+
+        private fun walkViaRoads(position: LatLng) {
+            viewModelScope.launch {
+                val current = locationRepository.currentPosition.value
+                if (current == null) {
+                    walkTo(position)
+                    return@launch
+                }
+                val waypoints =
+                    osrmClient
+                        .getRoute(com.locationjoystick.core.routing.OsrmClient.PROFILE_FOOT, listOf(current, position))
+                        .getOrNull()
+                if (waypoints.isNullOrEmpty()) {
+                    Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
+                    walkTo(position)
+                    return@launch
+                }
+                _uiState.update {
+                    it.copy(
+                        walkMode = WalkMode.Walking(target = position, start = it.currentPosition),
+                        routeTrace = null,
+                    )
+                }
+                walkCoordinator.startWalkAlongRoute(waypoints, viewModelScope) { newPos, speedMs, bearing ->
+                    context.startService(
+                        MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
+                    )
+                }
             }
         }
 

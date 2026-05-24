@@ -52,20 +52,30 @@ class WalkCoordinator
             scope: CoroutineScope,
             onPositionUpdate: (suspend (LatLng, Float, Float) -> Unit)? = null,
         ) {
+            startWalkAlongRoute(listOf(target), scope, onPositionUpdate)
+        }
+
+        fun startWalkAlongRoute(
+            waypoints: List<LatLng>,
+            scope: CoroutineScope,
+            onPositionUpdate: (suspend (LatLng, Float, Float) -> Unit)? = null,
+        ) {
+            require(waypoints.isNotEmpty()) { "Waypoints must not be empty" }
             activeWalkJob?.cancel()
-            locationRepository.setWalkTarget(target)
+            val finalTarget = waypoints.last()
+            locationRepository.setWalkTarget(finalTarget)
             locationRepository.setMockMode(MockMode.WALK_TO)
 
             with(walkToEngine) {
                 activeWalkJob =
-                    scope.launchWalkTo(
-                        target = target,
+                    scope.launchWalkAlongRoute(
+                        waypoints = waypoints,
                         onPositionUpdate = { newPos, speedMs, bearing ->
                             locationRepository.updatePosition(newPos)
                             onPositionUpdate?.invoke(newPos, speedMs, bearing)
                         },
                         onArrival = {
-                            Log.d(TAG, "Arrived at $target")
+                            Log.d(TAG, "Arrived at road-following destination $finalTarget")
                             locationRepository.setMockMode(MockMode.TELEPORT)
                             locationRepository.setWalkTarget(null)
                         },

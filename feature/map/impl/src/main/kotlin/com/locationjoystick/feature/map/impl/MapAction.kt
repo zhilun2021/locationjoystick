@@ -99,4 +99,8 @@ sealed interface MapAction {
     data class AddEphemeralWaypoint(
         val position: LatLng,
     ) : MapAction
+
+    data class WalkViaRoadsTo(
+        val position: LatLng,
+    ) : MapAction
 }
