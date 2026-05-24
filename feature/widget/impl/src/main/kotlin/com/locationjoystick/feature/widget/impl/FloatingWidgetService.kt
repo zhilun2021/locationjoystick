@@ -314,11 +314,20 @@ class FloatingWidgetService :
             AndroidWindowManager.LayoutParams.MATCH_PARENT,
             AndroidWindowManager.LayoutParams.MATCH_PARENT,
             AndroidWindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            // FLAG_NOT_FOCUSABLE is mandatory: prevents stealing keyboard focus from games/apps
-            // running behind the overlay panel. FLAG_NOT_TOUCH_MODAL limits touch interception
-            // to the panel bounds only.
+            // FLAG_NOT_FOCUSABLE prevents stealing keyboard focus from games/apps behind the panel.
+            // FLAG_NOT_TOUCH_MODAL limits touch interception to panel bounds only.
             AndroidWindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 AndroidWindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            android.graphics.PixelFormat.TRANSLUCENT,
+        )
+
+    // Map panel allows keyboard focus so the Nominatim search field accepts text input.
+    private fun mapPanelLayoutParams() =
+        AndroidWindowManager.LayoutParams(
+            AndroidWindowManager.LayoutParams.MATCH_PARENT,
+            AndroidWindowManager.LayoutParams.MATCH_PARENT,
+            AndroidWindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            AndroidWindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             android.graphics.PixelFormat.TRANSLUCENT,
         )
 
@@ -674,7 +683,7 @@ class FloatingWidgetService :
             }
             panelComposeView = panel
             try {
-                windowManager.addView(panel, panelLayoutParams())
+                windowManager.addView(panel, mapPanelLayoutParams())
                 Log.d(TAG, "Opened map panel")
             } catch (e: Exception) {
                 panelComposeView = null
