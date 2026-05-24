@@ -272,7 +272,7 @@ fun LjNavHost(
             popEnterTransition = { fadeInScale() },
             popExitTransition = { fadeOutScale() },
         ) {
-            AboutScreen(onNavigateBack = { navController.navigateUp() }, bottomBar = { LjBannerAd() })
+            AboutScreen(onOpenDrawer = onOpenDrawer, bottomBar = { LjBannerAd() })
         }
     }
 }
