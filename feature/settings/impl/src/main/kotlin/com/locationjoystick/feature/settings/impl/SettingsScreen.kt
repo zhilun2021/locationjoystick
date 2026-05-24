@@ -2,6 +2,7 @@ package com.locationjoystick.feature.settings.impl
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,16 +17,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +46,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.designsystem.LjAccent
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
@@ -296,14 +296,16 @@ internal fun SettingsScreen(
         title = "Lj",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
-        floatingActionButton = {
+        actions = {
             if (uiState.isDirty) {
-                FloatingActionButton(
+                TextButton(
+                    onClick = onDiscardChanges,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                ) { Text("Discard") }
+                TextButton(
                     onClick = onSaveChanges,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                ) {
-                    Icon(Icons.Filled.Check, contentDescription = "Save changes")
-                }
+                    colors = ButtonDefaults.textButtonColors(contentColor = LjAccent),
+                ) { Text("Save") }
             }
         },
     ) { paddingValues ->
@@ -445,6 +447,7 @@ private fun JitterInput(
     value: Double,
     onValueChange: (Double) -> Unit,
     label: String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
     var localValue by remember { mutableStateOf(formatJitterDouble(value)) }
     var lastSentValue by remember { mutableStateOf(value) }
@@ -467,7 +470,7 @@ private fun JitterInput(
         },
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
 }
 
@@ -476,6 +479,7 @@ private fun JitterInput(
     value: Int,
     onValueChange: (Int) -> Unit,
     label: String,
+    modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
     var localValue by remember { mutableStateOf(value.toString()) }
     var lastSentValue by remember { mutableStateOf(value) }
@@ -498,7 +502,7 @@ private fun JitterInput(
         },
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
     )
 }
 
@@ -607,29 +611,35 @@ private fun GpsJitterSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(8.dp))
-    JitterInput(
-        value = if (isMph) uiState.jitterIdleRadiusMeters * 3.28084 else uiState.jitterIdleRadiusMeters,
-        onValueChange = { onSetJitterIdleRadius(if (isMph) it / 3.28084 else it) },
-        label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
-    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        JitterInput(
+            value = if (isMph) uiState.jitterIdleRadiusMeters * 3.28084 else uiState.jitterIdleRadiusMeters,
+            onValueChange = { onSetJitterIdleRadius(if (isMph) it / 3.28084 else it) },
+            label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
+            modifier = Modifier.weight(1f),
+        )
+        JitterInput(
+            value = uiState.jitterIdleIntervalSeconds,
+            onValueChange = { onSetJitterIdleIntervalSeconds(it) },
+            label = "Idle interval (s)",
+            modifier = Modifier.weight(1f),
+        )
+    }
     Spacer(modifier = Modifier.height(8.dp))
-    JitterInput(
-        value = uiState.jitterIdleIntervalSeconds,
-        onValueChange = { onSetJitterIdleIntervalSeconds(it) },
-        label = "Idle interval (s)",
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    JitterInput(
-        value = if (isMph) uiState.jitterMovingRadiusMeters * 3.28084 else uiState.jitterMovingRadiusMeters,
-        onValueChange = { onSetJitterMovingRadius(if (isMph) it / 3.28084 else it) },
-        label = if (isMph) "Moving radius (ft)" else "Moving radius (m)",
-    )
-    Spacer(modifier = Modifier.height(8.dp))
-    JitterInput(
-        value = uiState.jitterIntervalSeconds,
-        onValueChange = { onSetJitterIntervalSeconds(it) },
-        label = "Moving interval (s)",
-    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        JitterInput(
+            value = if (isMph) uiState.jitterMovingRadiusMeters * 3.28084 else uiState.jitterMovingRadiusMeters,
+            onValueChange = { onSetJitterMovingRadius(if (isMph) it / 3.28084 else it) },
+            label = if (isMph) "Moving radius (ft)" else "Moving radius (m)",
+            modifier = Modifier.weight(1f),
+        )
+        JitterInput(
+            value = uiState.jitterIntervalSeconds,
+            onValueChange = { onSetJitterIntervalSeconds(it) },
+            label = "Moving interval (s)",
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 @Composable
@@ -1032,17 +1042,6 @@ private fun DataManagementSection(
 
     Button(onClick = onQrScan, modifier = Modifier.fillMaxWidth()) {
         Text("Import from QR")
-    }
-
-    if (uiState.isDirty) {
-        Spacer(modifier = Modifier.height(24.dp))
-        OutlinedButton(
-            onClick = onDiscardChanges,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(Icons.Filled.Close, contentDescription = "Discard", modifier = Modifier.padding(end = 8.dp))
-            Text("Discard Changes")
-        }
     }
 }
 
