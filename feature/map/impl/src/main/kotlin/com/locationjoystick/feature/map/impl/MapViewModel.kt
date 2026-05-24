@@ -95,6 +95,7 @@ class MapViewModel
             observeRoamingDefaults()
             observeSpeedUnit()
             observeCooldownForPendingTap()
+            restoreLastLocationIfNeeded()
         }
 
         private fun observeLocationState() {
@@ -446,6 +447,20 @@ class MapViewModel
             lon: Double,
         ) {
             viewModelScope.launch { settingsRepository.addRecentSearch(displayName, lat, lon) }
+        }
+
+        private fun restoreLastLocationIfNeeded() {
+            viewModelScope.launch {
+                if (locationRepository.currentPosition.value == null) {
+                    val remember = settingsRepository.getRememberLastLocation().first()
+                    if (remember) {
+                        val last = settingsRepository.getLastLocation().first()
+                        if (last != null) {
+                            locationRepository.setPositionInternal(last)
+                        }
+                    }
+                }
+            }
         }
 
         private fun teleportTo(position: LatLng) {

@@ -158,6 +158,8 @@ class MockLocationService : Service() {
     @Volatile private var suspendedMockingEnabled: Boolean =
         AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT
 
+    @Volatile private var rememberLastLocation: Boolean = false
+
     // Per-tick realism state
 
     /** Bearing from the last tick where speedMs > 0; held when the device is stationary. */
@@ -270,6 +272,7 @@ class MockLocationService : Service() {
         observeSetting("warmupEnabled", settingsRepository.getRealismWarmupEnabled()) { warmupEnabled = it }
         observeSetting("satelliteExtrasEnabled", settingsRepository.getRealismSatelliteExtrasEnabled()) { satelliteExtrasEnabled = it }
         observeSetting("suspendedMockingEnabled", settingsRepository.getRealismSuspendedMockingEnabled()) { suspendedMockingEnabled = it }
+        observeSetting("rememberLastLocation", settingsRepository.getRememberLastLocation()) { rememberLastLocation = it }
     }
 
     private fun <T> observeSetting(
@@ -508,6 +511,10 @@ class MockLocationService : Service() {
         // RUNNING observer can't start a new loop between our cancel and the null write.
         updateJob?.cancel()
         serviceScope.launch { updateJobMutex.withLock { updateJob = null } }
+        if (rememberLastLocation) {
+            val pos = LatLng(currentLat, currentLon)
+            serviceScope.launch { settingsRepository.setLastLocation(pos) }
+        }
         removeTestProvider()
         _state.value = MockLocationState.IDLE
         locationRepository.setMockMode(MockMode.TELEPORT)
@@ -669,7 +676,12 @@ class MockLocationService : Service() {
     private suspend fun handleReplayStop() {
         locationRepository.setRouteWaypoints(null)
         routeReplayEngine.stop()
-        stopSpoofing()
+        locationRepository.setMockMode(MockMode.TELEPORT)
+        locationRepository.setActiveRouteId(null)
+        if (_state.value == MockLocationState.RUNNING) {
+            startUpdateLoop()
+        }
+        Log.i(TAG, "Replay stopped; service remains active in TELEPORT mode")
     }
 
     private suspend fun handleReplayCancel() {

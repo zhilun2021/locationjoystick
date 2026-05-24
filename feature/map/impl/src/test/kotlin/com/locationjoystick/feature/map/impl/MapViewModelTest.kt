@@ -96,6 +96,8 @@ class MapViewModelTest {
             )
         every { settingsRepository.getActiveSpeedProfile() } returns
             flowOf(SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = 1.39))
+        every { settingsRepository.getRememberLastLocation() } returns flowOf(false)
+        every { settingsRepository.getLastLocation() } returns flowOf(null)
 
         viewModel =
             MapViewModel(
@@ -526,6 +528,85 @@ class MapViewModelTest {
             val state = viewModel.uiState.value
             assertEquals(4, state.ephemeralWaypoints.size)
             assertEquals(secondExtra, state.ephemeralWaypoints.last())
+        }
+
+    // Issue 8: restore last location on init
+
+    @Test
+    fun `init_restoresLastLocation_whenRememberEnabledAndNoCurrentPosition`() =
+        runTest {
+            val lastPos = LatLng(48.8566, 2.3522)
+            every { locationRepository.currentPosition } returns MutableStateFlow(null)
+            every { settingsRepository.getRememberLastLocation() } returns flowOf(true)
+            every { settingsRepository.getLastLocation() } returns flowOf(lastPos)
+
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                    ephemeralReplayController,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify { locationRepository.setPositionInternal(lastPos) }
+        }
+
+    @Test
+    fun `init_doesNotRestoreLastLocation_whenCurrentPositionAlreadySet`() =
+        runTest {
+            val currentPos = LatLng(51.5074, -0.1278)
+            every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            every { settingsRepository.getRememberLastLocation() } returns flowOf(true)
+            every { settingsRepository.getLastLocation() } returns flowOf(LatLng(0.0, 0.0))
+
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                    ephemeralReplayController,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { locationRepository.setPositionInternal(any()) }
+        }
+
+    @Test
+    fun `init_doesNotRestoreLastLocation_whenRememberDisabled`() =
+        runTest {
+            every { locationRepository.currentPosition } returns MutableStateFlow(null)
+            every { settingsRepository.getRememberLastLocation() } returns flowOf(false)
+            every { settingsRepository.getLastLocation() } returns flowOf(LatLng(48.8566, 2.3522))
+
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                    ephemeralReplayController,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { locationRepository.setPositionInternal(any()) }
         }
 
     @Test
