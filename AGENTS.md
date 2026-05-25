@@ -159,7 +159,7 @@ Replace `<your-model-id>` with active model:
 | QR Share / Transfer | @docs/features/qr-transfer.md |
 | Last Remembered Location | @docs/features/last-location.md |
 | Onboarding | @docs/features/onboarding.md |
-| Info / About Page | @docs/features/info-page.md |
+| About Page | @docs/features/about-page.md |
 
 ---
 

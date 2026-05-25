@@ -1,8 +1,8 @@
-# Info / About Page
+# About Page
 
-Module: `:app` (no feature submodules). Composable: `InfoScreen.kt`. No ViewModel — static content only.
+Module: `:app` (no feature submodules). Composable: `AboutScreen.kt`. No ViewModel — static content only.
 
-Key files: `app/src/main/kotlin/com/locationjoystick/app/InfoScreen.kt`
+Key files: `app/src/main/kotlin/com/locationjoystick/app/AboutScreen.kt`
 
 ## Content
 
@@ -20,4 +20,4 @@ Key files: `app/src/main/kotlin/com/locationjoystick/app/InfoScreen.kt`
 
 ## Route
 
-`info` in `LjNavHost`.
+`about` in `LjNavHost`.
