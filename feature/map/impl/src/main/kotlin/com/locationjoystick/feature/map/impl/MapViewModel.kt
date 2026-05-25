@@ -453,9 +453,13 @@ class MapViewModel
                     }
                 }
 
-                MapAction.PauseRoaming -> roamingRepository.pauseRoaming()
+                MapAction.PauseRoaming -> {
+                    roamingRepository.pauseRoaming()
+                }
 
-                MapAction.ResumeRoaming -> roamingRepository.resumeRoaming()
+                MapAction.ResumeRoaming -> {
+                    roamingRepository.resumeRoaming()
+                }
 
                 is MapAction.AddEphemeralWaypoint -> {
                     val state = _uiState.value

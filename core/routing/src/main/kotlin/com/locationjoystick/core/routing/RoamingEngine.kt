@@ -65,8 +65,13 @@ class RoamingEngine
         /** When true, the roaming loop suspends position updates until resumed. */
         @Volatile private var isPaused = false
 
-        fun pauseRoaming() { isPaused = true }
-        fun resumeRoaming() { isPaused = false }
+        fun pauseRoaming() {
+            isPaused = true
+        }
+
+        fun resumeRoaming() {
+            isPaused = false
+        }
 
         /**
          * Generates a uniformly random point within a circle of given radius.

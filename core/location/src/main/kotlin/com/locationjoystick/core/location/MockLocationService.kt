@@ -1,9 +1,6 @@
 package com.locationjoystick.core.location
 
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,7 +13,6 @@ import android.os.IBinder
 import android.os.SystemClock
 import android.provider.Settings
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.locationjoystick.core.common.constants.AppConstants
@@ -60,9 +56,6 @@ class MockLocationService : Service() {
     companion object {
         private const val TAG = "MockLocationService"
         private const val NOTIFICATION_ID = AppConstants.NotificationConstants.ID_ACTIVE
-        private const val NOTIFICATION_ID_PERM_ERROR = AppConstants.NotificationConstants.ID_PERMISSION_ERROR
-        private const val CHANNEL_ID = AppConstants.NotificationConstants.CHANNEL_ID_ACTIVE
-        private const val CHANNEL_ID_PERM_ERROR = AppConstants.NotificationConstants.CHANNEL_ID_PERMISSION_ERROR
 
         private const val JOYSTICK_SERVICE_CLASS = AppConstants.ServiceConstants.JOYSTICK_SERVICE_CLASS
         private const val WIDGET_SERVICE_CLASS = AppConstants.ServiceConstants.WIDGET_SERVICE_CLASS
@@ -105,13 +98,14 @@ class MockLocationService : Service() {
     @Inject lateinit var settingsRepository: SettingsRepository
 
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
-
     private val exceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             Log.e(TAG, "MockLocationService coroutine crashed", throwable)
             _state.value = MockLocationState.ERROR
         }
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default + exceptionHandler)
+
+    private lateinit var replayOrchestrator: ReplayOrchestrator
 
     /** Guards concurrent access to updateJob to prevent double-start from rapid state emissions. */
     private val updateJobMutex = Mutex()
@@ -187,6 +181,22 @@ class MockLocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        replayOrchestrator =
+            ReplayOrchestrator(
+                locationRepository = locationRepository,
+                routeRepository = routeRepository,
+                roamingRepository = roamingRepository,
+                routeReplayEngine = routeReplayEngine,
+                scope = serviceScope,
+                onStateChange = { _state.value = it },
+                onPositionChange = { lat, lon ->
+                    currentLat = lat
+                    currentLon = lon
+                },
+                onSpeedChange = { currentSpeedMs = it },
+                pushLocationUpdate = ::pushLocationUpdate,
+                startUpdateLoop = ::startUpdateLoop,
+            )
         createNotificationChannel()
         observeLocationState()
     }
@@ -524,182 +534,26 @@ class MockLocationService : Service() {
 
     fun getCurrentPosition(): LatLng = LatLng(currentLat, currentLon)
 
-    /**
-     * Shared engine for both named-route and ephemeral replay.
-     *
-     * @param waypoints Ordered list of positions to replay (≥2).
-     * @param speedMs Playback speed in m/s.
-     * @param isLooping Whether to loop at the end.
-     * @param persistMetadata If non-null, invoked before replay starts to persist route metadata
-     *   (route id, direction, waypoints) into the repository. Pass null for ephemeral replay.
-     * @param onComplete Invoked on the service scope when the replay engine signals completion.
-     */
-    private suspend fun startReplayWithWaypoints(
-        waypoints: List<LatLng>,
-        speedMs: Double,
-        isLooping: Boolean,
-        persistMetadata: (suspend () -> Unit)? = null,
-        onComplete: suspend () -> Unit = { locationRepository.setMockMode(MockMode.TELEPORT) },
-    ) {
-        if (locationRepository.currentMode.value == MockMode.ROAMING) roamingRepository.stopRoaming()
-        if (waypoints.size < 2) return
-
-        currentSpeedMs = speedMs.toFloat()
-        currentBearing = 0.0f
-
-        // Set mode BEFORE state so the state observer sees ROUTE_REPLAY and
-        // correctly skips starting the background update loop.
-        locationRepository.setMockMode(MockMode.ROUTE_REPLAY)
-        persistMetadata?.invoke()
-        // Trigger RUNNING after mode is set.
-        _state.value = MockLocationState.RUNNING
-        locationRepository.startSpoofing()
-
-        walkToPosition(waypoints.first(), speedMs)
-
-        routeReplayEngine.start(
-            waypoints = waypoints,
-            speedMs = speedMs,
-            isLooping = isLooping,
-            onPositionUpdate = { pos ->
-                currentLat = pos.latitude
-                currentLon = pos.longitude
-                try {
-                    locationRepository.setPositionInternal(pos)
-                    pushLocationUpdate()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Position update failed during replay", e)
-                }
-            },
-            onComplete = { serviceScope.launch { onComplete() } },
-        )
-
-        // If pause was requested during walk-to-start (before engine launched),
-        // ensure the engine is paused now that it has been initialized.
-        if (_state.value == MockLocationState.PAUSED) routeReplayEngine.pause()
-    }
-
     private fun handleReplayStart(
         routeId: String,
         isBackward: Boolean,
         speedMs: Double,
         isLoopingOverride: Boolean? = null,
         returnPosition: LatLng? = null,
-    ) {
-        serviceScope.launch {
-            val route = routeRepository.getRouteWithWaypoints(routeId).first() ?: return@launch
-            if (route.waypoints.size < 2) return@launch
-            val latLngs = (if (isBackward) route.waypoints.reversed() else route.waypoints).map { it.position }
-            val isLooping = isLoopingOverride ?: route.isLooping
-
-            startReplayWithWaypoints(
-                waypoints = latLngs,
-                speedMs = speedMs,
-                isLooping = isLooping,
-                persistMetadata = {
-                    locationRepository.setActiveRouteId(routeId)
-                    locationRepository.setIsReplayBackward(isBackward)
-                    locationRepository.setRouteWaypoints(latLngs)
-                },
-                onComplete = {
-                    locationRepository.setRouteWaypoints(null)
-                    locationRepository.setActiveRouteId(null)
-                    if (returnPosition != null) {
-                        walkToPosition(returnPosition, speedMs)
-                    }
-                    locationRepository.setMockMode(MockMode.TELEPORT)
-                },
-            )
-        }
-    }
+    ) = replayOrchestrator.handleStart(routeId, isBackward, speedMs, isLoopingOverride, returnPosition)
 
     private fun handleEphemeralReplayStart(
         waypoints: List<LatLng>,
         speedMs: Double,
-    ) {
-        serviceScope.launch {
-            startReplayWithWaypoints(
-                waypoints = waypoints,
-                speedMs = speedMs,
-                isLooping = false,
-                persistMetadata = null,
-            )
-        }
-    }
+    ) = replayOrchestrator.handleEphemeralStart(waypoints, speedMs)
 
-    private fun handleReplayPause() {
-        routeReplayEngine.pause()
-        updateJob?.cancel()
-        updateJob = null
-        _state.value = MockLocationState.PAUSED
-        locationRepository.pauseSpoofing()
-        Log.i(TAG, "Replay paused")
-    }
+    private fun handleReplayPause() = replayOrchestrator.handlePause()
 
-    private fun handleReplayResume(speedMs: Double) {
-        _state.value = MockLocationState.RUNNING
-        locationRepository.startSpoofing()
-        routeReplayEngine.resume(
-            onPositionUpdate = { pos ->
-                currentLat = pos.latitude
-                currentLon = pos.longitude
-                try {
-                    locationRepository.setPositionInternal(pos)
-                    pushLocationUpdate()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Position update failed during route resume", e)
-                }
-            },
-            onComplete = {
-                locationRepository.setRouteWaypoints(null)
-                stopSpoofing()
-            },
-        )
-        Log.i(TAG, "Replay resumed at ${speedMs}m/s")
-    }
+    private fun handleReplayResume(speedMs: Double) = replayOrchestrator.handleResume(speedMs)
 
-    private suspend fun walkToPosition(
-        target: LatLng,
-        speedMs: Double,
-    ) {
-        val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
-        while (currentCoroutineContext().isActive) {
-            val dist = haversineDistance(currentLat, currentLon, target.latitude, target.longitude)
-            if (dist < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) break
-            val bearing = calculateBearing(currentLat, currentLon, target.latitude, target.longitude)
-            val step = minOf(distancePerTick, dist)
-            val (newLat, newLon) = advancePosition(currentLat, currentLon, bearing, step)
-            currentLat = newLat
-            currentLon = newLon
-            locationRepository.setPositionInternal(LatLng(newLat, newLon))
-            pushLocationUpdate()
-            delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-        }
-    }
+    private suspend fun handleReplayStop() = replayOrchestrator.handleStop()
 
-    private suspend fun handleReplayStop() {
-        locationRepository.setRouteWaypoints(null)
-        routeReplayEngine.stop()
-        locationRepository.setMockMode(MockMode.TELEPORT)
-        locationRepository.setActiveRouteId(null)
-        if (_state.value == MockLocationState.RUNNING) {
-            startUpdateLoop()
-        }
-        Log.i(TAG, "Replay stopped; service remains active in TELEPORT mode")
-    }
-
-    private suspend fun handleReplayCancel() {
-        locationRepository.setRouteWaypoints(null)
-        routeReplayEngine.stop()
-        locationRepository.setMockMode(MockMode.TELEPORT)
-        locationRepository.setActiveRouteId(null)
-        // Only restart the idle update loop if spoofing is still active.
-        // If spoofing was stopped concurrently, do not start a new loop.
-        if (_state.value == MockLocationState.RUNNING) {
-            startUpdateLoop()
-        }
-        Log.i(TAG, "Replay cancelled; service remains active in TELEPORT mode")
-    }
+    private suspend fun handleReplayCancel() = replayOrchestrator.handleCancel()
 
     private fun setupTestProvider() {
         if (providerAdded) return
@@ -895,89 +749,9 @@ class MockLocationService : Service() {
         }
     }
 
-    private fun createNotificationChannel() {
-        val channel =
-            NotificationChannel(
-                CHANNEL_ID,
-                AppConstants.NotificationConstants.CHANNEL_NAME_ACTIVE,
-                NotificationManager.IMPORTANCE_LOW,
-            ).apply {
-                description = AppConstants.NotificationConstants.CHANNEL_DESC_ACTIVE
-                setShowBadge(false)
-            }
-        val errorChannel =
-            NotificationChannel(
-                CHANNEL_ID_PERM_ERROR,
-                AppConstants.NotificationConstants.CHANNEL_NAME_PERMISSION_ERROR,
-                NotificationManager.IMPORTANCE_HIGH,
-            ).apply {
-                description = AppConstants.NotificationConstants.CHANNEL_DESC_PERMISSION_ERROR
-            }
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
-        notificationManager.createNotificationChannel(errorChannel)
-    }
+    private fun createNotificationChannel() = createMockLocationNotificationChannels(this)
 
-    private fun postPermissionErrorNotification() {
-        val openAppIntent =
-            packageManager.getLaunchIntentForPackage(packageName)?.let { intent ->
-                PendingIntent.getActivity(
-                    this,
-                    0,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            }
-        val notification =
-            NotificationCompat
-                .Builder(this, CHANNEL_ID_PERM_ERROR)
-                .setContentTitle(AppConstants.NotificationConstants.TITLE_PERMISSION_ERROR)
-                .setContentText(AppConstants.NotificationConstants.TEXT_PERMISSION_ERROR)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentIntent(openAppIntent)
-                .setAutoCancel(true)
-                .build()
-        getSystemService(NotificationManager::class.java)
-            .notify(NOTIFICATION_ID_PERM_ERROR, notification)
-    }
+    private fun postPermissionErrorNotification() = postMockLocationPermissionErrorNotification(this)
 
-    private fun buildNotification(): Notification {
-        val openAppIntent =
-            packageManager
-                .getLaunchIntentForPackage(packageName)
-                ?.let { intent ->
-                    PendingIntent.getActivity(
-                        this,
-                        0,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    )
-                }
-
-        val stopIntent =
-            Intent(this, MockLocationService::class.java).apply {
-                action = ACTION_STOP
-            }
-        val stopPendingIntent =
-            PendingIntent.getService(
-                this,
-                1,
-                stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
-        return NotificationCompat
-            .Builder(this, CHANNEL_ID)
-            .setContentTitle(AppConstants.NotificationConstants.TITLE_ACTIVE)
-            .setContentText(AppConstants.NotificationConstants.TEXT_ACTIVE)
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentIntent(openAppIntent)
-            .addAction(
-                android.R.drawable.ic_delete,
-                AppConstants.NotificationConstants.ACTION_STOP,
-                stopPendingIntent,
-            ).setOngoing(true)
-            .setSilent(true)
-            .build()
-    }
+    private fun buildNotification(): Notification = buildMockLocationNotification(this)
 }

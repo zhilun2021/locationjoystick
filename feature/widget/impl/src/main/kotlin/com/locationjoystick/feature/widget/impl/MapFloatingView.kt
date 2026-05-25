@@ -1,6 +1,5 @@
 package com.locationjoystick.feature.widget.impl
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,16 +14,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,26 +45,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.launch
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.data.FavoriteRepository
-import com.locationjoystick.core.data.LocationRepository
-import com.locationjoystick.core.data.SettingsRepository
-import com.locationjoystick.core.model.RoamingDefaults
-import com.locationjoystick.core.model.SpeedUnit
-import kotlin.math.roundToInt
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjText
@@ -78,8 +70,14 @@ import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.map.maplibre.addEphemeralRouteLayers
+import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
+import com.locationjoystick.core.model.RoamingDefaults
+import com.locationjoystick.core.model.SpeedUnit
+import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -93,6 +91,7 @@ import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.sources.GeoJsonSource
 import org.maplibre.android.style.sources.RasterSource
 import org.maplibre.android.style.sources.TileSet
+import kotlin.math.roundToInt
 import org.maplibre.android.geometry.LatLng as MapLatLng
 
 private val MAP_FLOATING_VIEW_OSM_SOURCE = AppConstants.MapConstants.PANEL_OSM_SOURCE_ID
@@ -101,10 +100,21 @@ private val MAP_FLOATING_VIEW_OSM_LAYER = AppConstants.MapConstants.PANEL_OSM_LA
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MapFloatingView(
-    locationRepository: LocationRepository,
-    favoriteRepository: FavoriteRepository,
-    settingsRepository: SettingsRepository,
-    roamingRepository: com.locationjoystick.core.data.RoamingRepository,
+    currentPosition: LatLng?,
+    initialPosition: LatLng?,
+    walkTarget: LatLng?,
+    routeWaypoints: List<LatLng>?,
+    mockMode: MockMode,
+    mockLocationState: MockLocationState,
+    isRoamingPaused: Boolean,
+    favorites: List<FavoriteLocation>,
+    roamingDefaults: RoamingDefaults,
+    speedUnit: SpeedUnit,
+    onStartSpoofing: () -> Unit,
+    onStopSpoofing: () -> Unit,
+    onResumeRoaming: () -> Unit,
+    onPauseRoaming: () -> Unit,
+    onGeneratePreviewRoute: suspend (center: LatLng, radiusMeters: Double, followRoads: Boolean, speedProfileId: String) -> List<LatLng>?,
     onTeleport: (LatLng) -> Unit,
     onWalkTo: (LatLng) -> Unit,
     onStopRouteAndTeleport: (LatLng) -> Unit,
@@ -114,27 +124,14 @@ internal fun MapFloatingView(
     onStartRoaming: (RoamingDefaults) -> Unit,
     onStopRoaming: () -> Unit,
     onDismiss: () -> Unit,
-    context: Context,
     recentSearches: List<RecentSearch> = emptyList(),
     onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
 ) {
-    val currentPosition by locationRepository.currentPosition.collectAsStateWithLifecycle()
-    val walkTarget by locationRepository.walkTarget.collectAsStateWithLifecycle()
-    val routeWaypoints by locationRepository.routeWaypoints.collectAsStateWithLifecycle()
-    val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
-    val isRoaming = mockMode == com.locationjoystick.core.model.MockMode.ROAMING
-    val isRoamingPaused by roamingRepository.isRoamingPaused.collectAsStateWithLifecycle(initialValue = false)
-    val isRouteReplay = mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY
+    val isRoaming = mockMode == MockMode.ROAMING
+    val isRouteReplay = mockMode == MockMode.ROUTE_REPLAY
     val isWalkActive = walkTarget != null || isRouteReplay
-    val favoritesFlow = remember { favoriteRepository.getFavorites() }
-    val favorites by favoritesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val spoofState by locationRepository.mockLocationState.collectAsStateWithLifecycle()
-
-    val initialPosition = remember { locationRepository.currentPosition.value }
-
-    val roamingDefaults by remember { settingsRepository.getRoamingDefaults() }.collectAsStateWithLifecycle(initialValue = RoamingDefaults(radiusMeters = 1000.0, distanceMeters = 200.0, speedProfileId = "walk", followRoads = false, returnToInitialLocation = false))
-    val speedUnit by remember { settingsRepository.getSpeedUnit() }.collectAsStateWithLifecycle(initialValue = SpeedUnit.KMH)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var roamingPreviewWaypoints by remember { mutableStateOf<List<com.locationjoystick.core.model.LatLng>?>(null) }
     var showRoamingSheet by remember { mutableStateOf(false) }
     var walkStart by remember { mutableStateOf<LatLng?>(null) }
@@ -154,7 +151,7 @@ internal fun MapFloatingView(
     }
 
     val mapView =
-        remember {
+        remember(context) {
             MapLibre.getInstance(context)
             MapView(context)
         }
@@ -412,10 +409,9 @@ internal fun MapFloatingView(
                 FloatingActionButton(
                     onClick = {
                         isFollowingCamera.value = true
-                        val pos = locationRepository.currentPosition.value
-                        if (pos != null) {
+                        if (currentPosition != null) {
                             mapRef.value?.animateCamera(
-                                CameraUpdateFactory.newLatLng(MapLatLng(pos.latitude, pos.longitude)),
+                                CameraUpdateFactory.newLatLng(MapLatLng(currentPosition.latitude, currentPosition.longitude)),
                                 500,
                             )
                         }
@@ -444,9 +440,9 @@ internal fun MapFloatingView(
                 FloatingActionButton(
                     onClick = {
                         if (isRoamingPaused) {
-                            roamingRepository.resumeRoaming()
+                            onResumeRoaming()
                         } else {
-                            roamingRepository.pauseRoaming()
+                            onPauseRoaming()
                         }
                     },
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -477,10 +473,10 @@ internal fun MapFloatingView(
             ) {
                 Icon(Icons.Rounded.Search, contentDescription = "Search location")
             }
-            val isSpoofing = spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING
+            val isSpoofing = mockLocationState == MockLocationState.RUNNING
             FloatingActionButton(
                 onClick = {
-                    if (isSpoofing) locationRepository.stopSpoofing() else locationRepository.startSpoofing()
+                    if (isSpoofing) onStopSpoofing() else onStartSpoofing()
                 },
                 containerColor =
                     if (isSpoofing) {
@@ -504,7 +500,7 @@ internal fun MapFloatingView(
 
         if (showRoamingSheet) {
             val isMph = speedUnit == SpeedUnit.MPH
-            val isSpoofing = spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING
+            val isSpoofing = mockLocationState == MockLocationState.RUNNING
             var draft by remember(roamingDefaults) {
                 mutableStateOf(roamingDefaults)
             }
@@ -513,18 +509,22 @@ internal fun MapFloatingView(
                 roamingPreviewWaypoints = null
             }) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 24.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 24.dp),
                 ) {
                     Text("Roaming", style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(16.dp))
                     var radiusText by remember(isMph) {
                         mutableStateOf(
-                            if (isMph) String.format("%.2f", draft.radiusMeters / 1609.344)
-                            else draft.radiusMeters.roundToInt().toString()
+                            if (isMph) {
+                                String.format("%.2f", draft.radiusMeters / 1609.344)
+                            } else {
+                                draft.radiusMeters.roundToInt().toString()
+                            },
                         )
                     }
                     OutlinedTextField(
@@ -533,7 +533,14 @@ internal fun MapFloatingView(
                             radiusText = text
                             text.toDoubleOrNull()?.let { v ->
                                 val meters = if (isMph) v * 1609.344 else v
-                                draft = draft.copy(radiusMeters = meters.coerceIn(AppConstants.RoamingConstants.RADIUS_MIN_METERS, AppConstants.RoamingConstants.RADIUS_MAX_METERS))
+                                draft =
+                                    draft.copy(
+                                        radiusMeters =
+                                            meters.coerceIn(
+                                                AppConstants.RoamingConstants.RADIUS_MIN_METERS,
+                                                AppConstants.RoamingConstants.RADIUS_MAX_METERS,
+                                            ),
+                                    )
                             }
                         },
                         label = { Text(if (isMph) "Radius (mi)" else "Radius (m)") },
@@ -544,8 +551,11 @@ internal fun MapFloatingView(
                     Spacer(Modifier.height(8.dp))
                     var distanceText by remember(isMph) {
                         mutableStateOf(
-                            if (isMph) String.format("%.2f", draft.distanceMeters / 1609.344)
-                            else draft.distanceMeters.roundToInt().toString()
+                            if (isMph) {
+                                String.format("%.2f", draft.distanceMeters / 1609.344)
+                            } else {
+                                draft.distanceMeters.roundToInt().toString()
+                            },
                         )
                     }
                     OutlinedTextField(
@@ -554,7 +564,14 @@ internal fun MapFloatingView(
                             distanceText = text
                             text.toDoubleOrNull()?.let { v ->
                                 val meters = if (isMph) v * 1609.344 else v
-                                draft = draft.copy(distanceMeters = meters.coerceIn(AppConstants.RoamingConstants.DISTANCE_MIN_METERS, AppConstants.RoamingConstants.DISTANCE_MAX_METERS))
+                                draft =
+                                    draft.copy(
+                                        distanceMeters =
+                                            meters.coerceIn(
+                                                AppConstants.RoamingConstants.DISTANCE_MIN_METERS,
+                                                AppConstants.RoamingConstants.DISTANCE_MAX_METERS,
+                                            ),
+                                    )
                             }
                         },
                         label = { Text(if (isMph) "Route distance (mi)" else "Route distance (m)") },
@@ -566,12 +583,22 @@ internal fun MapFloatingView(
                     Text("Speed profile", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(4.dp))
                     Row(modifier = Modifier.fillMaxWidth()) {
-                        listOf(AppConstants.ProfileConstants.PROFILE_ID_WALK, AppConstants.ProfileConstants.PROFILE_ID_RUN, AppConstants.ProfileConstants.PROFILE_ID_BIKE).forEach { id ->
+                        listOf(
+                            AppConstants.ProfileConstants.PROFILE_ID_WALK,
+                            AppConstants.ProfileConstants.PROFILE_ID_RUN,
+                            AppConstants.ProfileConstants.PROFILE_ID_BIKE,
+                        ).forEach { id ->
                             val label = mapOf("walk" to "Walk", "run" to "Run", "bike" to "Bike")[id] ?: id
                             if (draft.speedProfileId == id) {
-                                OutlinedButton(onClick = { draft = draft.copy(speedProfileId = id) }, modifier = Modifier.padding(end = 4.dp)) { Text(label) }
+                                OutlinedButton(
+                                    onClick = { draft = draft.copy(speedProfileId = id) },
+                                    modifier = Modifier.padding(end = 4.dp),
+                                ) { Text(label) }
                             } else {
-                                FilledTonalButton(onClick = { draft = draft.copy(speedProfileId = id) }, modifier = Modifier.padding(end = 4.dp)) { Text(label) }
+                                FilledTonalButton(
+                                    onClick = { draft = draft.copy(speedProfileId = id) },
+                                    modifier = Modifier.padding(end = 4.dp),
+                                ) { Text(label) }
                             }
                         }
                     }
@@ -581,7 +608,10 @@ internal fun MapFloatingView(
                         Text("Follow roads", style = MaterialTheme.typography.bodyMedium)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Checkbox(checked = draft.returnToInitialLocation, onCheckedChange = { draft = draft.copy(returnToInitialLocation = it) })
+                        Checkbox(checked = draft.returnToInitialLocation, onCheckedChange = {
+                            draft =
+                                draft.copy(returnToInitialLocation = it)
+                        })
                         Text("Return to start", style = MaterialTheme.typography.bodyMedium)
                     }
                     Spacer(Modifier.height(16.dp))
@@ -590,13 +620,14 @@ internal fun MapFloatingView(
                         OutlinedButton(
                             onClick = {
                                 scope.launch {
-                                    val pos = locationRepository.currentPosition.value ?: return@launch
-                                    val waypoints = roamingRepository.generatePreviewRoute(
-                                        center = pos,
-                                        radiusMeters = draft.radiusMeters,
-                                        followRoads = draft.followRoads,
-                                        speedProfileId = draft.speedProfileId,
-                                    )
+                                    val pos = currentPosition ?: return@launch
+                                    val waypoints =
+                                        onGeneratePreviewRoute(
+                                            pos,
+                                            draft.radiusMeters,
+                                            draft.followRoads,
+                                            draft.speedProfileId,
+                                        )
                                     roamingPreviewWaypoints = waypoints
                                 }
                             },

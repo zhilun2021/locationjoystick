@@ -43,6 +43,15 @@ private fun Double.toDegrees(): Double = Math.toDegrees(this)
 private const val TAG = "JoystickOverlayService"
 
 /**
+ * Converts a screen angle (0=east, CCW positive) to a geographic bearing in degrees (0=north, CW positive).
+ */
+internal fun angleToBearing(angleDegrees: Float): Double {
+    val angleRad = angleDegrees.toDouble().toRadians()
+    val bearingRad = kotlin.math.atan2(cos(angleRad), -sin(angleRad))
+    return (bearingRad.toDegrees() + 360.0) % 360.0
+}
+
+/**
  * Pure position-advance function for one joystick tick.
  * Uses flat-earth approximation (accurate to within ~0.1% for distances < 1 km).
  */
@@ -53,9 +62,8 @@ internal fun computeJoystickStep(
     speedMs: Double,
     stepSeconds: Double,
 ): LatLng {
-    val angleRad = angleDegrees.toDouble().toRadians()
-    // Convert screen angle (0=east, CCW) to geographic bearing (0=north, CW).
-    val bearingRad = kotlin.math.atan2(cos(angleRad), -sin(angleRad))
+    val bearingDeg = angleToBearing(angleDegrees)
+    val bearingRad = bearingDeg.toRadians()
     val distanceMeters = speedMs * stepSeconds * force
     val dLat = distanceMeters * cos(bearingRad) / AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
     val dLon =
@@ -81,7 +89,11 @@ class JoystickOverlayService : OverlayService() {
 
     private var mockLocationService: MockLocationService? = null
 
-    @Volatile var locked = false
+    private val _isLocked = MutableStateFlow(false)
+    val isLocked: StateFlow<Boolean> = _isLocked.asStateFlow()
+
+    private val _isVisible = MutableStateFlow(false)
+    val isVisible: StateFlow<Boolean> = _isVisible.asStateFlow()
 
     /** Latest joystick direction+force from touch; read by the movement tick loop. */
     private var lastInput: JoystickInput? = null
@@ -144,7 +156,7 @@ class JoystickOverlayService : OverlayService() {
         get() = overlayView?.isAttachedToWindow == true
 
     fun setIsLocked(value: Boolean) {
-        locked = value
+        _isLocked.value = value
         (overlayView as? JoystickView)?.isLocked = value
         if (!value) {
             movementJob?.cancel()
@@ -157,15 +169,17 @@ class JoystickOverlayService : OverlayService() {
         val view = overlayView
         if (view != null && view.isAttachedToWindow) {
             hideOverlay()
+            _isVisible.value = false
         } else {
             showOverlay()
+            _isVisible.value = true
         }
     }
 
     override fun createOverlayView(): View {
         val view = JoystickView(this)
 
-        view.isLocked = locked
+        view.isLocked = _isLocked.value
 
         view.onInputChanged = { input ->
             lastInput = input
@@ -248,10 +262,7 @@ class JoystickOverlayService : OverlayService() {
         val speedMs = _cachedProfile.value?.speedMetersPerSecond ?: return
         locationRepository.setMockMode(MockMode.JOYSTICK)
 
-        val angleRad = input.angleDegrees.toDouble().toRadians()
-        val bearingRad = kotlin.math.atan2(cos(angleRad), -sin(angleRad))
-        val bearingDeg = ((bearingRad.toDegrees() + 360.0) % 360.0)
-
+        val bearingDeg = angleToBearing(input.angleDegrees)
         val nextPos = computeJoystickStep(currentPos, input.angleDegrees, input.force, speedMs, AppConstants.JoystickConstants.STEP_SECONDS)
 
         locationRepository.updatePosition(nextPos)
