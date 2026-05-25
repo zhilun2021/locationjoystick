@@ -41,5 +41,10 @@ coverage-open:
 screenshot:
 	./scripts/screenshot-gallery.sh
 
+SMOKE_TEST_CLASS = $(subst /,.,$(patsubst app/src/androidTest/kotlin/%,%,$(patsubst %.kt,%,$(TEST_FILE))))
+
 smoke-test:
-	./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.locationjoystick.app.smoke
+	./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.package=com.locationjoystick.app.smoke
+
+smoke-test-one:
+	./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=$(SMOKE_TEST_CLASS)

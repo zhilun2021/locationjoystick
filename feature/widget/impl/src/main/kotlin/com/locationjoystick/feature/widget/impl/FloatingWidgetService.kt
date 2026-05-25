@@ -564,7 +564,13 @@ class FloatingWidgetService :
             }
             walkCoordinator.startWalkAlongRoute(waypoints, serviceScope) { newPos, speedMs, bearing ->
                 startService(
-                    MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing),
+                    MockLocationIntentBuilder.updatePosition(
+                        this@FloatingWidgetService,
+                        newPos.latitude,
+                        newPos.longitude,
+                        speedMs,
+                        bearing,
+                    ),
                 )
             }
         }
@@ -587,7 +593,8 @@ class FloatingWidgetService :
                     null
                 }
             val intent =
-                MockLocationIntentBuilder.startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isBackward)
+                MockLocationIntentBuilder
+                    .startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isBackward)
                     .apply {
                         putExtra(MockLocationService.EXTRA_IS_LOOPING, isLooping)
                         if (returnPosition != null) {
