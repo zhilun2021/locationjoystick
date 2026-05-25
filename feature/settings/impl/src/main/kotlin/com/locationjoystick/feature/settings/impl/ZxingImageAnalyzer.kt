@@ -45,14 +45,15 @@ class ZxingImageAnalyzer(
         try {
             if (image.format != ImageFormat.YUV_420_888) return
 
-            val yBuffer = image.planes[0].buffer
+            val yPlane = image.planes[0]
+            val yBuffer = yPlane.buffer
             val yBytes = ByteArray(yBuffer.remaining())
             yBuffer.get(yBytes)
 
             val source =
                 PlanarYUVLuminanceSource(
                     yBytes,
-                    image.width,
+                    yPlane.rowStride,
                     image.height,
                     0,
                     0,
