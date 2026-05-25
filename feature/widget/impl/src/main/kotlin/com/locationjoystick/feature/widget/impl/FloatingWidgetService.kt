@@ -346,7 +346,9 @@ class FloatingWidgetService :
 
     private fun showFavoritesFloatingView() {
         serviceScope.launch {
-            favoritesDataFlow.value = favoriteRepository.getFavorites().first()
+            val favSortNewestFirst = settingsRepository.getFavoritesSortNewestFirst().first()
+            val rawFavorites = favoriteRepository.getFavorites().first()
+            favoritesDataFlow.value = if (favSortNewestFirst) rawFavorites.sortedByDescending { it.createdAt } else rawFavorites.sortedBy { it.createdAt }
             val panel =
                 ComposeView(this@FloatingWidgetService).apply {
                     setViewTreeLifecycleOwner(this@FloatingWidgetService)
@@ -379,7 +381,8 @@ class FloatingWidgetService :
                                         name = name,
                                         position = pos,
                                     )
-                                    favoritesDataFlow.value = favoriteRepository.getFavorites().first()
+                                    val refreshed = favoriteRepository.getFavorites().first()
+                    favoritesDataFlow.value = if (favSortNewestFirst) refreshed.sortedByDescending { it.createdAt } else refreshed.sortedBy { it.createdAt }
                                 } else {
                                     Log.w(TAG, "Cannot add favorite: no current position")
                                 }
@@ -408,7 +411,9 @@ class FloatingWidgetService :
 
     private fun showRoutesFloatingView() {
         serviceScope.launch {
-            routesDataFlow.value = routeRepository.getRoutes().first()
+            val routeSortNewestFirst = settingsRepository.getRoutesSortNewestFirst().first()
+            val rawRoutes = routeRepository.getRoutes().first()
+            routesDataFlow.value = if (routeSortNewestFirst) rawRoutes.sortedByDescending { it.createdAt } else rawRoutes.sortedBy { it.createdAt }
             val panel =
                 ComposeView(this@FloatingWidgetService).apply {
                     setViewTreeLifecycleOwner(this@FloatingWidgetService)

@@ -129,16 +129,26 @@ class MapViewModel
 
         private fun observeRoutes() {
             viewModelScope.launch {
-                routeRepository.getRoutes().collect { routes ->
-                    _uiState.update { current -> current.copy(routes = routes) }
+                combine(
+                    routeRepository.getRoutes(),
+                    settingsRepository.getRoutesSortNewestFirst(),
+                ) { routes, newestFirst ->
+                    if (newestFirst) routes.sortedByDescending { it.createdAt } else routes.sortedBy { it.createdAt }
+                }.collect { sorted ->
+                    _uiState.update { current -> current.copy(routes = sorted) }
                 }
             }
         }
 
         private fun observeFavorites() {
             viewModelScope.launch {
-                favoriteRepository.getFavorites().collect { favorites ->
-                    _uiState.update { current -> current.copy(favorites = favorites) }
+                combine(
+                    favoriteRepository.getFavorites(),
+                    settingsRepository.getFavoritesSortNewestFirst(),
+                ) { favorites, newestFirst ->
+                    if (newestFirst) favorites.sortedByDescending { it.createdAt } else favorites.sortedBy { it.createdAt }
+                }.collect { sorted ->
+                    _uiState.update { current -> current.copy(favorites = sorted) }
                 }
             }
         }
