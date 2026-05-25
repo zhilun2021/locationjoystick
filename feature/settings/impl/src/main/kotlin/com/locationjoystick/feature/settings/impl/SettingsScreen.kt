@@ -75,8 +75,28 @@ fun SettingsRoute(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
-        viewModel.importResult.collect { message ->
-            snackbarHostState.showSnackbar(message)
+        viewModel.userFeedback.collect { feedback ->
+            if (feedback.isError) {
+                val result =
+                    snackbarHostState.showSnackbar(
+                        message = feedback.message,
+                        actionLabel = "Report",
+                        duration = androidx.compose.material3.SnackbarDuration.Long,
+                    )
+                if (result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
+                    val intent =
+                        android.content.Intent(
+                            android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse(com.locationjoystick.core.common.constants.AppConstants.AppInfo.GITHUB_ISSUES_URL),
+                        )
+                    context.startActivity(intent)
+                }
+            } else {
+                snackbarHostState.showSnackbar(
+                    message = feedback.message,
+                    duration = androidx.compose.material3.SnackbarDuration.Short,
+                )
+            }
         }
     }
 
@@ -1033,7 +1053,6 @@ private fun RoamingSection(
         Text("Return to start", style = MaterialTheme.typography.bodyMedium)
     }
 }
-
 
 @Composable
 private fun ImportConfirmDialog(

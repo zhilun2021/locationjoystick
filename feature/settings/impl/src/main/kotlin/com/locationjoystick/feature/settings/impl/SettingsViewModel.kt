@@ -43,6 +43,11 @@ class SettingsViewModel
             private const val TAG = "SettingsViewModel"
         }
 
+        internal data class UserFeedback(
+            val message: String,
+            val isError: Boolean = false,
+        )
+
         private data class ChunkSession(
             val total: Int,
             val chunks: MutableMap<Int, List<ChunkContent>>,
@@ -55,7 +60,7 @@ class SettingsViewModel
 
         internal val qrChunksReady = MutableSharedFlow<QrChunker.ChunkResult>(extraBufferCapacity = 1)
 
-        val importResult = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        internal val userFeedback = MutableSharedFlow<UserFeedback>(extraBufferCapacity = 1)
 
         private data class RepoRealismChunk(
             val mapFollowsLocation: Boolean,
@@ -288,33 +293,39 @@ class SettingsViewModel
 
         fun saveChanges() {
             viewModelScope.launch {
-                val d = mutableDraft.value
-                if (d.walkSpeed != null) settingsRepository.setWalkSpeed(d.walkSpeed)
-                if (d.runSpeed != null) settingsRepository.setRunSpeed(d.runSpeed)
-                if (d.bikeSpeed != null) settingsRepository.setBikeSpeed(d.bikeSpeed)
-                if (d.speedUnit != null) settingsRepository.setSpeedUnit(d.speedUnit)
-                if (d.widgetFeatures != null) settingsRepository.setWidgetFeatures(d.widgetFeatures.toList())
-                if (d.rememberLastLocation != null) settingsRepository.setRememberLastLocation(d.rememberLastLocation)
-                if (d.mapFollowsLocation != null) settingsRepository.setMapFollowsLocation(d.mapFollowsLocation)
-                if (d.jitterIdleRadius != null) settingsRepository.setJitterIdleRadius(d.jitterIdleRadius)
-                if (d.jitterMovingRadius != null) settingsRepository.setJitterMovingRadius(d.jitterMovingRadius)
-                if (d.jitterIntervalSeconds != null) settingsRepository.setJitterIntervalSeconds(d.jitterIntervalSeconds)
-                if (d.jitterIdleIntervalSeconds != null) settingsRepository.setJitterIdleIntervalSeconds(d.jitterIdleIntervalSeconds)
-                if (d.roamingDefaults != null) settingsRepository.updateRoamingDefaults(d.roamingDefaults)
-                if (d.realismBearingHoldIdle != null) settingsRepository.setRealismBearingHoldIdle(d.realismBearingHoldIdle)
-                if (d.realismAltitudeEnabled != null) settingsRepository.setRealismAltitudeEnabled(d.realismAltitudeEnabled)
-                if (d.realismWarmupEnabled != null) settingsRepository.setRealismWarmupEnabled(d.realismWarmupEnabled)
-                if (d.realismSatelliteExtrasEnabled !=
-                    null
-                ) {
-                    settingsRepository.setRealismSatelliteExtrasEnabled(d.realismSatelliteExtrasEnabled)
+                try {
+                    val d = mutableDraft.value
+                    if (d.walkSpeed != null) settingsRepository.setWalkSpeed(d.walkSpeed)
+                    if (d.runSpeed != null) settingsRepository.setRunSpeed(d.runSpeed)
+                    if (d.bikeSpeed != null) settingsRepository.setBikeSpeed(d.bikeSpeed)
+                    if (d.speedUnit != null) settingsRepository.setSpeedUnit(d.speedUnit)
+                    if (d.widgetFeatures != null) settingsRepository.setWidgetFeatures(d.widgetFeatures.toList())
+                    if (d.rememberLastLocation != null) settingsRepository.setRememberLastLocation(d.rememberLastLocation)
+                    if (d.mapFollowsLocation != null) settingsRepository.setMapFollowsLocation(d.mapFollowsLocation)
+                    if (d.jitterIdleRadius != null) settingsRepository.setJitterIdleRadius(d.jitterIdleRadius)
+                    if (d.jitterMovingRadius != null) settingsRepository.setJitterMovingRadius(d.jitterMovingRadius)
+                    if (d.jitterIntervalSeconds != null) settingsRepository.setJitterIntervalSeconds(d.jitterIntervalSeconds)
+                    if (d.jitterIdleIntervalSeconds != null) settingsRepository.setJitterIdleIntervalSeconds(d.jitterIdleIntervalSeconds)
+                    if (d.roamingDefaults != null) settingsRepository.updateRoamingDefaults(d.roamingDefaults)
+                    if (d.realismBearingHoldIdle != null) settingsRepository.setRealismBearingHoldIdle(d.realismBearingHoldIdle)
+                    if (d.realismAltitudeEnabled != null) settingsRepository.setRealismAltitudeEnabled(d.realismAltitudeEnabled)
+                    if (d.realismWarmupEnabled != null) settingsRepository.setRealismWarmupEnabled(d.realismWarmupEnabled)
+                    if (d.realismSatelliteExtrasEnabled !=
+                        null
+                    ) {
+                        settingsRepository.setRealismSatelliteExtrasEnabled(d.realismSatelliteExtrasEnabled)
+                    }
+                    if (d.realismSuspendedMockingEnabled !=
+                        null
+                    ) {
+                        settingsRepository.setRealismSuspendedMockingEnabled(d.realismSuspendedMockingEnabled)
+                    }
+                    mutableDraft.value = DraftState()
+                    userFeedback.emit(UserFeedback("Settings saved"))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Save failed", e)
+                    userFeedback.emit(UserFeedback("Failed to save settings", isError = true))
                 }
-                if (d.realismSuspendedMockingEnabled !=
-                    null
-                ) {
-                    settingsRepository.setRealismSuspendedMockingEnabled(d.realismSuspendedMockingEnabled)
-                }
-                mutableDraft.value = DraftState()
             }
         }
 
@@ -384,8 +395,10 @@ class SettingsViewModel
                     context.contentResolver.openOutputStream(uri)?.use { stream ->
                         stream.write(json.toByteArray(Charsets.UTF_8))
                     }
+                    userFeedback.emit(UserFeedback("Export complete"))
                 } catch (e: Exception) {
                     Log.e(TAG, "Export failed", e)
+                    userFeedback.emit(UserFeedback("Failed to export", isError = true))
                 }
             }
         }
@@ -406,6 +419,7 @@ class SettingsViewModel
                         }
                     if (json.isEmpty()) {
                         Log.e(TAG, "Import failed: empty file")
+                        userFeedback.emit(UserFeedback("Failed to import: empty file", isError = true))
                         return@launch
                     }
                     val exportData = parseExportData(json)
@@ -439,8 +453,10 @@ class SettingsViewModel
                     setJitterMovingRadius(exportData.jitterMovingRadius)
                     setJitterIntervalSeconds(exportData.jitterIntervalSeconds)
                     setJitterIdleIntervalSeconds(exportData.jitterIdleIntervalSeconds)
+                    userFeedback.emit(UserFeedback("Import complete"))
                 } catch (e: Exception) {
                     Log.e(TAG, "Import failed", e)
+                    userFeedback.emit(UserFeedback("Failed to import", isError = true))
                 }
             }
         }
@@ -485,6 +501,7 @@ class SettingsViewModel
                     qrChunksReady.emit(result)
                 } catch (e: Exception) {
                     Log.e(TAG, "QR chunk preparation failed", e)
+                    userFeedback.emit(UserFeedback("Failed to prepare QR export", isError = true))
                 }
             }
         }
@@ -546,8 +563,10 @@ class SettingsViewModel
                     settingsRepository.setRealismWarmupEnabled(exportData.settings.warmupEnabled)
                     settingsRepository.setRealismSatelliteExtrasEnabled(exportData.settings.satelliteExtrasEnabled)
                     settingsRepository.setRealismSuspendedMockingEnabled(exportData.settings.suspendedMockingEnabled)
+                    userFeedback.emit(UserFeedback("Import complete"))
                 } catch (e: Exception) {
                     Log.e(TAG, "Import from ExportData failed", e)
+                    userFeedback.emit(UserFeedback("Failed to import", isError = true))
                 }
             }
         }
@@ -565,11 +584,13 @@ class SettingsViewModel
                         }
                     if (bytes.isEmpty()) {
                         Log.e(TAG, "GPS Joystick import failed: empty file")
+                        userFeedback.emit(UserFeedback("Failed to import from GPS Joystick", isError = true))
                         return@launch
                     }
                     val result = GpsJoystickMigrator.parse(bytes)
                     if (result.isFailure) {
                         Log.e(TAG, "GPS Joystick import failed: ${result.exceptionOrNull()?.message}")
+                        userFeedback.emit(UserFeedback("Failed to import from GPS Joystick", isError = true))
                         return@launch
                     }
                     val migration = result.getOrNull() ?: return@launch
@@ -589,9 +610,12 @@ class SettingsViewModel
                         migration.routes.forEach { routeRepository.insertRoute(it).getOrNull() }
                     }
                     Log.i(TAG, "GPS Joystick import complete: ${migration.favorites.size} favorites, ${migration.routes.size} routes")
-                    importResult.emit("Imported ${migration.favorites.size} favorites, ${migration.routes.size} routes from GPS Joystick")
+                    userFeedback.emit(
+                        UserFeedback("Imported ${migration.favorites.size} favorites, ${migration.routes.size} routes from GPS Joystick"),
+                    )
                 } catch (e: Exception) {
                     Log.e(TAG, "GPS Joystick import failed", e)
+                    userFeedback.emit(UserFeedback("Failed to import from GPS Joystick", isError = true))
                 }
             }
         }
@@ -612,11 +636,13 @@ class SettingsViewModel
                         }
                     if (json.isBlank()) {
                         Log.e(TAG, "YAMLA import failed: empty file")
+                        userFeedback.emit(UserFeedback("Failed to import from YAMLA", isError = true))
                         return@launch
                     }
                     val result = YamlaMigrator.parse(json)
                     if (result.isFailure) {
                         Log.e(TAG, "YAMLA import failed: ${result.exceptionOrNull()?.message}")
+                        userFeedback.emit(UserFeedback("Failed to import from YAMLA", isError = true))
                         return@launch
                     }
                     val migration = result.getOrNull() ?: return@launch
@@ -638,9 +664,10 @@ class SettingsViewModel
                     migration.bikeSpeed?.let { settingsRepository.setBikeSpeed(it) }
                     val speedsMsg = if (migration.walkSpeed != null) ", speeds updated" else ""
                     Log.i(TAG, "YAMLA import complete: ${migration.favorites.size} favorites$speedsMsg")
-                    importResult.emit("Imported ${migration.favorites.size} favorites from YAMLA$speedsMsg")
+                    userFeedback.emit(UserFeedback("Imported ${migration.favorites.size} favorites from YAMLA$speedsMsg"))
                 } catch (e: Exception) {
                     Log.e(TAG, "YAMLA import failed", e)
+                    userFeedback.emit(UserFeedback("Failed to import from YAMLA", isError = true))
                 }
             }
         }
