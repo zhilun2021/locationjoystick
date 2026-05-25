@@ -96,6 +96,8 @@ sealed interface MapAction {
 
     data object StopRoaming : MapAction
 
+    data object GenerateRoamingPreview : MapAction
+
     data class AddEphemeralWaypoint(
         val position: LatLng,
     ) : MapAction

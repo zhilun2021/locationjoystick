@@ -351,11 +351,26 @@ class MapViewModel
                             followRoads = latestRoamingDefaults.followRoads,
                             returnToInitialLocation = latestRoamingDefaults.returnToInitialLocation,
                         )
-                    _uiState.update { it.copy(showRoamingSheet = true, roamingDraft = draft) }
+                    _uiState.update { it.copy(showRoamingSheet = true, roamingDraft = draft, roamingPreviewWaypoints = null) }
                 }
 
                 MapAction.DismissRoamingSheet -> {
-                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, roamingPreviewWaypoints = null) }
+                }
+
+                MapAction.GenerateRoamingPreview -> {
+                    val draft = _uiState.value.roamingDraft ?: return
+                    val center = _uiState.value.currentPosition ?: return
+                    viewModelScope.launch {
+                        val waypoints =
+                            roamingRepository.generatePreviewRoute(
+                                center = center,
+                                radiusMeters = draft.radiusMeters,
+                                followRoads = draft.followRoads,
+                                speedProfileId = draft.speedProfileId,
+                            )
+                        _uiState.update { it.copy(roamingPreviewWaypoints = waypoints) }
+                    }
                 }
 
                 is MapAction.UpdateRoamingRadius -> {

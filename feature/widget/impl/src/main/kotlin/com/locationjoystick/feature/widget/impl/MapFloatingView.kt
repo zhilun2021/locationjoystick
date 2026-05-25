@@ -44,7 +44,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,6 +104,7 @@ internal fun MapFloatingView(
     locationRepository: LocationRepository,
     favoriteRepository: FavoriteRepository,
     settingsRepository: SettingsRepository,
+    roamingRepository: com.locationjoystick.core.data.RoamingRepository,
     onTeleport: (LatLng) -> Unit,
     onWalkTo: (LatLng) -> Unit,
     onStopRouteAndTeleport: (LatLng) -> Unit,
@@ -130,6 +133,8 @@ internal fun MapFloatingView(
 
     val roamingDefaults by remember { settingsRepository.getRoamingDefaults() }.collectAsStateWithLifecycle(initialValue = RoamingDefaults(radiusMeters = 1000.0, distanceMeters = 200.0, speedProfileId = "walk", followRoads = false, returnToInitialLocation = false))
     val speedUnit by remember { settingsRepository.getSpeedUnit() }.collectAsStateWithLifecycle(initialValue = SpeedUnit.KMH)
+    val scope = rememberCoroutineScope()
+    var roamingPreviewWaypoints by remember { mutableStateOf<List<com.locationjoystick.core.model.LatLng>?>(null) }
     var showRoamingSheet by remember { mutableStateOf(false) }
     var walkStart by remember { mutableStateOf<LatLng?>(null) }
     var pendingTap by remember { mutableStateOf<LatLng?>(null) }
@@ -159,6 +164,19 @@ internal fun MapFloatingView(
     val endpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val ephemeralRouteSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val ephemeralEndpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+
+    LaunchedEffect(roamingPreviewWaypoints) {
+        val src = ephemeralRouteSource.value ?: return@LaunchedEffect
+        val endSrc = ephemeralEndpointsSource.value ?: return@LaunchedEffect
+        val pts = roamingPreviewWaypoints
+        if (pts != null && pts.size >= 2) {
+            src.setGeoJson(buildLineGeoJson(pts))
+            endSrc.setGeoJson(buildPointsGeoJson(pts))
+        } else if (pts == null) {
+            src.setGeoJson(emptyGeoJson())
+            endSrc.setGeoJson(emptyGeoJson())
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -468,7 +486,10 @@ internal fun MapFloatingView(
             var draft by remember(roamingDefaults) {
                 mutableStateOf(roamingDefaults)
             }
-            ModalBottomSheet(onDismissRequest = { showRoamingSheet = false }) {
+            ModalBottomSheet(onDismissRequest = {
+                showRoamingSheet = false
+                roamingPreviewWaypoints = null
+            }) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -542,17 +563,39 @@ internal fun MapFloatingView(
                         Text("Return to start", style = MaterialTheme.typography.bodyMedium)
                     }
                     Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            onStartRoaming(draft)
-                            showRoamingSheet = false
-                        },
-                        enabled = isSpoofing,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Start")
+                    val hasPosition = currentPosition != null
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    val pos = locationRepository.currentPosition.value ?: return@launch
+                                    val waypoints = roamingRepository.generatePreviewRoute(
+                                        center = pos,
+                                        radiusMeters = draft.radiusMeters,
+                                        followRoads = draft.followRoads,
+                                        speedProfileId = draft.speedProfileId,
+                                    )
+                                    roamingPreviewWaypoints = waypoints
+                                }
+                            },
+                            enabled = hasPosition,
+                            modifier = Modifier.weight(1f).padding(end = 4.dp),
+                        ) {
+                            Text("Generate")
+                        }
+                        Button(
+                            onClick = {
+                                onStartRoaming(draft)
+                                showRoamingSheet = false
+                                roamingPreviewWaypoints = null
+                            },
+                            enabled = isSpoofing,
+                            modifier = Modifier.weight(1f).padding(start = 4.dp),
+                        ) {
+                            Text("Start")
+                        }
                     }
-                    if (!isSpoofing) {
+                    if (!hasPosition || !isSpoofing) {
                         Text(
                             "Start location spoofing first to enable roaming",
                             style = MaterialTheme.typography.bodySmall,

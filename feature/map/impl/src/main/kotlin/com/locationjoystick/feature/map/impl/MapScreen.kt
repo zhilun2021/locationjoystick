@@ -498,11 +498,16 @@ internal fun MapScreen(
                         endpointsSrc.setGeoJson(emptyGeoJson())
                     }
 
-                    // Ephemeral route preview polyline
-                    val ephemeralPts = uiState.ephemeralWaypoints
-                    if (ephemeralPts.size >= 2) {
-                        ephemeralRouteSrc.setGeoJson(buildLineGeoJson(ephemeralPts))
-                        ephemeralEndpointsSrc.setGeoJson(buildPointsGeoJson(ephemeralPts))
+                    // Ephemeral route preview polyline — show roaming preview when the sheet is open
+                    val displayWaypoints =
+                        if (uiState.showRoamingSheet) {
+                            uiState.roamingPreviewWaypoints ?: emptyList()
+                        } else {
+                            uiState.ephemeralWaypoints
+                        }
+                    if (displayWaypoints.size >= 2) {
+                        ephemeralRouteSrc.setGeoJson(buildLineGeoJson(displayWaypoints))
+                        ephemeralEndpointsSrc.setGeoJson(buildPointsGeoJson(displayWaypoints))
                     } else {
                         ephemeralRouteSrc.setGeoJson(emptyGeoJson())
                         ephemeralEndpointsSrc.setGeoJson(emptyGeoJson())
@@ -576,6 +581,7 @@ internal fun MapScreen(
             isSpoofingActive = uiState.isSpoofing,
             speedUnit = uiState.speedUnit,
             onAction = onAction,
+            onGeneratePreview = { onAction(MapAction.GenerateRoamingPreview) },
             onDismiss = { onAction(MapAction.DismissRoamingSheet) },
         )
     }

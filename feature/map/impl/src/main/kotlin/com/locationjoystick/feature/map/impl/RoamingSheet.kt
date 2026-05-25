@@ -54,6 +54,7 @@ fun RoamingSheet(
     isSpoofingActive: Boolean = true,
     speedUnit: SpeedUnit = SpeedUnit.KMH,
     onAction: (MapAction) -> Unit,
+    onGeneratePreview: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     val isMph = speedUnit == SpeedUnit.MPH
@@ -180,12 +181,21 @@ fun RoamingSheet(
 
             Spacer(Modifier.height(16.dp))
 
-            Button(
-                onClick = { onAction(MapAction.StartRoaming) },
-                enabled = hasCurrentPosition && isSpoofingActive,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Start")
+            Row(modifier = Modifier.fillMaxWidth()) {
+                OutlinedButton(
+                    onClick = onGeneratePreview,
+                    enabled = hasCurrentPosition,
+                    modifier = Modifier.weight(1f).padding(end = 4.dp),
+                ) {
+                    Text("Generate")
+                }
+                Button(
+                    onClick = { onAction(MapAction.StartRoaming) },
+                    enabled = hasCurrentPosition && isSpoofingActive,
+                    modifier = Modifier.weight(1f).padding(start = 4.dp),
+                ) {
+                    Text("Start")
+                }
             }
 
             if (!hasCurrentPosition || !isSpoofingActive) {

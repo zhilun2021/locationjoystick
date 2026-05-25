@@ -201,6 +201,43 @@ class RoamingEngine
         }
 
         /**
+         * Fetches a preview route between two points for UI display purposes.
+         * Does not start any roaming session.
+         *
+         * @param from Starting position
+         * @param to Destination position
+         * @param useRoadSnapping If true, uses OSRM for road-following; falls back to straight-line on failure
+         * @param speedProfileId Used to select the OSRM profile (e.g. "bike" → cycling, else foot)
+         * @return List of waypoints forming the route
+         */
+        suspend fun previewRoute(
+            from: LatLng,
+            to: LatLng,
+            useRoadSnapping: Boolean,
+            speedProfileId: String,
+        ): List<LatLng> {
+            if (!useRoadSnapping) {
+                return osrmClient.straightLineRoute(from, to)
+            }
+            val profile =
+                when (speedProfileId) {
+                    "bike" -> AppConstants.RoamingConstants.OSRM_PROFILE_CYCLING
+                    else -> AppConstants.RoamingConstants.OSRM_PROFILE_FOOT
+                }
+            return try {
+                osrmClient
+                    .getRoute(profile, listOf(from, to))
+                    .getOrElse { e ->
+                        Log.w(TAG, "OSRM unavailable for preview, using straight-line fallback", e)
+                        osrmClient.straightLineRoute(from, to)
+                    }
+            } catch (e: Exception) {
+                Log.w(TAG, "Preview route fetch failed, using straight-line fallback", e)
+                osrmClient.straightLineRoute(from, to)
+            }
+        }
+
+        /**
          * Fetches a route between two points.
          * If [config.useRoadSnapping] is true, uses OSRM for road-following.
          * Falls back to straight-line on OSRM failure.

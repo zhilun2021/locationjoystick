@@ -668,6 +668,7 @@ class FloatingWidgetService :
                         locationRepository = locationRepository,
                         favoriteRepository = favoriteRepository,
                         settingsRepository = settingsRepository,
+                        roamingRepository = roamingRepository,
                         onTeleport = { pos ->
                             val svc = mockLocationService
                             if (svc != null) {
