@@ -11,6 +11,7 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.location.EphemeralReplayController
+import com.locationjoystick.core.routing.OsrmClient
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
@@ -51,6 +52,7 @@ class MapViewModelTest {
     private lateinit var walkCoordinator: WalkCoordinator
     private lateinit var teleportUseCase: TeleportUseCase
     private lateinit var ephemeralReplayController: EphemeralReplayController
+    private lateinit var osrmClient: OsrmClient
     private lateinit var viewModel: MapViewModel
 
     private val walkTargetFlow = MutableStateFlow<LatLng?>(null)
@@ -70,6 +72,7 @@ class MapViewModelTest {
         walkCoordinator = mockk(relaxed = true)
         teleportUseCase = mockk(relaxed = true)
         ephemeralReplayController = mockk(relaxed = true)
+        osrmClient = mockk(relaxed = true)
 
         every { locationRepository.currentPosition } returns MutableStateFlow(null)
         every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.IDLE)
@@ -111,6 +114,7 @@ class MapViewModelTest {
                 walkCoordinator,
                 teleportUseCase,
                 ephemeralReplayController,
+                osrmClient,
             )
     }
 
@@ -148,6 +152,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -175,6 +180,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -205,6 +211,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -256,6 +263,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -284,6 +292,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -313,6 +322,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -341,6 +351,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -375,6 +386,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -474,6 +486,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -514,6 +527,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -552,6 +566,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -578,6 +593,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -603,6 +619,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -631,6 +648,7 @@ class MapViewModelTest {
                     walkCoordinator,
                     teleportUseCase,
                     ephemeralReplayController,
+                    osrmClient,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
