@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -155,7 +156,10 @@ fun RouteDetailScreen(
         bottomBar = bottomBar,
         actions = {
             if (route != null && editedName != route!!.name) {
-                TextButton(onClick = { editedName = route!!.name }) { Text("Discard") }
+                TextButton(
+                    onClick = { editedName = route!!.name },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                ) { Text("Discard") }
                 TextButton(
                     onClick = {
                         coroutineScope.launch {
