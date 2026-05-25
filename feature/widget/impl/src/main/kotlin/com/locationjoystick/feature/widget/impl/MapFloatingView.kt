@@ -390,29 +390,6 @@ internal fun MapFloatingView(
                     Icon(Icons.Rounded.MyLocation, contentDescription = "Re-center on location")
                 }
             }
-            val isSpoofing = spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING
-            FloatingActionButton(
-                onClick = {
-                    if (isSpoofing) locationRepository.stopSpoofing() else locationRepository.startSpoofing()
-                },
-                containerColor =
-                    if (isSpoofing) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        Color(AppConstants.MapColorConstants.ACTIVE_BUTTON_COLOR)
-                    },
-                contentColor =
-                    if (isSpoofing) {
-                        MaterialTheme.colorScheme.onError
-                    } else {
-                        Color.White
-                    },
-            ) {
-                Icon(
-                    imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
-                    contentDescription = if (isSpoofing) "Stop spoofing" else "Start spoofing",
-                )
-            }
             FloatingActionButton(
                 onClick = { showFavoritesPicker = true },
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -456,6 +433,29 @@ internal fun MapFloatingView(
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
                 Icon(Icons.Rounded.Search, contentDescription = "Search location")
+            }
+            val isSpoofing = spoofState == com.locationjoystick.core.model.MockLocationState.RUNNING
+            FloatingActionButton(
+                onClick = {
+                    if (isSpoofing) locationRepository.stopSpoofing() else locationRepository.startSpoofing()
+                },
+                containerColor =
+                    if (isSpoofing) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        Color(AppConstants.MapColorConstants.ACTIVE_BUTTON_COLOR)
+                    },
+                contentColor =
+                    if (isSpoofing) {
+                        MaterialTheme.colorScheme.onError
+                    } else {
+                        Color.White
+                    },
+            ) {
+                Icon(
+                    imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
+                    contentDescription = if (isSpoofing) "Stop spoofing" else "Start spoofing",
+                )
             }
         }
 
