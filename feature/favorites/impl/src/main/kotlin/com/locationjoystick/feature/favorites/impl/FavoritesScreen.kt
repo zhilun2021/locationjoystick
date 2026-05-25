@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
@@ -77,6 +78,7 @@ fun FavoritesRoute(
         onUpdateFavorite = viewModel::updateFavorite,
         onNavigateToMapPicker = onNavigateToMapPicker,
         onOpenDrawer = onOpenDrawer,
+        onToggleSort = viewModel::toggleSort,
         getCurrentPosition = { viewModel.currentPosition },
         bottomBar = bottomBar,
     )
@@ -109,6 +111,7 @@ internal fun FavoritesScreen(
     cooldownStates: Map<String, CooldownState> = emptyMap(),
     onNavigateToMapPicker: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
+    onToggleSort: () -> Unit = {},
     getCurrentPosition: () -> com.locationjoystick.core.model.LatLng? = { null },
     bottomBar: @Composable () -> Unit = {},
 ) {
@@ -126,8 +129,11 @@ internal fun FavoritesScreen(
         bottomBar = bottomBar,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         actions = {
+            IconButton(onClick = onToggleSort) {
+                Icon(Icons.Default.SwapVert, contentDescription = "Sort")
+            }
             IconButton(onClick = { showAddMenu = !showAddMenu }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Add options")
+                Icon(Icons.Default.Add, contentDescription = "Add favorite")
             }
             DropdownMenu(
                 expanded = showAddMenu,

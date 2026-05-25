@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,16 +32,25 @@ class FavoritesViewModel
         private val teleportUseCase: TeleportUseCase,
     ) : ViewModel() {
         private val pendingDeleteIdFlow = MutableStateFlow<String?>(null)
+        private val _sortNewestFirst = MutableStateFlow(true)
 
         val uiState: StateFlow<FavoritesUiState> =
             combine(
                 favoriteRepository.getFavorites(),
                 pendingDeleteIdFlow,
-            ) { favorites, pendingDeleteId ->
+                _sortNewestFirst,
+            ) { favorites, pendingDeleteId, sortNewestFirst ->
+                val sorted =
+                    if (sortNewestFirst) {
+                        favorites.sortedByDescending { it.createdAt }
+                    } else {
+                        favorites.sortedBy { it.createdAt }
+                    }
                 FavoritesUiState(
-                    favorites = favorites,
+                    favorites = sorted,
                     isLoading = false,
                     pendingDeleteId = pendingDeleteId,
+                    sortNewestFirst = sortNewestFirst,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -71,6 +81,10 @@ class FavoritesViewModel
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyMap(),
             )
+
+        fun toggleSort() {
+            _sortNewestFirst.update { !it }
+        }
 
         fun addRecentSearch(
             displayName: String,

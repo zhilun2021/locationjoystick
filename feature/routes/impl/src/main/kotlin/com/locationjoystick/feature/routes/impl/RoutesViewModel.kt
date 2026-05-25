@@ -22,12 +22,13 @@ import com.locationjoystick.core.model.Waypoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -45,15 +46,25 @@ class RoutesViewModel
         private val settingsRepository: SettingsRepository,
         @ApplicationContext private val context: Context,
     ) : ViewModel() {
+        private val _sortNewestFirst = MutableStateFlow(true)
+
         val uiState: StateFlow<RoutesUiState> =
-            routeRepository
-                .getRoutes()
-                .map { routes -> RoutesUiState(routes = routes, isLoading = false) }
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5_000),
-                    initialValue = RoutesUiState(isLoading = true),
-                )
+            combine(
+                routeRepository.getRoutes(),
+                _sortNewestFirst,
+            ) { routes, sortNewestFirst ->
+                val sorted =
+                    if (sortNewestFirst) {
+                        routes.sortedByDescending { it.createdAt }
+                    } else {
+                        routes.sortedBy { it.createdAt }
+                    }
+                RoutesUiState(routes = sorted, isLoading = false, sortNewestFirst = sortNewestFirst)
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = RoutesUiState(isLoading = true),
+            )
 
         val playbackState: StateFlow<RoutePlaybackState> =
             combine(
@@ -72,6 +83,10 @@ class RoutesViewModel
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = RoutePlaybackState(),
             )
+
+        fun toggleSort() {
+            _sortNewestFirst.update { !it }
+        }
 
         fun deleteRoute(routeId: String) {
             viewModelScope.launch {

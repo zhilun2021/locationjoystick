@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.rounded.Map
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,6 +78,7 @@ fun RoutesRoute(
         onPauseReplay = viewModel::pauseReplay,
         onResumeReplay = viewModel::resumeReplay,
         onStopReplay = viewModel::stopReplay,
+        onToggleSort = viewModel::toggleSort,
         bottomBar = bottomBar,
     )
 }
@@ -114,6 +116,7 @@ internal fun RoutesScreen(
     onPauseReplay: () -> Unit,
     onResumeReplay: () -> Unit,
     onStopReplay: () -> Unit,
+    onToggleSort: () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
 ) {
     var deletingRoute by remember { mutableStateOf<com.locationjoystick.core.model.Route?>(null) }
@@ -124,8 +127,11 @@ internal fun RoutesScreen(
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         actions = {
+            IconButton(onClick = onToggleSort) {
+                Icon(Icons.Default.SwapVert, contentDescription = "Sort")
+            }
             IconButton(onClick = { showAddMenu = !showAddMenu }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Add options")
+                Icon(Icons.Default.Add, contentDescription = "Add route")
             }
             DropdownMenu(
                 expanded = showAddMenu,

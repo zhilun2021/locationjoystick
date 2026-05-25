@@ -6,4 +6,5 @@ data class FavoritesUiState(
     val favorites: List<FavoriteLocation> = emptyList(),
     val isLoading: Boolean = false,
     val pendingDeleteId: String? = null,
+    val sortNewestFirst: Boolean = true,
 )
