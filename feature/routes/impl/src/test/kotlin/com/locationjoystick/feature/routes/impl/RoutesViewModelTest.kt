@@ -262,4 +262,70 @@ class RoutesViewModelTest {
     fun `all four RouteReplayMode values covered`() {
         assertEquals(4, RouteReplayMode.entries.size)
     }
+
+    // GPX fixture tests — real files from external apps
+
+    private fun loadFixture(name: String): String =
+        javaClass.classLoader!!.getResourceAsStream(name)!!
+            .bufferedReader()
+            .readText()
+
+    /**
+     * route-random-2026-05-25T13-38-39.gpx — track-point format (<trkpt>).
+     * Expects all 344 points parsed and the route name extracted from <metadata><name>.
+     */
+    @Test
+    fun `fixture routeRandom trkpt parses all 344 waypoints`() {
+        val gpx = loadFixture("route-random-2026-05-25T13-38-39.gpx")
+
+        val waypoints = parseGpxWaypoints(gpx)
+
+        assertEquals(344, waypoints.size)
+    }
+
+    @Test
+    fun `fixture routeRandom first and last coordinates correct`() {
+        val gpx = loadFixture("route-random-2026-05-25T13-38-39.gpx")
+
+        val waypoints = parseGpxWaypoints(gpx)
+
+        assertEquals(51.512219, waypoints.first().latitude, 0.000001)
+        assertEquals(-0.132268, waypoints.first().longitude, 0.000001)
+        assertEquals(51.512219, waypoints.last().latitude, 0.000001)
+        assertEquals(-0.132268, waypoints.last().longitude, 0.000001)
+    }
+
+    @Test
+    fun `fixture routeRandom name extracted from metadata`() {
+        val gpx = loadFixture("route-random-2026-05-25T13-38-39.gpx")
+
+        val name = extractGpxName(gpx)
+
+        assertEquals("Generated Route", name)
+    }
+
+    /**
+     * gpsjoystick_20250408232304.gpx — GPS JoyStick app export using <rtept> (route points).
+     * The current parser only handles <trkpt>; this fixture documents that <rtept> is NOT
+     * yet supported. When support is added, update this test to assert 185 waypoints.
+     */
+    @Test
+    fun `fixture gpsJoystick rtept format not yet supported returns empty`() {
+        val gpx = loadFixture("gpsjoystick_20250408232304.gpx")
+
+        val waypoints = parseGpxWaypoints(gpx)
+
+        // GPS JoyStick exports use <rtept> which the current regex does not match.
+        // This test documents the gap — 185 points are present but 0 are parsed.
+        assertEquals(0, waypoints.size)
+    }
+
+    @Test
+    fun `fixture gpsJoystick name extracted correctly despite rtept format`() {
+        val gpx = loadFixture("gpsjoystick_20250408232304.gpx")
+
+        val name = extractGpxName(gpx)
+
+        assertEquals("Paris Jardins", name)
+    }
 }
