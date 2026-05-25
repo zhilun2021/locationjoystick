@@ -266,7 +266,8 @@ class RoutesViewModelTest {
     // GPX fixture tests — real files from external apps
 
     private fun loadFixture(name: String): String =
-        javaClass.classLoader!!.getResourceAsStream(name)!!
+        javaClass.classLoader!!
+            .getResourceAsStream(name)!!
             .bufferedReader()
             .readText()
 
