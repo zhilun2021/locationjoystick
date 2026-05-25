@@ -12,8 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -23,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -130,17 +129,19 @@ fun RouteDetailScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var editedName by remember { mutableStateOf("") }
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var isNameInitialized by remember { mutableStateOf(false) }
 
-    if (route != null && editedName.isEmpty()) {
-        editedName = route!!.name
+    LaunchedEffect(route) {
+        if (route != null && !isNameInitialized) {
+            editedName = route!!.name
+            isNameInitialized = true
+        }
     }
 
-    // Save-on-back handler
     BackHandler {
-        if (editedName != route?.name && editedName.isNotBlank()) {
+        if (route?.waypoints?.isEmpty() == true) {
             coroutineScope.launch {
-                viewModel.renameRoute(editedName)
+                viewModel.deleteRoute()
                 onNavigateBack()
             }
         } else {
@@ -148,39 +149,25 @@ fun RouteDetailScreen(
         }
     }
 
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmation = false },
-            title = { Text("Delete Route?") },
-            text = { Text("Are you sure you want to delete this route? This action cannot be undone.") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirmation = false
-                        coroutineScope.launch {
-                            viewModel.deleteRoute()
-                            onNavigateBack()
-                        }
-                    },
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirmation = false }) {
-                    Text("Cancel")
-                }
-            },
-        )
-    }
-
     LjScaffold(
         title = "Route Details",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         actions = {
-            IconButton(onClick = { showDeleteConfirmation = true }) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete route")
+            if (route != null && editedName != route!!.name) {
+                TextButton(onClick = { editedName = route!!.name }) { Text("Discard") }
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            if (route?.waypoints?.isEmpty() == true) {
+                                viewModel.deleteRoute()
+                            } else if (editedName.isNotBlank()) {
+                                viewModel.renameRoute(editedName)
+                            }
+                            onNavigateBack()
+                        }
+                    },
+                ) { Text("Save") }
             }
         },
     ) { paddingValues ->
