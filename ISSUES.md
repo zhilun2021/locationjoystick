@@ -26,12 +26,10 @@ The "upload" one provides the following options:
 
 #### Settings user feedback
 
-We should add a small notification or bubble somewhere that indicates:
-- When settings are saved
-- When import is complete
-- When export is complete
+We should add a small notification , something not intrusive, when an error happens:
+- failed to import, failed to save, etc. and append "click to report bug" which opens a link to the github repository issue.
 
-Something non intrusive, at the app level
+we should also let the user know when everything went well ("settings saved", "import complete"), super discrete, discarded on click.
 
 #### Map screen and floating map view UX
 
