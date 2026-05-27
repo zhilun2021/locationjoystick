@@ -4,16 +4,9 @@ import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.SpeedUnit
-
-data class RoamingDraft(
-    val radiusMeters: Double,
-    val distanceMeters: Double,
-    val speedProfileId: String,
-    val followRoads: Boolean,
-    val returnToInitialLocation: Boolean,
-)
 
 /** Represents the current walk/ephemeral-replay state shown in the map UI. */
 sealed interface WalkMode {
@@ -46,7 +39,7 @@ data class MapUiState(
     val isWalkPaused: Boolean = false,
     val isRouteReplay: Boolean = false,
     val showRoamingSheet: Boolean = false,
-    val roamingDraft: RoamingDraft? = null,
+    val roamingDraft: RoamingDefaults? = null,
     val isRoaming: Boolean = false,
     val isRoamingPaused: Boolean = false,
     val roamingPreviewWaypoints: List<LatLng>? = null,

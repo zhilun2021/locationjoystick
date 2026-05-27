@@ -8,7 +8,6 @@ import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -18,7 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class RoamingRepositoryTest {
     private lateinit var fakeRoamingEngine: RoamingEngine
     private lateinit var fakeLocationRepository: LocationRepository
@@ -84,6 +83,7 @@ class RoamingRepositoryTest {
                     config = config,
                     speedMs = 1.4,
                     onRouteUpdate = any(),
+                    onComplete = any(),
                     onPositionUpdate = any(),
                 )
             }
@@ -99,7 +99,7 @@ class RoamingRepositoryTest {
             repository.startRoaming(config, speedMs = 2.0)
 
             verify(exactly = 2) {
-                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any(), any())
             }
 
             repository.stopRoaming()
@@ -111,9 +111,9 @@ class RoamingRepositoryTest {
             val config = createDefaultConfig()
             var capturedCallback: ((LatLng) -> Unit)? = null
             every {
-                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any(), any())
             } answers {
-                capturedCallback = lastArg()
+                capturedCallback = arg(4)
                 Job()
             }
 
@@ -137,7 +137,7 @@ class RoamingRepositoryTest {
             repository.stopRoaming()
 
             coVerifyOrder {
-                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any(), any())
                 fakeRoamingEngine.stopRoaming()
             }
         }
@@ -158,26 +158,52 @@ class RoamingRepositoryTest {
             repository.stopRoaming()
         }
 
-    // invokeOnCompletion callback
+    // onComplete callback
 
     @Test
     fun `roaming completion sets isRoaming to false and MockMode to TELEPORT`() =
         runTest {
             val config = createDefaultConfig()
 
-            val job = Job()
+            var capturedOnComplete: (() -> Unit)? = null
             every {
-                fakeRoamingEngine.startRoaming(any(), any(), any(), any())
-            } returns job
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any(), any())
+            } answers {
+                capturedOnComplete = arg(3)
+                Job()
+            }
 
             repository.startRoaming(config, speedMs = 1.4)
 
             assertTrue(repository.isRoaming.first())
             assertEquals(MockMode.ROAMING, fakeLocationRepository.currentMode.first())
 
-            job.complete()
+            capturedOnComplete?.invoke()
 
             assertFalse(repository.isRoaming.first())
+            assertEquals(MockMode.TELEPORT, fakeLocationRepository.currentMode.first())
+        }
+
+    @Test
+    fun `completion callback fires when loop exits naturally`() =
+        runTest {
+            val config = createDefaultConfig()
+
+            var capturedOnComplete: (() -> Unit)? = null
+            every {
+                fakeRoamingEngine.startRoaming(any(), any(), any(), any(), any())
+            } answers {
+                capturedOnComplete = arg(3)
+                Job()
+            }
+
+            repository.startRoaming(config, speedMs = 1.4)
+
+            // Simulate natural completion (remainingMeters <= 0 path)
+            capturedOnComplete?.invoke()
+
+            assertFalse(repository.isRoaming.first())
+            assertFalse(repository.isRoamingPaused.first())
             assertEquals(MockMode.TELEPORT, fakeLocationRepository.currentMode.first())
         }
 

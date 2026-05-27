@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjTheme
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 import kotlin.math.roundToInt
 
@@ -49,7 +50,7 @@ private val SPEED_PROFILE_LABELS =
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoamingSheet(
-    draft: RoamingDraft,
+    draft: RoamingDefaults,
     hasCurrentPosition: Boolean,
     isSpoofingActive: Boolean = true,
     speedUnit: SpeedUnit = SpeedUnit.KMH,
@@ -216,7 +217,7 @@ private fun RoamingSheetPreview() {
     LjTheme {
         RoamingSheet(
             draft =
-                RoamingDraft(
+                RoamingDefaults(
                     radiusMeters = 5_000.0,
                     distanceMeters = 1_000.0,
                     speedProfileId = "walk",

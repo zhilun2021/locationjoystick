@@ -10,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -90,100 +91,108 @@ class RoamingEngine
         /**
          * Starts a roaming session.
          *
+         * Any previously active session is cancelled and awaited (via [cancelAndJoin]) inside the
+         * new coroutine before movement begins, so two sessions never overlap.
+         *
          * @param config Roaming configuration (center, radius, duration, etc.)
          * @param speedMs Movement speed in meters per second
-         * @param onPositionUpdate Callback invoked each tick with new position
          * @param onRouteUpdate Callback invoked when route changes (for UI display)
+         * @param onComplete Callback invoked when the session ends naturally (not on cancellation)
+         * @param onPositionUpdate Callback invoked each tick with new position
          * @return Job that can be used to track/cancel the roaming session
          */
         fun startRoaming(
             config: RoamingConfig,
             speedMs: Double,
             onRouteUpdate: (List<LatLng>) -> Unit = {},
+            onComplete: () -> Unit = {},
             onPositionUpdate: (LatLng) -> Unit,
         ): Job {
-            // Cancel previous job BEFORE launching the new one. Setting activeJob = job after
-            // launch would make the new coroutine see itself as activeJob and self-cancel.
+            // Capture previous job before launching. The new coroutine awaits its cancellation
+            // via cancelAndJoin so the two sessions never overlap.
             val previous = activeJob
             activeJob = null
-            previous?.cancel()
 
             val job =
                 engineScope.launch {
+                    previous?.cancelAndJoin()
                     isPaused = false
                     val initialLocation = config.centerPosition
                     var currentPosition = config.centerPosition
                     var remainingMeters = config.distanceMeters
-                    var currentRoute: List<LatLng> = emptyList()
-                    var waypointIndex = 0
-
                     val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
+
                     while (isActive && remainingMeters > 0) {
-                        while (isPaused && isActive) {
+                        val destination = randomPointInRadius(config.centerPosition, config.radiusMeters)
+                        val route = fetchRoute(config, currentPosition, destination)
+                        onRouteUpdate(route)
+                        // Guard against empty route to avoid a tight busy-spin
+                        if (route.size < 2) {
                             delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+                            continue
                         }
-                        if (!isActive) break
-                        if (currentRoute.isEmpty() || waypointIndex >= currentRoute.size) {
-                            val destination = randomPointInRadius(config.centerPosition, config.radiusMeters)
-                            currentRoute = fetchRoute(config, currentPosition, destination)
-                            onRouteUpdate(currentRoute)
-                            waypointIndex = 0
-                            // Guard against empty route to avoid a tight busy-spin
-                            if (currentRoute.size < 2) {
-                                delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                                continue
+                        var ticks = 0
+                        currentPosition =
+                            walkRouteSegment(route, currentPosition, speedMs, onPositionUpdate) {
+                                ticks++
                             }
-                        }
-
-                        val result =
-                            routeInterpolator.interpolateAlongRoute(
-                                waypoints = currentRoute,
-                                currentPosition = currentPosition,
-                                currentWaypointIndex = waypointIndex,
-                                speedMs = speedMs,
-                                deltaTimeMs = AppConstants.LocationConstants.UPDATE_INTERVAL_MS,
-                            )
-
-                        currentPosition = result.position
-                        waypointIndex = result.nextWaypointIndex
-                        remainingMeters -= distancePerTick
-
-                        if (result.reachedEnd) {
-                            currentRoute = emptyList()
-                            onRouteUpdate(emptyList())
-                        }
-
-                        onPositionUpdate(currentPosition)
-                        delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+                        remainingMeters -= ticks * distancePerTick
+                        onRouteUpdate(emptyList())
                     }
 
                     if (config.returnToInitialLocation && isActive) {
                         val returnRoute = fetchRoute(config, currentPosition, initialLocation)
                         onRouteUpdate(returnRoute)
-                        var returnIndex = 0
-                        while (isActive && returnRoute.isNotEmpty()) {
-                            while (isPaused && isActive) {
-                                delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                            }
-                            if (!isActive) break
-                            val result =
-                                routeInterpolator.interpolateAlongRoute(
-                                    waypoints = returnRoute,
-                                    currentPosition = currentPosition,
-                                    currentWaypointIndex = returnIndex,
-                                    speedMs = speedMs,
-                                    deltaTimeMs = AppConstants.LocationConstants.UPDATE_INTERVAL_MS,
-                                )
-                            currentPosition = result.position
-                            returnIndex = result.nextWaypointIndex
-                            onPositionUpdate(currentPosition)
-                            if (result.reachedEnd) break
-                            delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+                        if (returnRoute.size >= 2) {
+                            currentPosition =
+                                walkRouteSegment(returnRoute, currentPosition, speedMs, onPositionUpdate)
                         }
                     }
+
+                    onComplete()
                 }
             activeJob = job
             return job
+        }
+
+        /**
+         * Walks [route] from [startPosition] to completion or coroutine cancellation.
+         *
+         * On each tick: waits while paused, calls [routeInterpolator], invokes [onPositionUpdate],
+         * calls [onTick], delays one interval, and breaks when the end is reached.
+         *
+         * @return Final position reached (last position emitted to [onPositionUpdate]).
+         */
+        private suspend fun walkRouteSegment(
+            route: List<LatLng>,
+            startPosition: LatLng,
+            speedMs: Double,
+            onPositionUpdate: (LatLng) -> Unit,
+            onTick: () -> Unit = {},
+        ): LatLng {
+            var currentPosition = startPosition
+            var waypointIndex = 0
+            while (currentCoroutineContext().isActive) {
+                while (isPaused && currentCoroutineContext().isActive) {
+                    delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+                }
+                if (!currentCoroutineContext().isActive) break
+                val result =
+                    routeInterpolator.interpolateAlongRoute(
+                        waypoints = route,
+                        currentPosition = currentPosition,
+                        currentWaypointIndex = waypointIndex,
+                        speedMs = speedMs,
+                        deltaTimeMs = AppConstants.LocationConstants.UPDATE_INTERVAL_MS,
+                    )
+                currentPosition = result.position
+                waypointIndex = result.nextWaypointIndex
+                onPositionUpdate(currentPosition)
+                onTick()
+                if (result.reachedEnd) break
+                delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+            }
+            return currentPosition
         }
 
         /**

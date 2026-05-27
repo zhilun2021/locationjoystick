@@ -633,7 +633,7 @@ class MockLocationService : Service() {
         val mode = locationRepository.currentMode.value
         val current = suspendedPhase.get()
         val next = advanceSuspendedPhase(current, now, suspendedMockingEnabled, mode, Random.Default)
-        if (next !== current) {
+        if (next != current) {
             suspendedPhase.set(next)
             Log.i(TAG, "Realism: suspended phase=${if (next.isActive) "PAUSED" else "PUSHING"}")
         }

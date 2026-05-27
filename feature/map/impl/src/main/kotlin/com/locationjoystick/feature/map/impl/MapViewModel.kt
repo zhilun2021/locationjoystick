@@ -19,8 +19,8 @@ import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
-import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.RoamingDefaults
+import com.locationjoystick.core.model.toConfig
 import com.locationjoystick.core.model.SpeedUnit
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -358,15 +358,7 @@ class MapViewModel
                 }
 
                 MapAction.OpenRoamingSheet -> {
-                    val draft =
-                        RoamingDraft(
-                            radiusMeters = latestRoamingDefaults.radiusMeters,
-                            distanceMeters = latestRoamingDefaults.distanceMeters,
-                            speedProfileId = latestRoamingDefaults.speedProfileId,
-                            followRoads = latestRoamingDefaults.followRoads,
-                            returnToInitialLocation = latestRoamingDefaults.returnToInitialLocation,
-                        )
-                    _uiState.update { it.copy(showRoamingSheet = true, roamingDraft = draft, roamingPreviewWaypoints = null) }
+                    _uiState.update { it.copy(showRoamingSheet = true, roamingDraft = latestRoamingDefaults, roamingPreviewWaypoints = null) }
                 }
 
                 MapAction.DismissRoamingSheet -> {
@@ -433,15 +425,7 @@ class MapViewModel
                                 .firstOrNull { it.id == draft.speedProfileId }
                                 ?.speedMetersPerSecond
                                 ?: settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                        val config =
-                            RoamingConfig(
-                                centerPosition = position,
-                                radiusMeters = draft.radiusMeters,
-                                distanceMeters = draft.distanceMeters,
-                                speedProfileId = draft.speedProfileId,
-                                useRoadSnapping = draft.followRoads,
-                                returnToInitialLocation = draft.returnToInitialLocation,
-                            )
+                        val config = draft.toConfig(position)
                         roamingRepository.startRoaming(config, speedMs)
                     }
                     _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }

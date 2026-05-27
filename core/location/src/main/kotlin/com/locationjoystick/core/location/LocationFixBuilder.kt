@@ -112,7 +112,9 @@ internal fun advanceSuspendedPhase(
     random: Random,
 ): SuspendedPhaseState {
     if (!enabled || mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO) {
-        return SuspendedPhaseState(isActive = false, startMs = now)
+        // Return current unchanged if already in the idle (not-active) state to avoid
+        // spurious log spam — no state transition is needed.
+        return if (!current.isActive) current else SuspendedPhaseState(isActive = false, startMs = now)
     }
     val elapsed = now - current.startMs
     return when {
