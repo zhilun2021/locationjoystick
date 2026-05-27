@@ -102,6 +102,12 @@ sealed interface MapAction {
 
     data object GenerateRoamingPreview : MapAction
 
+    data object MinimizeRoamingSheet : MapAction
+
+    data object ExpandRoamingSheet : MapAction
+
+    data object ClearMap : MapAction
+
     data class AddEphemeralWaypoint(
         val position: LatLng,
     ) : MapAction

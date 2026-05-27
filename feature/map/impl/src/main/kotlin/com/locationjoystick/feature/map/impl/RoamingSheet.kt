@@ -18,6 +18,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +55,10 @@ fun RoamingSheet(
     hasCurrentPosition: Boolean,
     isSpoofingActive: Boolean = true,
     speedUnit: SpeedUnit = SpeedUnit.KMH,
+    hasPreview: Boolean = false,
     onAction: (MapAction) -> Unit,
     onGeneratePreview: () -> Unit = {},
+    onMinimize: () -> Unit = {},
     onDismiss: () -> Unit,
 ) {
     val isMph = speedUnit == SpeedUnit.MPH
@@ -196,6 +199,16 @@ fun RoamingSheet(
                     modifier = Modifier.weight(1f).padding(start = 4.dp),
                 ) {
                     Text("Start")
+                }
+            }
+
+            if (hasPreview) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = onMinimize,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("View on map")
                 }
             }
 

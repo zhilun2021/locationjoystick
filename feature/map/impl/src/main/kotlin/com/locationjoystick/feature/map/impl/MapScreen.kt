@@ -275,6 +275,26 @@ internal fun MapScreen(
                         contentDescription = "Open favorites",
                     )
                 }
+                val hasClearableContent =
+                    !uiState.isRoaming &&
+                        (
+                            uiState.roamingPreviewWaypoints != null ||
+                                uiState.ephemeralWaypoints.isNotEmpty() ||
+                                uiState.walkTarget != null ||
+                                uiState.pendingTapPosition != null
+                        )
+                if (hasClearableContent) {
+                    FloatingActionButton(
+                        onClick = { onAction(MapAction.ClearMap) },
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ) {
+                        Icon(
+                            imageVector = LjIcons.Delete,
+                            contentDescription = "Clear map",
+                        )
+                    }
+                }
                 if (uiState.isRoaming) {
                     FloatingActionButton(
                         onClick = { onAction(MapAction.StopRoaming) },
@@ -302,16 +322,28 @@ internal fun MapScreen(
                 }
                 FloatingActionButton(
                     onClick = {
-                        if (!uiState.isRoaming) {
-                            onAction(MapAction.OpenRoamingSheet)
+                        when {
+                            uiState.isRoamingSheetMinimized -> onAction(MapAction.ExpandRoamingSheet)
+                            !uiState.isRoaming -> onAction(MapAction.OpenRoamingSheet)
                         }
                     },
-                    containerColor = if (uiState.isRoaming) Color(0xFF388E3C) else MaterialTheme.colorScheme.tertiaryContainer,
-                    contentColor = if (uiState.isRoaming) Color.White else MaterialTheme.colorScheme.onTertiaryContainer,
+                    containerColor = when {
+                        uiState.isRoaming -> Color(0xFF388E3C)
+                        uiState.isRoamingSheetMinimized -> MaterialTheme.colorScheme.tertiary
+                        else -> MaterialTheme.colorScheme.tertiaryContainer
+                    },
+                    contentColor = when {
+                        uiState.isRoaming || uiState.isRoamingSheetMinimized -> Color.White
+                        else -> MaterialTheme.colorScheme.onTertiaryContainer
+                    },
                 ) {
                     Icon(
                         imageVector = LjIcons.Explore,
-                        contentDescription = if (uiState.isRoaming) "Roaming active" else "Start roaming",
+                        contentDescription = when {
+                            uiState.isRoaming -> "Roaming active"
+                            uiState.isRoamingSheetMinimized -> "Expand roaming sheet"
+                            else -> "Start roaming"
+                        },
                     )
                 }
                 FloatingActionButton(
@@ -587,14 +619,16 @@ internal fun MapScreen(
     }
 
     val roamingDraft = uiState.roamingDraft
-    if (uiState.showRoamingSheet && roamingDraft != null) {
+    if (uiState.showRoamingSheet && !uiState.isRoamingSheetMinimized && roamingDraft != null) {
         RoamingSheet(
             draft = roamingDraft,
             hasCurrentPosition = uiState.currentPosition != null,
             isSpoofingActive = uiState.isSpoofing,
             speedUnit = uiState.speedUnit,
+            hasPreview = uiState.roamingPreviewWaypoints != null,
             onAction = onAction,
             onGeneratePreview = { onAction(MapAction.GenerateRoamingPreview) },
+            onMinimize = { onAction(MapAction.MinimizeRoamingSheet) },
             onDismiss = { onAction(MapAction.DismissRoamingSheet) },
         )
     }

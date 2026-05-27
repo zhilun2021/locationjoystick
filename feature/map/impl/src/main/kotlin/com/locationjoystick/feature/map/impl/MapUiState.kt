@@ -43,6 +43,7 @@ data class MapUiState(
     val isRoaming: Boolean = false,
     val isRoamingPaused: Boolean = false,
     val roamingPreviewWaypoints: List<LatLng>? = null,
+    val isRoamingSheetMinimized: Boolean = false,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val cooldownState: CooldownState = CooldownState.Ready,
 )

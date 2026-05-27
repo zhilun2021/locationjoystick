@@ -362,12 +362,13 @@ class MapViewModel
                             showRoamingSheet = true,
                             roamingDraft = latestRoamingDefaults,
                             roamingPreviewWaypoints = null,
+                            isRoamingSheetMinimized = false,
                         )
                     }
                 }
 
                 MapAction.DismissRoamingSheet -> {
-                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, roamingPreviewWaypoints = null) }
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, roamingPreviewWaypoints = null, isRoamingSheetMinimized = false) }
                 }
 
                 MapAction.GenerateRoamingPreview -> {
@@ -382,6 +383,32 @@ class MapViewModel
                                 speedProfileId = draft.speedProfileId,
                             )
                         _uiState.update { it.copy(roamingPreviewWaypoints = waypoints) }
+                    }
+                }
+
+                MapAction.MinimizeRoamingSheet -> {
+                    _uiState.update { it.copy(isRoamingSheetMinimized = true) }
+                }
+
+                MapAction.ExpandRoamingSheet -> {
+                    _uiState.update { it.copy(isRoamingSheetMinimized = false) }
+                }
+
+                MapAction.ClearMap -> {
+                    walkCoordinator.cancel()
+                    if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
+                        context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
+                    }
+                    _uiState.update {
+                        it.copy(
+                            pendingTapPosition = null,
+                            walkMode = WalkMode.Idle,
+                            isWalkPaused = false,
+                            roamingPreviewWaypoints = null,
+                            showRoamingSheet = false,
+                            roamingDraft = null,
+                            isRoamingSheetMinimized = false,
+                        )
                     }
                 }
 
@@ -433,7 +460,7 @@ class MapViewModel
                         val config = draft.toConfig(position)
                         roamingRepository.startRoaming(config, speedMs)
                     }
-                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null) }
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, isRoamingSheetMinimized = false) }
                 }
 
                 MapAction.StopRoaming -> {
