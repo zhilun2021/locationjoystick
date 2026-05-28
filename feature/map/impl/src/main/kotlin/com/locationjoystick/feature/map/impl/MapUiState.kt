@@ -44,6 +44,7 @@ data class MapUiState(
     val roamingDraft: RoamingDefaults? = null,
     val isRoaming: Boolean = false,
     val isRoamingPaused: Boolean = false,
+    val isRoamingControlsExpanded: Boolean = false,
     val roamingPreviewWaypoints: List<LatLng>? = null,
     val isRoamingSheetMinimized: Boolean = false,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,

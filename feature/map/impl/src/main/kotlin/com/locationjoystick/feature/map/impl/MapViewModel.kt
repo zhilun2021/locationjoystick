@@ -479,6 +479,7 @@ class MapViewModel
                     viewModelScope.launch {
                         roamingRepository.stopRoaming()
                     }
+                    _uiState.update { it.copy(isRoamingControlsExpanded = false) }
                 }
 
                 MapAction.PauseRoaming -> {
@@ -541,6 +542,10 @@ class MapViewModel
 
                 MapAction.ToggleRouteControls -> {
                     _uiState.update { it.copy(isRouteControlsExpanded = !it.isRouteControlsExpanded) }
+                }
+
+                MapAction.ToggleRoamingControls -> {
+                    _uiState.update { it.copy(isRoamingControlsExpanded = !it.isRoamingControlsExpanded) }
                 }
             }
         }

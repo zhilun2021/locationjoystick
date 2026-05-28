@@ -129,11 +129,35 @@ internal fun MapFabColumn(
             }
         }
 
-        // Roaming — collapsible: compass icon always, pause/resume+stop expand when roaming active
+        // Roaming — collapsible: compass icon always, pause/resume+stop expand to the left when roaming active
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4),
         ) {
+            AnimatedVisibility(visible = uiState.isRoaming && uiState.isRoamingControlsExpanded) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4)) {
+                    MapIconButton(
+                        icon = LjIcons.Stop,
+                        contentDescription = "Stop roaming",
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                        onClick = { onAction(MapAction.StopRoaming) },
+                    )
+                    MapIconButton(
+                        icon = if (uiState.isRoamingPaused) LjIcons.PlayArrow else LjIcons.Pause,
+                        contentDescription = if (uiState.isRoamingPaused) "Resume roaming" else "Pause roaming",
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = {
+                            if (uiState.isRoamingPaused) {
+                                onAction(MapAction.ResumeRoaming)
+                            } else {
+                                onAction(MapAction.PauseRoaming)
+                            }
+                        },
+                    )
+                }
+            }
             MapIconButton(
                 icon = LjIcons.Explore,
                 contentDescription =
@@ -155,36 +179,12 @@ internal fun MapFabColumn(
                     },
                 onClick = {
                     when {
+                        uiState.isRoaming -> onAction(MapAction.ToggleRoamingControls)
                         uiState.isRoamingSheetMinimized -> onAction(MapAction.ExpandRoamingSheet)
-                        !uiState.isRoaming -> onAction(MapAction.OpenRoamingSheet)
+                        else -> onAction(MapAction.OpenRoamingSheet)
                     }
                 },
             )
-
-            AnimatedVisibility(visible = uiState.isRoaming) {
-                Row(horizontalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4)) {
-                    MapIconButton(
-                        icon = if (uiState.isRoamingPaused) LjIcons.PlayArrow else LjIcons.Pause,
-                        contentDescription = if (uiState.isRoamingPaused) "Resume roaming" else "Pause roaming",
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        onClick = {
-                            if (uiState.isRoamingPaused) {
-                                onAction(MapAction.ResumeRoaming)
-                            } else {
-                                onAction(MapAction.PauseRoaming)
-                            }
-                        },
-                    )
-                    MapIconButton(
-                        icon = LjIcons.Stop,
-                        contentDescription = "Stop roaming",
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
-                        onClick = { onAction(MapAction.StopRoaming) },
-                    )
-                }
-            }
         }
 
         // Search — always visible
