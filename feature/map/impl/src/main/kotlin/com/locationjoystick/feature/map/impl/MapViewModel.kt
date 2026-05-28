@@ -368,7 +368,14 @@ class MapViewModel
                 }
 
                 MapAction.DismissRoamingSheet -> {
-                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, roamingPreviewWaypoints = null, isRoamingSheetMinimized = false) }
+                    _uiState.update {
+                        it.copy(
+                            showRoamingSheet = false,
+                            roamingDraft = null,
+                            roamingPreviewWaypoints = null,
+                            isRoamingSheetMinimized = false,
+                        )
+                    }
                 }
 
                 MapAction.GenerateRoamingPreview -> {

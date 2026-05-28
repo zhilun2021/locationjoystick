@@ -282,7 +282,8 @@ internal fun buildLocation(
                 state.jitterMovingRadiusMeters > 0.0 -> {
                 if (state.speedMs > 0f) {
                     gaussianLatLonOffsetLateral(
-                        state.latitude, state.longitude,
+                        state.latitude,
+                        state.longitude,
                         state.jitterMovingRadiusMeters,
                         state.bearing,
                         AppConstants.JitterConstants.LONGITUDINAL_JITTER_FRACTION,
