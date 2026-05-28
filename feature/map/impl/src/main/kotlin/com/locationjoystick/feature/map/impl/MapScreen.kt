@@ -543,9 +543,9 @@ internal fun MapScreen(
                         endpointsSrc.setGeoJson(emptyGeoJson())
                     }
 
-                    // Ephemeral route preview polyline — show roaming preview when the sheet is open
+                    // Ephemeral route preview polyline — show roaming preview when the sheet is open or minimized
                     val displayWaypoints =
-                        if (uiState.showRoamingSheet) {
+                        if (uiState.showRoamingSheet || uiState.isRoamingSheetMinimized) {
                             uiState.roamingPreviewWaypoints ?: emptyList()
                         } else {
                             uiState.ephemeralWaypoints

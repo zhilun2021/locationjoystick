@@ -62,7 +62,7 @@ fun RoamingSheet(
     onDismiss: () -> Unit,
 ) {
     val isMph = speedUnit == SpeedUnit.MPH
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = { if (hasPreview) onMinimize() else onDismiss() }) {
         Column(
             modifier =
                 Modifier

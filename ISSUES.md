@@ -10,7 +10,6 @@ No outstanding documentation issues.
 
 ### UI/UX issues
 
-#### Roaming UX
+#### Walk here via roads
 
-- When roaming is started, the icon should become green, clicking on it expands it like we do for the floating widget route icon when started. it should be treaded like a route so we should be able to start/pause/stop the roaming.
-
+This only walks here via a straight line, however we want to follow the roads similarly to what we do with the routes.
