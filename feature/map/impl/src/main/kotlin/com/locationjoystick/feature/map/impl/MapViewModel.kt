@@ -212,6 +212,7 @@ class MapViewModel
         fun onAction(action: MapAction) {
             when (action) {
                 is MapAction.TapToTeleport -> {
+                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
                     if (_uiState.value.isSpoofing) {
                         _uiState.update { it.copy(pendingTapPosition = action.position) }
                     } else {
@@ -229,10 +230,12 @@ class MapViewModel
                 }
 
                 is MapAction.LongPressTapToWalk -> {
+                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
                     walkTo(action.position)
                 }
 
                 is MapAction.WalkViaRoadsTo -> {
+                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
                     walkViaRoads(action.position)
                 }
 
