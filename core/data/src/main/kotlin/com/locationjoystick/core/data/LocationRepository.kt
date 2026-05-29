@@ -28,7 +28,6 @@ private const val TAG = "LocationRepository"
  * re-derive this by combining [activeRouteId], [walkTarget], and roaming flags individually.
  *
  * Use [isActivityPausable] to know whether the current active mode supports pause/resume.
- * Roaming ([MockMode.ROAMING]) does not support pause; all other active modes do.
  */
 @Singleton
 class LocationRepository
@@ -72,11 +71,10 @@ class LocationRepository
 
         /**
          * True when the current active mode supports pause/resume.
-         * [MockMode.ROAMING] does NOT support pause — only stop is available.
          */
         val isActivityPausable: Flow<Boolean> =
             _currentMode.map { mode ->
-                mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO
+                mode == MockMode.ROUTE_REPLAY || mode == MockMode.WALK_TO || mode == MockMode.ROAMING
             }
 
         fun updatePosition(

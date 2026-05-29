@@ -270,12 +270,14 @@ class FloatingWidgetService :
             val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
             val mockLocationState by locationRepository.mockLocationState.collectAsStateWithLifecycle()
             val isWalkPaused by locationRepository.isWalkPaused.collectAsStateWithLifecycle()
+            val isRoamingPausedWidget by roamingRepository.isRoamingPaused.collectAsStateWithLifecycle(initialValue = false)
             val isActivityPaused =
                 isWalkPaused ||
                     (
                         mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY &&
                             mockLocationState == com.locationjoystick.core.model.MockLocationState.PAUSED
-                    )
+                    ) ||
+                    (mockMode == com.locationjoystick.core.model.MockMode.ROAMING && isRoamingPausedWidget)
             val routeExpanded by routeExpandedFlow.collectAsStateWithLifecycle()
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
 
@@ -478,6 +480,14 @@ class FloatingWidgetService :
                     }
                 } else {
                     startService(MockLocationIntentBuilder.pauseRouteReplay(this@FloatingWidgetService))
+                }
+            }
+
+            com.locationjoystick.core.model.MockMode.ROAMING -> {
+                if (roamingRepository.isRoamingPaused.value) {
+                    serviceScope.launch { roamingRepository.resumeRoaming() }
+                } else {
+                    serviceScope.launch { roamingRepository.pauseRoaming() }
                 }
             }
 

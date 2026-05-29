@@ -547,11 +547,11 @@ class LocationRepositoryTest {
         }
 
     @Test
-    fun `isActivityPausable is false for ROAMING`() =
+    fun `isActivityPausable is true for ROAMING`() =
         runTest {
             repository.setMockMode(MockMode.ROAMING)
             repository.isActivityPausable.test {
-                assertFalse(awaitItem())
+                assertTrue(awaitItem())
                 cancelAndIgnoreRemainingEvents()
             }
         }
