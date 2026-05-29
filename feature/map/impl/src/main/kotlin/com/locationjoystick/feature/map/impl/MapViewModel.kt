@@ -21,7 +21,6 @@ import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
-import com.locationjoystick.core.model.RouteReplayMode
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.toConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -521,7 +520,10 @@ class MapViewModel
                 }
 
                 is MapAction.StartRouteReplay -> {
-                    startRouteReplayWithMode(action.routeId, action.mode)
+                    startRouteReplay(
+                        action.routeId, action.isLooping, action.isReverse,
+                        action.isReturnToLocation, action.teleportToStart,
+                    )
                     _uiState.update { it.copy(showRoutesSheet = false) }
                 }
 
@@ -623,23 +625,27 @@ class MapViewModel
             }
         }
 
-        private fun startRouteReplayWithMode(
+        private fun startRouteReplay(
             routeId: String,
-            mode: RouteReplayMode,
+            isLooping: Boolean = false,
+            isReverse: Boolean = false,
+            isReturnToLocation: Boolean = false,
+            teleportToStart: Boolean = false,
         ) {
             viewModelScope.launch {
                 val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                val isBackward = mode == RouteReplayMode.LOOP_REVERSE
-                val isLooping = mode == RouteReplayMode.LOOP || mode == RouteReplayMode.LOOP_REVERSE
-                val returnPosition =
-                    if (mode == RouteReplayMode.RETURN_TO_LOCATION) {
-                        locationRepository.currentPosition.value
-                    } else {
-                        null
+                val returnPosition = if (isReturnToLocation) locationRepository.currentPosition.value else null
+                if (teleportToStart) {
+                    val route = _uiState.value.routes.find { it.id == routeId }
+                    val waypoints = route?.waypoints
+                    if (!waypoints.isNullOrEmpty()) {
+                        val startWaypoint = if (isReverse) waypoints.last() else waypoints.first()
+                        teleportUseCase.execute(startWaypoint.position)
                     }
+                }
                 val intent =
                     MockLocationIntentBuilder
-                        .startRouteReplay(context, routeId, speedMs, isBackward)
+                        .startRouteReplay(context, routeId, speedMs, isReverse)
                         .apply {
                             putExtra(MockLocationService.EXTRA_IS_LOOPING, isLooping)
                             if (returnPosition != null) {

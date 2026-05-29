@@ -22,11 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -49,7 +49,6 @@ import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.model.FavoriteLocation
-import com.locationjoystick.core.model.RouteReplayMode
 import com.locationjoystick.core.model.WidgetFeature
 
 @Composable
@@ -357,15 +356,17 @@ internal fun FavoritesFloatingView(
 internal fun RoutesFloatingView(
     routes: List<com.locationjoystick.core.model.Route>,
     onDismiss: () -> Unit,
-    onStartWithMode: (routeId: String, RouteReplayMode) -> Unit,
+    onStartRoute: (routeId: String, isLooping: Boolean, isReverse: Boolean, isReturnToLocation: Boolean, teleportToStart: Boolean) -> Unit,
     onCreateFromMap: () -> Unit,
 ) {
+    var selectedRouteId by remember { mutableStateOf<String?>(null) }
+
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.7f))
-                .clickable { onDismiss() },
+                .clickable { if (selectedRouteId != null) selectedRouteId = null else onDismiss() },
     ) {
         Box(
             modifier =
@@ -386,102 +387,131 @@ internal fun RoutesFloatingView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (selectedRouteId != null) {
+                        IconButton(onClick = { selectedRouteId = null }) {
+                            Icon(LjIcons.ArrowBack, contentDescription = "Back", tint = LjText)
+                        }
+                    }
                     Text(
-                        text = "Routes",
+                        text = if (selectedRouteId != null) {
+                            routes.find { it.id == selectedRouteId }?.name ?: "Routes"
+                        } else {
+                            "Routes"
+                        },
                         style = MaterialTheme.typography.titleLarge,
                         color = LjText,
+                        modifier = Modifier.weight(1f),
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
+                    if (selectedRouteId == null) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
+                        }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    if (routes.isEmpty()) {
-                        Text(
-                            text = "No routes saved",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = LjText.copy(alpha = 0.6f),
-                        )
-                    } else {
-                        LazyColumn {
-                            items(routes, key = { it.id }) { route ->
-                                Row(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = route.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = LjText,
-                                        modifier = Modifier.weight(1f),
-                                    )
-                                    var routeMenuExpanded by remember { mutableStateOf(false) }
-                                    Box {
-                                        Button(onClick = { routeMenuExpanded = true }) {
+
+                if (selectedRouteId != null) {
+                    val routeId = selectedRouteId!!
+                    var loop by remember(routeId) { mutableStateOf(false) }
+                    var reverse by remember(routeId) { mutableStateOf(false) }
+                    var returnToLocation by remember(routeId) { mutableStateOf(false) }
+
+                    WidgetCheckboxRow("Loop", loop, enabled = !returnToLocation) { loop = it }
+                    WidgetCheckboxRow("Reverse", reverse) { reverse = it }
+                    WidgetCheckboxRow("Return to location", returnToLocation, enabled = !loop) { returnToLocation = it }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    Button(
+                        onClick = {
+                            onStartRoute(routeId, loop, reverse, returnToLocation && !loop, false)
+                            selectedRouteId = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Walk and start", color = LjText)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            onStartRoute(routeId, loop, reverse, returnToLocation && !loop, true)
+                            selectedRouteId = null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Teleport and start", color = LjText)
+                    }
+                } else {
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (routes.isEmpty()) {
+                            Text(
+                                text = "No routes saved",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = LjText.copy(alpha = 0.6f),
+                            )
+                        } else {
+                            LazyColumn {
+                                items(routes, key = { it.id }) { route ->
+                                    Row(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            text = route.name,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = LjText,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                        Button(onClick = { selectedRouteId = route.id }) {
                                             Icon(LjIcons.PlayArrow, contentDescription = null)
-                                        }
-                                        DropdownMenu(
-                                            expanded = routeMenuExpanded,
-                                            onDismissRequest = { routeMenuExpanded = false },
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Walk route") },
-                                                onClick = {
-                                                    onStartWithMode(route.id, RouteReplayMode.ONE_WAY)
-                                                    routeMenuExpanded = false
-                                                    onDismiss()
-                                                },
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Return to location") },
-                                                onClick = {
-                                                    onStartWithMode(route.id, RouteReplayMode.RETURN_TO_LOCATION)
-                                                    routeMenuExpanded = false
-                                                    onDismiss()
-                                                },
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Loop") },
-                                                onClick = {
-                                                    onStartWithMode(route.id, RouteReplayMode.LOOP)
-                                                    routeMenuExpanded = false
-                                                    onDismiss()
-                                                },
-                                            )
-                                            DropdownMenuItem(
-                                                text = { Text("Loop in reverse") },
-                                                onClick = {
-                                                    onStartWithMode(route.id, RouteReplayMode.LOOP_REVERSE)
-                                                    routeMenuExpanded = false
-                                                    onDismiss()
-                                                },
-                                            )
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                Spacer(Modifier.height(12.dp))
-                Button(
-                    onClick = {
-                        onCreateFromMap()
-                        onDismiss()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(LjIcons.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Create route from map")
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            onCreateFromMap()
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(LjIcons.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Create route from map")
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun WidgetCheckboxRow(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { onCheckedChange(!checked) }
+                .padding(vertical = 4.dp),
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        Text(
+            text = label,
+            color = if (enabled) LjText else LjText.copy(alpha = 0.38f),
+        )
     }
 }
 

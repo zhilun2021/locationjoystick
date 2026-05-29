@@ -431,8 +431,8 @@ class FloatingWidgetService :
                 RoutesFloatingView(
                     routes = routes,
                     onDismiss = { hidePanelView() },
-                    onStartWithMode = { routeId, mode ->
-                        startRouteReplayWithMode(routeId, mode)
+                    onStartRoute = { routeId, isLooping, isReverse, isReturnToLocation, teleportToStart ->
+                        startRouteReplayWithMode(routeId, isLooping, isReverse, isReturnToLocation, teleportToStart)
                         moveAppToBack()
                     },
                     onCreateFromMap = { openRouteCreator() },
@@ -565,23 +565,31 @@ class FloatingWidgetService :
 
     private fun startRouteReplayWithMode(
         routeId: String,
-        mode: com.locationjoystick.core.model.RouteReplayMode,
+        isLooping: Boolean = false,
+        isReverse: Boolean = false,
+        isReturnToLocation: Boolean = false,
+        teleportToStart: Boolean = false,
     ) {
         serviceScope.launch {
             val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-            val isBackward = mode == com.locationjoystick.core.model.RouteReplayMode.LOOP_REVERSE
-            val isLooping =
-                mode == com.locationjoystick.core.model.RouteReplayMode.LOOP ||
-                    mode == com.locationjoystick.core.model.RouteReplayMode.LOOP_REVERSE
-            val returnPosition =
-                if (mode == com.locationjoystick.core.model.RouteReplayMode.RETURN_TO_LOCATION) {
-                    locationRepository.currentPosition.value
-                } else {
-                    null
+            val returnPosition = if (isReturnToLocation) locationRepository.currentPosition.value else null
+            if (teleportToStart) {
+                val route = routeRepository.getRoutes().first().find { it.id == routeId }
+                val waypoints = route?.waypoints
+                if (!waypoints.isNullOrEmpty()) {
+                    val startWaypoint = if (isReverse) waypoints.last() else waypoints.first()
+                    startService(
+                        Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
+                            action = MockLocationService.ACTION_UPDATE_POSITION
+                            putExtra(AppConstants.ServiceConstants.EXTRA_LAT, startWaypoint.position.latitude)
+                            putExtra(AppConstants.ServiceConstants.EXTRA_LON, startWaypoint.position.longitude)
+                        },
+                    )
                 }
+            }
             val intent =
                 MockLocationIntentBuilder
-                    .startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isBackward)
+                    .startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isReverse)
                     .apply {
                         putExtra(MockLocationService.EXTRA_IS_LOOPING, isLooping)
                         if (returnPosition != null) {

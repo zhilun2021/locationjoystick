@@ -1,5 +1,6 @@
 package com.locationjoystick.feature.map.impl
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,13 +32,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.FavoritesList
 import com.locationjoystick.core.model.FavoriteLocation
-import com.locationjoystick.core.model.RouteReplayMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +47,8 @@ internal fun RoutesPickerSheet(
     uiState: MapUiState,
     onAction: (MapAction) -> Unit,
 ) {
+    var selectedRouteId by remember { mutableStateOf<String?>(null) }
+
     ModalBottomSheet(
         onDismissRequest = { onAction(MapAction.CloseRoutesSheet) },
     ) {
@@ -63,7 +68,6 @@ internal fun RoutesPickerSheet(
             } else {
                 LazyColumn {
                     items(uiState.routes, key = { it.id }) { route ->
-                        var menuExpanded by remember { mutableStateOf(false) }
                         Row(
                             modifier =
                                 Modifier
@@ -77,49 +81,24 @@ internal fun RoutesPickerSheet(
                                 style = MaterialTheme.typography.bodyLarge,
                                 modifier = Modifier.weight(1f),
                             )
-                            Box {
-                                Button(onClick = { menuExpanded = true }) {
-                                    Icon(LjIcons.PlayArrow, contentDescription = "Start route")
-                                }
-                                DropdownMenu(
-                                    expanded = menuExpanded,
-                                    onDismissRequest = { menuExpanded = false },
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Walk route") },
-                                        onClick = {
-                                            onAction(MapAction.StartRouteReplay(route.id, RouteReplayMode.ONE_WAY))
-                                            menuExpanded = false
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Return to location") },
-                                        onClick = {
-                                            onAction(MapAction.StartRouteReplay(route.id, RouteReplayMode.RETURN_TO_LOCATION))
-                                            menuExpanded = false
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Loop") },
-                                        onClick = {
-                                            onAction(MapAction.StartRouteReplay(route.id, RouteReplayMode.LOOP))
-                                            menuExpanded = false
-                                        },
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Loop in reverse") },
-                                        onClick = {
-                                            onAction(MapAction.StartRouteReplay(route.id, RouteReplayMode.LOOP_REVERSE))
-                                            menuExpanded = false
-                                        },
-                                    )
-                                }
+                            Button(onClick = { selectedRouteId = route.id }) {
+                                Icon(LjIcons.PlayArrow, contentDescription = "Start route")
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    selectedRouteId?.let { routeId ->
+        StartRouteDialog(
+            onDismiss = { selectedRouteId = null },
+            onStart = { isLooping, isReverse, isReturnToLocation, teleportToStart ->
+                onAction(MapAction.StartRouteReplay(routeId, isLooping, isReverse, isReturnToLocation, teleportToStart))
+                selectedRouteId = null
+            },
+        )
     }
 }
 
@@ -373,4 +352,78 @@ internal fun SaveCurrentLocationDialog(
             }
         },
     )
+}
+
+@Composable
+private fun StartRouteDialog(
+    onDismiss: () -> Unit,
+    onStart: (isLooping: Boolean, isReverse: Boolean, isReturnToLocation: Boolean, teleportToStart: Boolean) -> Unit,
+) {
+    var loop by remember { mutableStateOf(false) }
+    var reverse by remember { mutableStateOf(false) }
+    var returnToLocation by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(shape = RoundedCornerShape(16.dp)) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text("Start route", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(16.dp))
+
+                CheckboxRow(label = "Loop", checked = loop, enabled = !returnToLocation, onCheckedChange = { loop = it })
+                CheckboxRow(label = "Reverse", checked = reverse, onCheckedChange = { reverse = it })
+                CheckboxRow(
+                    label = "Return to location",
+                    checked = returnToLocation,
+                    enabled = !loop,
+                    onCheckedChange = { returnToLocation = it },
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Button(
+                    onClick = { onStart(loop, reverse, returnToLocation && !loop, false) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Walk and start")
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { onStart(loop, reverse, returnToLocation && !loop, true) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Teleport and start")
+                }
+                Spacer(Modifier.height(4.dp))
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("Cancel")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CheckboxRow(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(enabled = enabled) { onCheckedChange(!checked) }
+                .padding(vertical = 4.dp),
+    ) {
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+        Text(
+            text = label,
+            color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+        )
+    }
 }
