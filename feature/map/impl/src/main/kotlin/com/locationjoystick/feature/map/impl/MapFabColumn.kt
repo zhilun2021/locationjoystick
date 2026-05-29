@@ -20,7 +20,10 @@ internal fun MapFabColumn(
     onAction: (MapAction) -> Unit,
     onToggleSearch: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4),
+        horizontalAlignment = Alignment.End,
+    ) {
         if (!isFollowingCamera) {
             LjMapIconButton(
                 icon = LjIcons.MyLocation,
@@ -130,8 +133,8 @@ internal fun MapFabColumn(
                     LjMapIconButton(
                         icon = LjIcons.Stop,
                         contentDescription = "Stop roaming",
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError,
+                        containerColor = Color.Black,
+                        contentColor = MaterialTheme.colorScheme.error,
                         onClick = { onAction(MapAction.StopRoaming) },
                     )
                     LjMapIconButton(
@@ -159,13 +162,14 @@ internal fun MapFabColumn(
                     },
                 containerColor =
                     when {
-                        uiState.isRoaming -> Color(0xFF388E3C)
+                        uiState.isRoaming -> Color.Black
                         uiState.isRoamingSheetMinimized -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.tertiaryContainer
                     },
                 contentColor =
                     when {
-                        uiState.isRoaming || uiState.isRoamingSheetMinimized -> Color.White
+                        uiState.isRoaming -> Color(0xFF388E3C)
+                        uiState.isRoamingSheetMinimized -> Color.White
                         else -> MaterialTheme.colorScheme.onTertiaryContainer
                     },
                 onClick = {
