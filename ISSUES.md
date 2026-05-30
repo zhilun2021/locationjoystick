@@ -6,6 +6,10 @@ No outstanding documentation issues.
 
 ---
 
+## Audit
+
+/thermo-nuclear Audit the last 20 commits in order to make sure there's no bug or regression introduced.
+
 ## False mention in docs
 
 - "No root required" or equivalent shouldn't be set, we need to be rooted for the app to properly work.
