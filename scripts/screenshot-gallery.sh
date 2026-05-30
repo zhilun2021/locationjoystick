@@ -61,20 +61,16 @@ ui_dump() {
 
 # Given UI dump file and a search term (matched against text= or content-desc=),
 # echo the centre point as "X Y" of the first matching node.
+# Uses [^>]* between the text match and bounds= to stay within one XML node
+# (the uiautomator dump is a single line; [^>]* prevents crossing node boundaries).
 bounds_of() {
   local dump="$1" term="$2"
-  local bounds
-  bounds=$(grep -oP "(text|content-desc)=\"[^\"]*${term}[^\"]*\"[^>]*bounds=\"\[\K[0-9,\]\[]*" "$dump" | head -1)
-  if [[ -z "$bounds" ]]; then
-    echo ""
-    return
-  fi
-  local x1 y1 x2 y2
-  x1=$(echo "$bounds" | grep -oP '^\d+')
-  y1=$(echo "$bounds" | grep -oP '^\d+,\K\d+')
-  x2=$(echo "$bounds" | grep -oP '\]\[(\d+)' | grep -oP '\d+')
-  y2=$(echo "$bounds" | grep -oP '\]\[\d+,\K\d+')
-  echo "$(( (x1 + x2) / 2 )) $(( (y1 + y2) / 2 ))"
+  perl -lne '
+    if (/(?:text|content-desc)="[^"]*'"${term}"'[^"]*"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/i) {
+      printf "%d %d\n", int(($1+$3)/2), int(($2+$4)/2);
+      last;
+    }
+  ' "$dump" 2>/dev/null
 }
 
 # Tap a UI element by its visible text or content-desc (case-insensitive substring).
@@ -98,30 +94,22 @@ tap_text() {
 # the semantics tree and would otherwise ambiguate IdleScreen card taps.
 tap_text_below() {
   local text="$1" min_y="$2"
-  local dump match
+  local dump centre x y
   dump=$(ui_dump)
-  match=$(grep -oP "(text|content-desc)=\"[^\"]*${text}[^\"]*\"[^>]*bounds=\"\[\K[0-9,\]\[]*" "$dump" | while IFS= read -r b; do
-    local by1 by2 cy
-    by1=$(echo "$b" | grep -oP '^\d+,\K\d+')
-    by2=$(echo "$b" | grep -oP '\]\[\d+,\K\d+')
-    cy=$(( (by1 + by2) / 2 ))
-    if [[ $cy -ge $min_y ]]; then
-      echo "$b"
-      break
-    fi
-  done | head -1)
+  centre=$(perl -lne '
+    while (/(?:text|content-desc)="[^"]*'"${text}"'[^"]*"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/gi) {
+      my $cy = int(($2+$4)/2);
+      next if $cy < '"${min_y}"';
+      printf "%d %d\n", int(($1+$3)/2), $cy;
+      last;
+    }
+  ' "$dump" 2>/dev/null)
   rm -f "$dump"
-  if [[ -z "$match" ]]; then
+  if [[ -z "$centre" ]]; then
     warn "Could not find \"$text\" below y=$min_y — skipping tap."
     return 1
   fi
-  local x1 y1 x2 y2
-  x1=$(echo "$match" | grep -oP '^\d+')
-  y1=$(echo "$match" | grep -oP '^\d+,\K\d+')
-  x2=$(echo "$match" | grep -oP '\]\[(\d+)' | grep -oP '\d+')
-  y2=$(echo "$match" | grep -oP '\]\[\d+,\K\d+')
-  local x=$(( (x1 + x2) / 2 ))
-  local y=$(( (y1 + y2) / 2 ))
+  read -r x y <<< "$centre"
   log "Tapping \"$text\" at ($x, $y) [y≥$min_y filter]"
   $ADB shell input tap "$x" "$y"
 }
@@ -160,12 +148,15 @@ pause_for_user() {
   echo ""
 }
 
-# Launch the app and land on IdleScreen.
+# Force-stop and restart the app to guarantee a clean IdleScreen landing.
+# --activity-single-top only redelivers the intent; the Compose nav stack stays
+# wherever it was. Force-stop is the only reliable way to reset it.
 go_idle() {
   log "Returning to IdleScreen..."
-  $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" \
-    --activity-clear-top --activity-single-top >/dev/null
-  wait_s 2 "Loading"
+  $ADB shell am force-stop "$PACKAGE"
+  sleep 1
+  $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" >/dev/null
+  wait_s 4 "App starting"
 }
 
 # ── Setup ────────────────────────────────────────────────────────────────────
@@ -179,20 +170,21 @@ if ! $ADB devices | grep -q "device$"; then
 fi
 
 DEVICE_MODEL=$($ADB shell getprop ro.product.model | tr -d '\r')
-SCREEN_SIZE=$($ADB shell wm size | grep -oP '\d+x\d+')
+SCREEN_SIZE=$($ADB shell wm size | awk '{print $NF}')
 log "Device: $DEVICE_MODEL ($SCREEN_SIZE)"
 
 # Screen height for Y-threshold disambiguation of IdleScreen card taps.
-SCREEN_H=$(echo "$SCREEN_SIZE" | grep -oP 'x\K\d+')
+SCREEN_H=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $2}')
 # IdleScreen cards live roughly in the bottom 70% of the display.
 CARD_Y_MIN=$(( SCREEN_H * 30 / 100 ))
 
 # ── 1. Launch app ────────────────────────────────────────────────────────────
 
-log "Launching app..."
-$ADB shell am start -n "${PACKAGE}/${ACTIVITY}" \
-  --activity-clear-top --activity-single-top >/dev/null
-wait_s 3 "App launching"
+log "Launching app (force-stop to clear any saved nav state)..."
+$ADB shell am force-stop "$PACKAGE"
+sleep 1
+$ADB shell am start -n "${PACKAGE}/${ACTIVITY}" >/dev/null
+wait_s 4 "App launching"
 
 dump=$(ui_dump)
 if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
