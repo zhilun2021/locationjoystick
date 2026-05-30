@@ -6,6 +6,10 @@ No outstanding documentation issues.
 
 ---
 
+## False mention in docs
+
+- "No root required" or equivalent shouldn't be set, we need to be rooted for the app to properly work.
+
 ## Pre-Release Plan Audit — Bugs & Precision Gaps (2026-05-30)
 
 ### BUG — Wrong org slug in README "do not touch" zone
