@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # screenshot-gallery.sh
 #
-# Captures Play Store / GitHub gallery screenshots from a connected Android device.
+# Captures wiki / Play Store gallery screenshots from a connected Android device.
 # Re-run any time the app updates. Saves PNGs to ./screenshots/ (or --output DIR).
 #
 # Usage:
@@ -9,11 +9,20 @@
 #   ./scripts/screenshot-gallery.sh --output /tmp/gallery
 #   ./scripts/screenshot-gallery.sh --device emulator-5554
 #
-# Prerequisites: adb in PATH, device connected with USB debugging on.
-# The app must already be installed and past onboarding (permissions granted).
+# Prerequisites:
+#   - adb in PATH, device connected with USB debugging on
+#   - App installed and past onboarding (permissions granted)
+#   - At least one saved route must exist in the app (required for step 10)
 #
 # Overlay screens (joystick + widget) require manual activation — the script
 # will pause and prompt you at those steps.
+#
+# Output files (15 canonical PNGs):
+#   01_idle, 02_map, 03_routes, 04_favorites, 05_settings,
+#   06_map_routes_sheet, 07_map_favorites_sheet, 08_map_roaming_sheet,
+#   09_route_creator, 10_route_detail, 11_map_picker,
+#   12_settings_scrolled, 13_qr_share,
+#   14_joystick_overlay, 15_widget_overlay
 
 set -euo pipefail
 
@@ -54,14 +63,12 @@ ui_dump() {
 # echo the centre point as "X Y" of the first matching node.
 bounds_of() {
   local dump="$1" term="$2"
-  # Extract the bounds attribute from the line containing the term.
   local bounds
   bounds=$(grep -oP "(text|content-desc)=\"[^\"]*${term}[^\"]*\"[^>]*bounds=\"\[\K[0-9,\]\[]*" "$dump" | head -1)
   if [[ -z "$bounds" ]]; then
     echo ""
     return
   fi
-  # bounds format: x1,y1][x2,y2
   local x1 y1 x2 y2
   x1=$(echo "$bounds" | grep -oP '^\d+')
   y1=$(echo "$bounds" | grep -oP '^\d+,\K\d+')
@@ -70,7 +77,7 @@ bounds_of() {
   echo "$(( (x1 + x2) / 2 )) $(( (y1 + y2) / 2 ))"
 }
 
-# Tap a UI element by its visible text (case-insensitive substring).
+# Tap a UI element by its visible text or content-desc (case-insensitive substring).
 tap_text() {
   local text="$1"
   local dump centre x y
@@ -86,6 +93,39 @@ tap_text() {
   $ADB shell input tap "$x" "$y"
 }
 
+# Tap a UI element by text/content-desc, but only match nodes whose vertical
+# centre is at or below min_y. Filters out closed-drawer items that remain in
+# the semantics tree and would otherwise ambiguate IdleScreen card taps.
+tap_text_below() {
+  local text="$1" min_y="$2"
+  local dump match
+  dump=$(ui_dump)
+  match=$(grep -oP "(text|content-desc)=\"[^\"]*${text}[^\"]*\"[^>]*bounds=\"\[\K[0-9,\]\[]*" "$dump" | while IFS= read -r b; do
+    local by1 by2 cy
+    by1=$(echo "$b" | grep -oP '^\d+,\K\d+')
+    by2=$(echo "$b" | grep -oP '\]\[\d+,\K\d+')
+    cy=$(( (by1 + by2) / 2 ))
+    if [[ $cy -ge $min_y ]]; then
+      echo "$b"
+      break
+    fi
+  done | head -1)
+  rm -f "$dump"
+  if [[ -z "$match" ]]; then
+    warn "Could not find \"$text\" below y=$min_y — skipping tap."
+    return 1
+  fi
+  local x1 y1 x2 y2
+  x1=$(echo "$match" | grep -oP '^\d+')
+  y1=$(echo "$match" | grep -oP '^\d+,\K\d+')
+  x2=$(echo "$match" | grep -oP '\]\[(\d+)' | grep -oP '\d+')
+  y2=$(echo "$match" | grep -oP '\]\[\d+,\K\d+')
+  local x=$(( (x1 + x2) / 2 ))
+  local y=$(( (y1 + y2) / 2 ))
+  log "Tapping \"$text\" at ($x, $y) [y≥$min_y filter]"
+  $ADB shell input tap "$x" "$y"
+}
+
 # Press the hardware back button.
 back() { $ADB shell input keyevent KEYCODE_BACK; }
 
@@ -96,10 +136,10 @@ wait_s() {
     printf "\r  %s… %ds " "$msg" "$i"
     sleep 1
   done
-  printf "\r%*s\r" 40 ""   # clear line
+  printf "\r%*s\r" 40 ""
 }
 
-# Capture screen and pull to OUTPUT_DIR/<name>.png
+# Capture screen and pull to OUTPUT_DIR/<name>.png (idempotent overwrite).
 screenshot() {
   local name="$1"
   local dest="$OUTPUT_DIR/${name}.png"
@@ -120,15 +160,12 @@ pause_for_user() {
   echo ""
 }
 
-# Navigate the app drawer to a destination by its label.
-drawer_navigate() {
-  local label="$1"
-  # Open drawer via hamburger (top-left)
-  log "Opening navigation drawer"
-  $ADB shell input tap 60 120
-  wait_s 1 "Drawer opening"
-  tap_text "$label"
-  wait_s 2 "Navigating"
+# Launch the app and land on IdleScreen.
+go_idle() {
+  log "Returning to IdleScreen..."
+  $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" \
+    --activity-clear-top --activity-single-top >/dev/null
+  wait_s 2 "Loading"
 }
 
 # ── Setup ────────────────────────────────────────────────────────────────────
@@ -145,14 +182,18 @@ DEVICE_MODEL=$($ADB shell getprop ro.product.model | tr -d '\r')
 SCREEN_SIZE=$($ADB shell wm size | grep -oP '\d+x\d+')
 log "Device: $DEVICE_MODEL ($SCREEN_SIZE)"
 
-# ── 1. Launch app at IdleScreen ──────────────────────────────────────────────
+# Screen height for Y-threshold disambiguation of IdleScreen card taps.
+SCREEN_H=$(echo "$SCREEN_SIZE" | grep -oP 'x\K\d+')
+# IdleScreen cards live roughly in the bottom 70% of the display.
+CARD_Y_MIN=$(( SCREEN_H * 30 / 100 ))
+
+# ── 1. Launch app ────────────────────────────────────────────────────────────
 
 log "Launching app..."
 $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" \
   --activity-clear-top --activity-single-top >/dev/null
 wait_s 3 "App launching"
 
-# If we land on onboarding, bail out early with a clear message.
 dump=$(ui_dump)
 if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
   rm -f "$dump"
@@ -163,56 +204,150 @@ if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
 fi
 rm -f "$dump"
 
-# ── 2. Map screen ────────────────────────────────────────────────────────────
+# ── 01. IdleScreen ───────────────────────────────────────────────────────────
 
-log "=== MAP ==="
-tap_text "Map"
+log "=== 01 IDLE ==="
+screenshot "01_idle"
+
+# ── 02. Map screen ───────────────────────────────────────────────────────────
+
+log "=== 02 MAP ==="
+# Y-min filter prevents matching the closed drawer "Map" item in the semantics tree.
+tap_text_below "Map" "$CARD_Y_MIN"
 wait_s 3 "Map loading"
-screenshot "01_map"
+screenshot "02_map"
 
-# ── 3. Routes screen ─────────────────────────────────────────────────────────
+# ── 03. Routes screen ────────────────────────────────────────────────────────
 
-log "=== ROUTES ==="
-back
-wait_s 1 "Going back"
-tap_text "Routes"
+log "=== 03 ROUTES ==="
+go_idle
+tap_text_below "Routes" "$CARD_Y_MIN"
 wait_s 2 "Routes loading"
-screenshot "02_routes"
+screenshot "03_routes"
 
-# ── 4. Settings screen ───────────────────────────────────────────────────────
+# ── 04. Favorites screen ─────────────────────────────────────────────────────
 
-log "=== SETTINGS ==="
-back
-wait_s 1 "Going back"
-tap_text "Settings"
+log "=== 04 FAVORITES ==="
+go_idle
+tap_text_below "Favorites" "$CARD_Y_MIN"
+wait_s 2 "Favorites loading"
+screenshot "04_favorites"
+
+# ── 05. Settings screen ──────────────────────────────────────────────────────
+
+log "=== 05 SETTINGS ==="
+go_idle
+tap_text_below "Settings" "$CARD_Y_MIN"
 wait_s 2 "Settings loading"
-screenshot "03_settings"
+screenshot "05_settings"
 
-# Scroll down in settings to capture speed profiles / realism section
-log "Scrolling settings for more content..."
+# ── 06. Map → Routes bottom sheet ────────────────────────────────────────────
+
+log "=== 06 MAP ROUTES SHEET ==="
+go_idle
+tap_text_below "Map" "$CARD_Y_MIN"
+wait_s 3 "Map loading"
+# Use content-desc of the FAB, not the bare label "Routes" which would match the drawer.
+tap_text "open routes"
+wait_s 2 "Routes sheet opening"
+screenshot "06_map_routes_sheet"
+back
+wait_s 1 "Dismissing sheet"
+
+# ── 07. Map → Favorites bottom sheet ─────────────────────────────────────────
+
+log "=== 07 MAP FAVORITES SHEET ==="
+tap_text "open favorites"
+wait_s 2 "Favorites sheet opening"
+screenshot "07_map_favorites_sheet"
+back
+wait_s 1 "Dismissing sheet"
+
+# ── 08. Map → Roaming bottom sheet ───────────────────────────────────────────
+
+log "=== 08 MAP ROAMING SHEET ==="
+tap_text "start roaming"
+wait_s 2 "Roaming sheet opening"
+screenshot "08_map_roaming_sheet"
+back
+wait_s 1 "Dismissing sheet"
+
+# ── 09. Route creator ────────────────────────────────────────────────────────
+
+log "=== 09 ROUTE CREATOR ==="
+go_idle
+tap_text_below "Routes" "$CARD_Y_MIN"
+wait_s 2 "Routes loading"
+tap_text "Add route"
+wait_s 1 "Add menu opening"
+tap_text "from map"
+wait_s 3 "Route creator loading"
+screenshot "09_route_creator"
+back
+wait_s 1 "Returning to Routes"
+
+# ── 10. Route detail ─────────────────────────────────────────────────────────
+
+log "=== 10 ROUTE DETAIL ==="
+pause_for_user "Ensure at least one route exists in the Routes list, then press ENTER."
+# Open the overflow menu on the first visible route and tap Edit.
+tap_text "Menu"
+wait_s 1 "Menu opening"
+tap_text "Edit"
+wait_s 2 "Route detail loading"
+screenshot "10_route_detail"
+back
+wait_s 1 "Returning to Routes"
+
+# ── 11. Map picker (from Favorites add flow) ──────────────────────────────────
+
+log "=== 11 MAP PICKER ==="
+go_idle
+tap_text_below "Favorites" "$CARD_Y_MIN"
+wait_s 2 "Favorites loading"
+tap_text "Add favorite"
+wait_s 1 "Add menu opening"
+tap_text "from map"
+wait_s 3 "Map picker loading"
+screenshot "11_map_picker"
+back
+wait_s 1 "Returning to Favorites"
+
+# ── 12. Settings scrolled ────────────────────────────────────────────────────
+
+log "=== 12 SETTINGS SCROLLED ==="
+go_idle
+tap_text_below "Settings" "$CARD_Y_MIN"
+wait_s 2 "Settings loading"
 $ADB shell input swipe 540 1800 540 600 600
 wait_s 1 "Scrolling"
-screenshot "04_settings_scrolled"
+screenshot "12_settings_scrolled"
 
-# ── 5. Back to IdleScreen ────────────────────────────────────────────────────
+# ── 13. QR share dialog ──────────────────────────────────────────────────────
 
+log "=== 13 QR SHARE ==="
+tap_text "Export"
+wait_s 1 "Export menu opening"
+tap_text "QR"
+wait_s 2 "QR share dialog opening"
+screenshot "13_qr_share"
 back
-wait_s 1 "Going back"
+wait_s 1 "Dismissing QR dialog"
 
-# ── 6. Joystick overlay ──────────────────────────────────────────────────────
+# ── 14. Joystick overlay ─────────────────────────────────────────────────────
 
-log "=== JOYSTICK ==="
-pause_for_user "Start mock location then enable the Floating Joystick in the app.
+log "=== 14 JOYSTICK OVERLAY ==="
+pause_for_user "Start mock location then enable the Floating Joystick.
   The joystick overlay should be visible on screen before you press ENTER.
   Tip: Map screen → start spoofing → enable joystick from widget or drawer."
-screenshot "05_joystick_overlay"
+screenshot "14_joystick_overlay"
 
-# ── 7. Floating widget ───────────────────────────────────────────────────────
+# ── 15. Floating widget ──────────────────────────────────────────────────────
 
-log "=== FLOATING WIDGET ==="
+log "=== 15 FLOATING WIDGET ==="
 pause_for_user "Dismiss the joystick (if open) and enable the Floating Widget instead.
   The widget bubble should be visible on screen before you press ENTER."
-screenshot "06_widget_overlay"
+screenshot "15_widget_overlay"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 
