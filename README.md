@@ -1,15 +1,22 @@
 # locationjoystick
 
-![Build](https://img.shields.io/github/actions/workflow/status/locationjoystick/locationjoystick/release.yml?label=Build&style=flat-square)
+![Build](https://img.shields.io/github/actions/workflow/status/shortcuts/locationjoystick/release.yml?label=Build&style=flat-square)
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 ![minSdk](https://img.shields.io/badge/minSdk-31%20(Android%2012)-green?style=flat-square)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.x-purple?style=flat-square)
 
-No-root mock location app for Android. Spoof GPS anywhere using floating joystick, saved routes, and OSM-powered roaming — without touching system partition.
+Spoof your GPS location on Android — no root required. Point your phone anywhere on the map using a floating joystick, saved routes, or automatic roaming while your other apps keep running normally.
 
----
+## Why locationjoystick?
 
-## Features
+- **Free and open-source** — no subscriptions, no premium tiers, no paywalled features
+- **No root required** — uses Android's official mock location API, works on any unmodified device
+- **Runs in the background** — joystick, widget, and routes all stay active while other apps run in the foreground
+- **Import in seconds** — bring your saved routes from GPS Joystick or YAMLA without starting from scratch
+
+## What can it do?
+
+Here's everything included:
 
 | Feature | Description |
 |---------|-------------|
@@ -31,19 +38,9 @@ No-root mock location app for Android. Spoof GPS anywhere using floating joystic
 
 ---
 
-## What is locationjoystick?
-
-GPS spoofing app built on Android's official mock location API. No root, no Xposed, no system mods. Enable Developer Options, pick locationjoystick as mock location provider → device believes it's wherever you say.
-
-Primary use case: location-based games. Walk saved routes, roam a neighborhood automatically, or nudge position with floating joystick while a game runs in foreground.
-
-Also useful for: privacy (mask real location), QA testing (simulate movement at desk), development (test geofences, location triggers, map features).
-
----
-
 ## Download
 
-Pre-built APKs on [Releases page](https://github.com/locationjoystick/locationjoystick/releases).
+Pre-built APKs on [Releases page](https://github.com/shortcuts/locationjoystick/releases).
 
 Sideload:
 
@@ -108,7 +105,7 @@ make coverage-open   # open HTML in browser
 ### Clone and build
 
 ```bash
-git clone https://github.com/locationjoystick/locationjoystick.git
+git clone https://github.com/shortcuts/locationjoystick.git
 cd locationjoystick
 ./gradlew assembleDebug
 ```
