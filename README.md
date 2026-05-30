@@ -5,12 +5,11 @@
 ![minSdk](https://img.shields.io/badge/minSdk-31%20(Android%2012)-green?style=flat-square)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.x-purple?style=flat-square)
 
-Spoof your GPS location on Android — no root required. Point your phone anywhere on the map using a floating joystick, saved routes, or automatic roaming while your other apps keep running normally.
+Spoof your GPS location on Android. Point your phone anywhere on the map using a floating joystick, saved routes, or automatic roaming while your other apps keep running normally.
 
 ## Why locationjoystick?
 
 - **Free and open-source** — no subscriptions, no premium tiers, no paywalled features
-- **No root required** — uses Android's official mock location API, works on any unmodified device
 - **Runs in the background** — joystick, widget, and routes all stay active while other apps run in the foreground
 - **Import in seconds** — bring your saved routes from GPS Joystick or YAMLA without starting from scratch
 
