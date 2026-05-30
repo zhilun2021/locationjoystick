@@ -6,9 +6,97 @@ No outstanding documentation issues.
 
 ---
 
+## Pre-Release Plan Audit — Bugs & Precision Gaps (2026-05-30)
+
+### BUG — Wrong org slug in README "do not touch" zone
+
+**Severity:** High — broken links on public repo day one.
+
+`## Download` and `## Building` sections (explicitly marked "do not touch" in PLAN.md) both contain `github.com/locationjoystick/locationjoystick`:
+- `https://github.com/locationjoystick/locationjoystick/releases`
+- `git clone https://github.com/locationjoystick/locationjoystick.git`
+
+**Fix:** Deliverable 1 must include a full-file org-slug find-replace (`locationjoystick/locationjoystick` → `shortcuts/locationjoystick`), not just a badge fix. The "do not touch structure/content" constraint is fine; the URL slug is a separate mechanical fix that must cover the whole file.
+
+---
+
+### BUG — `.nojekyll` in wrong directory
+
+**Severity:** High — GitHub Pages will run Jekyll on `docs/`, mangling markdown and possibly failing the build.
+
+PLAN.md places `.nojekyll` at `docs/wiki/.nojekyll`. GitHub Pages only suppresses Jekyll when `.nojekyll` is at the **root of the Pages source**. With source = `docs/`, the file must be at `docs/.nojekyll`. A `.nojekyll` in a subdirectory is silently ignored.
+
+**Fix:** Create `docs/.nojekyll` (not `docs/wiki/.nojekyll`).
+
+---
+
+### BUG — Wiki screenshots not committed to git
+
+**Severity:** High — GitHub Pages serves static files from the repo. If `docs/wiki/screenshots/*.png` are not committed, every `<img>` in the wiki renders as a broken image.
+
+The plan has `screenshots/` listed in the directory structure but never says to commit the files. Screenshot PNGs are binary — they should be committed once captured. `docs/wiki/screenshots/` must be tracked in git (not in `.gitignore`).
+
+**Fix:** After running the expanded screenshot-gallery.sh, explicitly `git add docs/wiki/screenshots/` and commit before pushing.
+
+---
+
+### BUG — Screenshot script: ambiguous `tap_text` for nav card labels
+
+**Severity:** Medium — same root cause as the smoke test disambiguation fixes in ISSUES.md above.
+
+`ModalNavigationDrawer` includes drawer items in the Compose semantics tree even when closed. `tap_text("Map")` / `tap_text("Routes")` / `tap_text("Settings")` will find two matching nodes (drawer item + IdleScreen card) and hit whichever comes first in the dump — likely the drawer item, navigating incorrectly.
+
+Current script already has this bug for the 6 existing shots. Deliverable 4 must fix it: use the IdleScreen card bounds (bottom half of screen) via coordinate filtering, or use unique card subtitles/descriptions that don't appear in the drawer.
+
+---
+
+### BUG — Screenshot step 10 (`10_route_detail`) requires pre-existing route
+
+**Severity:** Medium — if routes list is empty, `tap_text("Menu")` finds nothing and the script errors or silently skips.
+
+Plan says "from Routes, open existing route detail" with no seeding step. On a fresh install past onboarding, routes list is empty.
+
+**Fix:** Add a route-creation step before step 10, or add a `pause_for_user` gate: "Ensure at least one route exists in the Routes list, then press ENTER." Document this prerequisite in the script header.
+
+---
+
+### PRECISION — README feature table row count
+
+PLAN.md says "Keep existing feature table (19 rows)". Actual table has **14 rows**. Not a blocker, but the count is wrong throughout the plan — update to 14 so the constraint is checkable.
+
+---
+
+### PRECISION — Map FAB content descriptions in screenshot script
+
+PLAN.md says to open bottom sheets by tapping FAB labels "Routes", "Favorites", "Roaming". The `tap_text` helper matches both `text=` and `content-desc=` attributes.
+
+From MapSmokeTest, the verified FAB content descriptions are:
+- `"open routes"` (not "Routes")
+- `"open favorites"` (not "Favorites")
+- `"start roaming"` (not "Roaming")
+
+Script must use these exact strings or `tap_text` will fail to find the elements.
+
+---
+
+### PRECISION — Deliverable 2 is completing an existing skeleton, not writing from scratch
+
+`docs/reddit-post.md` already exists (in git as untracked). It has the title, disclaimer, hook, credibility, GPS Joystick/YAMLA comparison, and outro — but beat 5 (feature highlights) is an empty `- ` bullet. The Play Store link is a broken empty href `[on the play store]()`.
+
+Two explicit fixups required:
+1. Replace the empty `- ` bullet with 8–10 plain-language feature bullets.
+2. Replace `[on the play store]()` with `[coming soon]` (plain text, no href — not an anchor tag with placeholder).
+
+Plan should say "complete the existing skeleton" not "write docs/reddit-post.md".
+
+---
+
 ## Backlog
 
 ### UI/UX issues
+
+- Send a small notification when a "walk to" or "route" or "roaming" have been finished, similar UX to the settings saved one.
+- Floating widget -> map -> roaming -> app crashes (only the floating widget it seems, spoof continues) and we are back at the initial location of the spoof session. this create multiple issues outside of the crash: we are not actively saving the last position, this could trigger the anti cheat behavior of certain app after crashes. it also highlights the fact that our smoke test don't properly assert the floating widget.
 
 ---
 
