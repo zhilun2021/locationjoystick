@@ -3,6 +3,7 @@ package com.locationjoystick.app.smoke
 import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import com.locationjoystick.app.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -33,7 +34,7 @@ class MainActivityIntentTest {
             )
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Map").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
     }
 
     @Test
@@ -45,6 +46,6 @@ class MainActivityIntentTest {
             )
         }
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("New route").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Search location").assertIsDisplayed()
     }
 }

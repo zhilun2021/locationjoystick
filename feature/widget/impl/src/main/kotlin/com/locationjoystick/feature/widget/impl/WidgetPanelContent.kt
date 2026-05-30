@@ -393,11 +393,12 @@ internal fun RoutesFloatingView(
                         }
                     }
                     Text(
-                        text = if (selectedRouteId != null) {
-                            routes.find { it.id == selectedRouteId }?.name ?: "Routes"
-                        } else {
-                            "Routes"
-                        },
+                        text =
+                            if (selectedRouteId != null) {
+                                routes.find { it.id == selectedRouteId }?.name ?: "Routes"
+                            } else {
+                                "Routes"
+                            },
                         style = MaterialTheme.typography.titleLarge,
                         color = LjText,
                         modifier = Modifier.weight(1f),

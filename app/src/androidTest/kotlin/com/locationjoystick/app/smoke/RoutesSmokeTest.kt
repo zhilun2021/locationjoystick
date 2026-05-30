@@ -1,19 +1,23 @@
 package com.locationjoystick.app.smoke
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
 import com.locationjoystick.core.model.Waypoint
+import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import javax.inject.Inject
 
+@HiltAndroidTest
 class RoutesSmokeTest : BaseSmokeTest() {
     @Inject lateinit var routeRepository: RouteRepository
 
@@ -43,26 +47,31 @@ class RoutesSmokeTest : BaseSmokeTest() {
 
     @Test
     fun routes_screen_loads() {
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
     }
 
     @Test
     fun seeded_route_is_visible() {
-        composeRule.onNodeWithText("Smoke Test Route").assertIsDisplayed()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Smoke Test Route", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Smoke Test Route", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
-    fun replay_mode_dropdown_shows_all_options() {
+    fun start_route_dialog_shows_all_options() {
         composeRule.onNodeWithContentDescription("Start route").performClick()
-        composeRule.onNodeWithText("Walk route").assertIsDisplayed()
-        composeRule.onNodeWithText("Return to location").assertIsDisplayed()
+        composeRule.waitForIdle()
         composeRule.onNodeWithText("Loop").assertIsDisplayed()
-        composeRule.onNodeWithText("Loop in reverse").assertIsDisplayed()
+        composeRule.onNodeWithText("Reverse").assertIsDisplayed()
+        composeRule.onNodeWithText("Return to location").assertIsDisplayed()
+        composeRule.onNodeWithText("Walk and start").assertIsDisplayed()
+        composeRule.onNodeWithText("Teleport and start").assertIsDisplayed()
     }
 
     @Test
     fun route_overflow_menu_shows_edit_export_delete() {
-        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.onNodeWithContentDescription("Menu").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Edit").assertIsDisplayed()
         composeRule.onNodeWithText("Export").assertIsDisplayed()

@@ -5,9 +5,11 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
 
+@HiltAndroidTest
 class AboutSmokeTest : BaseSmokeTest() {
     @Before
     override fun setup() {
@@ -18,7 +20,7 @@ class AboutSmokeTest : BaseSmokeTest() {
 
     @Test
     fun about_screen_loads() {
-        composeRule.onNodeWithText("About").assertIsDisplayed()
+        composeRule.onNodeWithText("Credits").assertIsDisplayed()
     }
 
     @Test
@@ -31,7 +33,7 @@ class AboutSmokeTest : BaseSmokeTest() {
     @Test
     fun about_shows_app_name_and_version() {
         composeRule.onNodeWithText("locationjoystick").assertIsDisplayed()
-        composeRule.onNodeWithText("v", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Open source Android mock GPS app", substring = true).assertIsDisplayed()
     }
 
     @Test

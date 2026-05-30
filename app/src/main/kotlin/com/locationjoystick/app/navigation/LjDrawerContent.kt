@@ -16,6 +16,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.locationjoystick.app.ABOUT_ROUTE
@@ -34,7 +36,7 @@ fun LjDrawerContent(
 ) {
     val scope = rememberCoroutineScope()
 
-    ModalDrawerSheet(modifier = Modifier.widthIn(max = 320.dp)) {
+    ModalDrawerSheet(modifier = Modifier.widthIn(max = 320.dp).semantics { testTag = "nav_drawer" }) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.End,

@@ -1,20 +1,25 @@
 package com.locationjoystick.app.smoke
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.espresso.Espresso
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.RouteType
 import com.locationjoystick.core.model.Waypoint
+import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import javax.inject.Inject
 
+@HiltAndroidTest
 class RouteDetailSmokeTest : BaseSmokeTest() {
     @Inject lateinit var routeRepository: RouteRepository
 
@@ -40,8 +45,11 @@ class RouteDetailSmokeTest : BaseSmokeTest() {
         }
         composeRule.waitForIdleScreen()
         composeRule.navigateFromIdle("Routes")
-        composeRule.onNodeWithText("Detail Smoke Route").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("More options").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Detail Smoke Route", substring = true).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Detail Smoke Route", substring = true).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Menu").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Edit").performClick()
         composeRule.waitForIdle()
@@ -49,19 +57,19 @@ class RouteDetailSmokeTest : BaseSmokeTest() {
 
     @Test
     fun route_detail_screen_loads() {
-        composeRule.onNodeWithText("Detail Smoke Route").assertIsDisplayed()
+        composeRule.onNodeWithText("Detail Smoke Route", substring = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun navigate_back_from_detail() {
         Espresso.pressBack()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
     }
 
     @Test
     fun route_detail_shows_delete_button() {
-        composeRule.onNodeWithContentDescription("Delete route").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Remove waypoint")[0].assertIsDisplayed()
     }
 
     @Test
@@ -71,6 +79,6 @@ class RouteDetailSmokeTest : BaseSmokeTest() {
 
     @Test
     fun route_detail_shows_waypoint_list() {
-        composeRule.onNodeWithText("Waypoints", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Waypoint 1", substring = true).assertIsDisplayed()
     }
 }

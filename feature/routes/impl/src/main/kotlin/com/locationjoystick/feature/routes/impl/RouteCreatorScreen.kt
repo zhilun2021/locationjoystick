@@ -131,7 +131,11 @@ internal fun RouteCreatorScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val mapView = remember { MapView(context) }
+    val mapView =
+        remember {
+            MapLibre.getInstance(context)
+            MapView(context)
+        }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val segmentsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val waypointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }

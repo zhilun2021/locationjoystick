@@ -1,12 +1,18 @@
 package com.locationjoystick.app.smoke
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
 
+@HiltAndroidTest
 class IdleSmokeTest : BaseSmokeTest() {
     @Before
     override fun setup() {
@@ -22,11 +28,12 @@ class IdleSmokeTest : BaseSmokeTest() {
     @Test
     fun drawer_opens_and_shows_items() {
         composeRule.openDrawer()
-        composeRule.onNodeWithText("Map").assertIsDisplayed()
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
-        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
-        composeRule.onNodeWithText("Settings").assertIsDisplayed()
-        composeRule.onNodeWithText("About").assertIsDisplayed()
+        listOf("Map", "Routes", "Favorites", "Settings", "About").forEach { label ->
+            composeRule
+                .onAllNodesWithText(label)
+                .filterToOne(hasAnyAncestor(hasTestTag("nav_drawer")))
+                .assertIsDisplayed()
+        }
     }
 
     @Test
@@ -40,60 +47,60 @@ class IdleSmokeTest : BaseSmokeTest() {
     @Test
     fun navigate_to_map_via_card() {
         composeRule.navigateFromIdle("Map")
-        composeRule.onNodeWithText("Map").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_routes_via_card() {
         composeRule.navigateFromIdle("Routes")
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_favorites_via_card() {
         composeRule.navigateFromIdle("Favorites")
-        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_settings_via_card() {
         composeRule.navigateFromIdle("Settings")
-        composeRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeRule.onNodeWithText("Speed Profiles").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_about_via_card() {
         composeRule.navigateFromIdle("About")
-        composeRule.onNodeWithText("About").assertIsDisplayed()
+        composeRule.onNodeWithText("Credits").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_map_via_drawer() {
         composeRule.navigateViaDrawer("Map")
-        composeRule.onNodeWithText("Map").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_settings_via_drawer() {
         composeRule.navigateViaDrawer("Settings")
-        composeRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeRule.onNodeWithText("Speed Profiles").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_routes_via_drawer() {
         composeRule.navigateViaDrawer("Routes")
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_favorites_via_drawer() {
         composeRule.navigateViaDrawer("Favorites")
-        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
     }
 
     @Test
     fun navigate_to_about_via_drawer() {
         composeRule.navigateViaDrawer("About")
-        composeRule.onNodeWithText("About").assertIsDisplayed()
+        composeRule.onNodeWithText("Credits").assertIsDisplayed()
     }
 }

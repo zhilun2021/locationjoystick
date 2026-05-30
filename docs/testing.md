@@ -32,15 +32,16 @@ Covers every nav path in `LjNavHost`:
 | File | What it asserts |
 |------|----------------|
 | `IdleSmokeTest` | Idle loads; drawer open/close; all 5 cards navigate; Map + Settings + Routes + Favorites + About via drawer |
-| `MapSmokeTest` | Map loads; hamburger opens drawer |
-| `FavoritesSmokeTest` | Favorites loads; seeded item visible; "Add options → from map" reaches `MapPickerScreen` |
-| `RoutesSmokeTest` | Routes loads; seeded route visible |
-| `RouteCreatorSmokeTest` | Creator loads via FAB; back returns to Routes |
-| `RouteDetailSmokeTest` | Detail loads via overflow Edit; back returns to Routes |
-| `SettingsSmokeTest` | Settings loads; speed unit toggle; export button |
-| `AboutSmokeTest` | About loads; back returns to Idle |
+| `MapSmokeTest` | Map loads; hamburger opens drawer; all 5 always-visible FABs present (start simulation, favorites, routes, roaming, search) |
+| `FavoritesSmokeTest` | Favorites loads; seeded item visible; "Add favorite" → from map reaches MapPicker (checks search FAB); back from MapPicker returns to Favorites; from coordinates sheet opens; item menu shows Edit/Delete |
+| `RoutesSmokeTest` | Routes loads ("Add route" FAB visible); seeded route visible (waitUntil async); start route dialog shows Loop/Reverse/Return/Walk+Teleport; overflow menu shows Edit/Export/Delete |
+| `RouteCreatorSmokeTest` | Creator loads via "Add route" → "from map"; search/undo/favorites FABs visible; back returns to Routes |
+| `RouteDetailSmokeTest` | Detail loads via overflow "Menu" → Edit (waitUntil route visible); back returns to Routes; delete button, name field, waypoint list visible |
+| `SettingsSmokeTest` | Settings loads; speed unit toggle; export/import icon buttons visible; export dropdown shows QR + file options; import dropdown shows QR + file + GPS Joystick + YAMLA; all section headers visible |
+| `AboutSmokeTest` | About loads; back returns to Idle; version, credits, license, links, privacy sections visible |
+| `MainActivityIntentTest` | Intent with EXTRA_NAVIGATE_TO_MAP lands on Map; intent with EXTRA_NAVIGATE_TO_ROUTE_CREATOR lands on creator |
 
-Helpers in `SmokeTestHelpers.kt`: `skipOnboarding()`, `openDrawer()`, `navigateViaDrawer()`, `navigateFromIdle()`.
+Helpers in `SmokeTestHelpers.kt`: `waitForIdleScreen()`, `openDrawer()`, `navigateViaDrawer()`, `navigateFromIdle()`.
 
 ## Unit Tests (`:core:*`)
 

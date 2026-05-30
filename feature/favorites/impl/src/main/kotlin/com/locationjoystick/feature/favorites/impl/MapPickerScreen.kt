@@ -103,7 +103,11 @@ internal fun MapPickerScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val mapView = remember { MapView(context) }
+    val mapView =
+        remember {
+            MapLibre.getInstance(context)
+            MapView(context)
+        }
     val mapRef = remember { mutableStateOf<MapLibreMap?>(null) }
     val markerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val selectedPosition = remember { mutableStateOf<Pair<Double, Double>?>(null) }

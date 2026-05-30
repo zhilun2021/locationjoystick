@@ -16,7 +16,12 @@ All constants → `:core:common/constants/AppConstants.kt`.
 | `OsrmConstants` | Base URL, endpoint paths |
 | `MapConstants` | Default lat/lon |
 | `NominatimConstants` | Search endpoint |
-| `ExportConstants` | Schema version, MIME type |
+| `ExportConstants` | Schema version, MIME type, GPX MIME type, GPX version/creator, max GPX import size |
+| `CooldownConstants` | Walk-to and teleport cooldown durations |
+| `UnitConversionConstants` | Speed/distance unit conversion factors |
+| `MapColorConstants` | Map active button color, route colors |
+| `AnimationConstants` | Spring damping ratio, stiffness values for nav transitions |
+| `TimeConstants` | Time-related constants |
 | `NotificationConstants` | Channel IDs |
 | `ServiceConstants` | Service action strings |
 | `DataStoreConstants` | DataStore preference keys |

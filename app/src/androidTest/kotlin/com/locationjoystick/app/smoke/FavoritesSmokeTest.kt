@@ -4,13 +4,16 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.espresso.Espresso
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.model.LatLng
+import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import javax.inject.Inject
 
+@HiltAndroidTest
 class FavoritesSmokeTest : BaseSmokeTest() {
     @Inject lateinit var favoriteRepository: FavoriteRepository
 
@@ -30,7 +33,7 @@ class FavoritesSmokeTest : BaseSmokeTest() {
 
     @Test
     fun favorites_screen_loads() {
-        composeRule.onNodeWithText("Favorites").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
     }
 
     @Test
@@ -40,17 +43,16 @@ class FavoritesSmokeTest : BaseSmokeTest() {
 
     @Test
     fun navigate_to_map_picker() {
-        composeRule.onNodeWithContentDescription("Add options").performClick()
+        composeRule.onNodeWithContentDescription("Add favorite").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("from map").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Pick Location").assertIsDisplayed()
-        composeRule.onNodeWithText("Search", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Search location").assertIsDisplayed()
     }
 
     @Test
     fun add_dropdown_shows_all_three_options() {
-        composeRule.onNodeWithContentDescription("Add options").performClick()
+        composeRule.onNodeWithContentDescription("Add favorite").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("from map").assertIsDisplayed()
         composeRule.onNodeWithText("from coordinates").assertIsDisplayed()
@@ -63,5 +65,27 @@ class FavoritesSmokeTest : BaseSmokeTest() {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Edit").assertIsDisplayed()
         composeRule.onNodeWithText("Delete").assertIsDisplayed()
+    }
+
+    @Test
+    fun navigate_back_from_map_picker() {
+        composeRule.onNodeWithContentDescription("Add favorite").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("from map").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Pick Location").assertIsDisplayed()
+        Espresso.pressBack()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
+    }
+
+    @Test
+    fun from_coordinates_dialog_opens() {
+        composeRule.onNodeWithContentDescription("Add favorite").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("from coordinates").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Latitude", substring = true).assertIsDisplayed()
+        composeRule.onNodeWithText("Longitude", substring = true).assertIsDisplayed()
     }
 }

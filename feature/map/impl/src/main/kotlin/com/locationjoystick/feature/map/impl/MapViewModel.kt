@@ -521,8 +521,11 @@ class MapViewModel
 
                 is MapAction.StartRouteReplay -> {
                     startRouteReplay(
-                        action.routeId, action.isLooping, action.isReverse,
-                        action.isReturnToLocation, action.teleportToStart,
+                        action.routeId,
+                        action.isLooping,
+                        action.isReverse,
+                        action.isReturnToLocation,
+                        action.teleportToStart,
                     )
                     _uiState.update { it.copy(showRoutesSheet = false) }
                 }

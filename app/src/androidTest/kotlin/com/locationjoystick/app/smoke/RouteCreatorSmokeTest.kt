@@ -5,29 +5,33 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso
+import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
 import org.junit.Test
 
+@HiltAndroidTest
 class RouteCreatorSmokeTest : BaseSmokeTest() {
     @Before
     override fun setup() {
         super.setup()
         composeRule.waitForIdleScreen()
         composeRule.navigateFromIdle("Routes")
-        composeRule.onNodeWithContentDescription("New route").performClick()
+        composeRule.onNodeWithContentDescription("Add route").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("from map").performClick()
         composeRule.waitForIdle()
     }
 
     @Test
     fun route_creator_screen_loads() {
-        composeRule.onNodeWithText("New route").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Search location").assertIsDisplayed()
     }
 
     @Test
     fun navigate_back_from_creator() {
         Espresso.pressBack()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Routes").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
     }
 
     @Test
@@ -41,12 +45,12 @@ class RouteCreatorSmokeTest : BaseSmokeTest() {
     }
 
     @Test
-    fun route_creator_shows_save_route_button() {
-        composeRule.onNodeWithText("Save Route").assertIsDisplayed()
+    fun route_creator_shows_favorites_button() {
+        composeRule.onNodeWithContentDescription("Pick from favorites").assertIsDisplayed()
     }
 
     @Test
-    fun route_creator_shows_route_type() {
-        composeRule.onNodeWithText("Straight", substring = true).assertIsDisplayed()
+    fun route_creator_shows_title() {
+        composeRule.onNodeWithText("Create Route").assertIsDisplayed()
     }
 }

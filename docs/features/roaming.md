@@ -2,7 +2,7 @@
 
 Set a center, radius, and distance. Walks randomly within the radius. Configured via bottom sheet on the Map screen.
 
-Key files: `:core:routing/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:core:data/RoamingRepository.kt`, `:feature:map:impl/RoamingSheet.kt`, `:feature:map:impl/MapViewModel.kt`
+Key files: `:core:routing/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:core:data/RoamingRepository.kt`, `:feature:map:impl/MapBottomSheets.kt`, `:feature:map:impl/MapViewModel.kt`
 
 ## Modes
 

@@ -13,6 +13,8 @@ Key files: `:feature:routes:impl/RoutesScreen.kt`, `:feature:routes:impl/RouteCr
 
 `RouteEntity` + `WaypointEntity` one-to-many. Waypoints: `routeId`, `lat`, `lon`, `orderIndex`. Query via `@Transaction @Query` → `Flow<RouteWithWaypoints>`.
 
+Routes can also be imported from GPX files via the Routes screen overflow menu → "Import GPX". Max file size: 10 MB. Parsed and saved as `RouteType.STRAIGHT` routes.
+
 ## Replay
 
 - Interpolate waypoints at speed (m/s).

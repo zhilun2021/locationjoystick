@@ -26,8 +26,27 @@ Schema version: `AppConstants.ExportConstants.SCHEMA_VERSION`.
 
 All I/O runs on `Dispatchers.IO`.
 
+## GPX Import (Routes only)
+
+Routes can be imported from GPX files via the Routes screen overflow menu → "Import GPX".
+
+- File picker with `application/gpx+xml` MIME type.
+- Max file size: `AppConstants.ExportConstants.MAX_GPX_IMPORT_SIZE_BYTES` (10 MB).
+- Parsed and saved as `RouteType.STRAIGHT` routes.
+
+## Third-Party Imports
+
+Settings screen → Import icon → dropdown menu offers:
+
+- **Import from GPS Joystick** — imports routes from GPS Joystick app format.
+- **Import from YAMLA** — imports routes from YAMLA JSON format.
+
+All imported routes are saved as `RouteType.STRAIGHT` segments.
+
 ## Edge Cases
 
 - Malformed JSON → show "Invalid file" error.
 - Missing fields → use `@SerialName` defaults.
 - Skip confirmation on fresh install (empty DB).
+- GPX file exceeds max size → show "File too large" error.
+- Invalid third-party format → show "Invalid file" error.

@@ -17,14 +17,14 @@ No-root mock location app for Android. Spoof GPS anywhere using floating joystic
 | **Last Position** | Restores last spoofed location on app restart. No manual re-entry needed. |
 | **Joystick** | Floating overlay stays on top of any app. Drag to move in any direction at chosen speed. Draggable anywhere on screen. |
 | **Speed Profiles** | Walk / Run / Bike presets, all user-editable. Anti-cheat warning when speed exceeds threshold. Accessible from floating widget. |
-| **Routes** | Create waypoints on map → polyline. Two types: **straight** (direct segments) and **guided** (OSRM road-following). Save, edit, replay, loop, or record in real time. |
+| **Routes** | Create waypoints on map → polyline. Two types: **straight** (direct segments) and **guided** (OSRM road-following). Save, edit, replay, loop, or record in real time. Import from GPX files. |
 | **Roaming** | Set center, radius, duration. Auto-walks randomly within radius. Optional road-following via OSRM. Configured via bottom sheet on Map screen. |
 | **Favorites** | Save named map positions. Instantly teleport or walk to any. Add via inline dialog or MapPicker with Nominatim search. |
 | **Floating Widget** | Configurable quick-access panel floats over other apps. Collapsible FAB → expanded panel with user-selected controls. |
 | **Click-to-Move** | Long-press map → "Walk here" or "Teleport here". Walk advances at current speed; teleport jumps instantly. |
 | **QR Transfer** | Share or import config between devices via QR codes. Export splits into scannable chunks; import scans and reassembles. |
 | **GPS Realism** | Makes spoofed GPS indistinguishable from a real chip. Toggle per-feature: bearing hold when stationary, realistic altitude drift, warm-up accuracy envelope (converges over 30 s), satellite count in fix (7–14), and natural signal dropouts (auto-paused during route replay and walk-to). All off by default; enable selectively in Settings. |
-| **Import/Export** | All data to/from JSON (routes, favorites, speed profiles, widget config, roaming defaults, jitter settings). |
+| **Import/Export** | All data to/from JSON (routes, favorites, speed profiles, widget config, roaming defaults, jitter settings). Route import also supports GPX, GPS Joystick, and YAMLA formats. |
 | **Background Service** | Spoofs while minimized or screen off via foreground service. Low-priority notification. |
 | **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
 | **About** | App version, GitHub, privacy policy, and open-source credits. Accessible from home screen and navigation drawer. |
@@ -183,6 +183,7 @@ Each feature split into `:api` (public contract) + `:impl` (implementation).
 | `:core:designsystem` | Design tokens, theme, typography, shared components |
 | `:core:location` | Mock GPS foreground service + movement engine |
 | `:core:model` | Pure Kotlin domain data classes |
+| `:core:map` | GeoJSON utils, MapLibre lifecycle bridge, style extensions |
 | `:core:overlay` | Shared WindowManager overlay utilities |
 | `:core:routing` | OSRM client, route interpolation, roaming engine, replay engine |
 | `:core:testing` | Shared test utilities, fakes |
