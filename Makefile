@@ -14,6 +14,9 @@ clean:
 build:
 	./gradlew assembleRelease
 
+bundle:
+	./gradlew bundleRelease
+
 format:
 	ktlint --format
 

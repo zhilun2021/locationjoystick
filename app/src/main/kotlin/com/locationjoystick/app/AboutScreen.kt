@@ -147,9 +147,18 @@ internal fun AboutScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No data is collected or transmitted. All settings, routes, and favorites are stored locally on your device.",
+                text =
+                    "App data (routes, favorites, settings) is stored locally on your device. " +
+                        "This app uses Google AdMob for advertising, which may collect device identifiers for ad personalisation.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Privacy Policy",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth().clickable { openUrl(AppConstants.AppInfo.PRIVACY_POLICY_URL) },
             )
 
             Spacer(modifier = Modifier.height(40.dp))

@@ -200,6 +200,19 @@
 }
 
 # -----------------------------------------------------------------------------
+# Google Mobile Ads (AdMob) / GMS
+# -----------------------------------------------------------------------------
+-keep class com.google.android.gms.ads.** { *; }
+-keep interface com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.** { *; }
+-dontwarn com.google.android.gms.ads.**
+-keep class com.google.android.gms.common.** { *; }
+-dontwarn com.google.android.gms.common.**
+# UMP (User Messaging Platform)
+-keep class com.google.android.ump.** { *; }
+-dontwarn com.google.android.ump.**
+
+# -----------------------------------------------------------------------------
 # Suppress noisy warnings from transitive dependencies
 # -----------------------------------------------------------------------------
 -dontwarn java.lang.invoke.**

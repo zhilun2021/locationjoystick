@@ -197,11 +197,14 @@ fun SettingsRoute(
         )
     }
 
+    val qrScanProgress by viewModel.qrScanProgress.collectAsStateWithLifecycle()
+
     if (showQrScanner) {
         QrScannerScreen(
             onChunkScanned = viewModel::onChunkScanned,
             onPermissionDenied = { showQrScanner = false },
             onNavigateBack = { showQrScanner = false },
+            scanProgress = qrScanProgress,
         )
         return
     }

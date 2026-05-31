@@ -44,6 +44,7 @@ okhttp = "4.12.0"
 
 # Ads
 play-services-ads = "23.6.0"
+ump = "3.0.0"
 
 # QR Code & Camera
 zxing = "3.5.3"
@@ -119,6 +120,7 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }
 
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "play-services-ads" }
+user-messaging-platform = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
 
 # QR Code & Camera
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }

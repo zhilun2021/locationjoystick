@@ -69,6 +69,7 @@ private fun QrScannerScreenPreview() {
         onChunkScanned = {},
         onPermissionDenied = {},
         onNavigateBack = {},
+        scanProgress = null,
     )
 }
 
@@ -77,6 +78,7 @@ fun QrScannerScreen(
     onChunkScanned: (ChunkEnvelope) -> Unit,
     onPermissionDenied: () -> Unit,
     onNavigateBack: () -> Unit,
+    scanProgress: Pair<Int, Int>? = null,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -177,9 +179,16 @@ fun QrScannerScreen(
                 Modifier
                     .align(Alignment.TopCenter)
                     .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val label =
+                if (scanProgress != null) {
+                    "Chunk ${scanProgress.first}/${scanProgress.second} received — scan next QR code"
+                } else {
+                    "Point camera at QR code"
+                }
             Text(
-                "Point camera at QR code",
+                label,
                 modifier =
                     Modifier
                         .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))

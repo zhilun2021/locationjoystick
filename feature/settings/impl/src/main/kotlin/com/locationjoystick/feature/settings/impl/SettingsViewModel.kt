@@ -58,6 +58,9 @@ class SettingsViewModel
         private val _qrImportReady = MutableSharedFlow<ExportData>(extraBufferCapacity = 1)
         val qrImportReady: SharedFlow<ExportData> = _qrImportReady
 
+        private val _qrScanProgress = MutableStateFlow<Pair<Int, Int>?>(null)
+        val qrScanProgress: StateFlow<Pair<Int, Int>?> = _qrScanProgress.asStateFlow()
+
         internal val qrChunksReady = MutableSharedFlow<QrChunker.ChunkResult>(extraBufferCapacity = 1)
 
         internal val userFeedback = MutableSharedFlow<UserFeedback>(extraBufferCapacity = 1)
@@ -521,23 +524,30 @@ class SettingsViewModel
         }
 
         fun onChunkScanned(envelope: ChunkEnvelope) {
-            if (envelope.k != "lj.s" || envelope.v != 2) {
-                Log.e(TAG, "Unknown QR format: k=${envelope.k} v=${envelope.v}")
-                return
-            }
-
-            val session =
-                chunkSessions.getOrPut(envelope.session) {
-                    ChunkSession(envelope.total, mutableMapOf())
+            viewModelScope.launch {
+                if (envelope.k != "lj.s" || envelope.v != 2) {
+                    Log.e(TAG, "Unknown QR format: k=${envelope.k} v=${envelope.v}")
+                    userFeedback.emit(UserFeedback("Invalid QR code — not a Location Joystick export", isError = true))
+                    return@launch
                 }
-
-            val content = decodeChunkContent(envelope.d)
-            session.chunks[envelope.chunk] = content
-
-            if (session.chunks.size == session.total) {
-                chunkSessions.remove(envelope.session)
-                val merged = mergeChunks(session.chunks.values.flatten())
-                _qrImportReady.tryEmit(merged)
+                try {
+                    val content = withContext(Dispatchers.Default) { decodeChunkContent(envelope.d) }
+                    val session =
+                        chunkSessions.getOrPut(envelope.session) {
+                            ChunkSession(envelope.total, mutableMapOf())
+                        }
+                    session.chunks[envelope.chunk] = content
+                    _qrScanProgress.value = session.chunks.size to session.total
+                    if (session.chunks.size == session.total) {
+                        chunkSessions.remove(envelope.session)
+                        _qrScanProgress.value = null
+                        val merged = withContext(Dispatchers.Default) { mergeChunks(session.chunks.values.flatten()) }
+                        _qrImportReady.emit(merged)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "QR chunk decode failed", e)
+                    userFeedback.emit(UserFeedback("Failed to read QR code — try scanning again", isError = true))
+                }
             }
         }
 
