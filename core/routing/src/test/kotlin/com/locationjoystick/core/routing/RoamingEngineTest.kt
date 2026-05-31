@@ -80,6 +80,40 @@ class RoamingEngineTest {
     }
 
     @Test
+    fun `returnToInitialLocation does not double total distance`() {
+        val center = LatLng(0.0, 0.0)
+        val distanceMeters = 200.0
+        val speedMs = 1.4
+
+        fun runAndCount(returnToStart: Boolean): Int {
+            val e = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+            val config = RoamingConfig(
+                centerPosition = center,
+                radiusMeters = 500.0,
+                distanceMeters = distanceMeters,
+                useRoadSnapping = false,
+                speedProfileId = "walk",
+                returnToInitialLocation = returnToStart,
+            )
+            var ticks = 0
+            val latch = CountDownLatch(1)
+            e.startRoaming(config, speedMs, onComplete = { latch.countDown() }) { ticks++ }
+            latch.await(30, TimeUnit.SECONDS)
+            return ticks
+        }
+
+        val ticksNoReturn = runAndCount(returnToStart = false)
+        val ticksWithReturn = runAndCount(returnToStart = true)
+
+        // Without the fix, ticksWithReturn ≈ 2x ticksNoReturn.
+        // With the fix, both should be in the same ballpark (within 60% overhead for return leg).
+        assertTrue(
+            "returnToStart should not double total distance: noReturn=$ticksNoReturn withReturn=$ticksWithReturn",
+            ticksWithReturn <= ticksNoReturn * 1.6,
+        )
+    }
+
+    @Test
     fun `stop does not permanently break startRoaming`() {
         // Regression for: stop() used to cancel engineScope permanently making startRoaming a no-op.
         val config =
