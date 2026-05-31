@@ -95,6 +95,27 @@ tap_text() {
   $ADB shell input tap "$x" "$y"
 }
 
+# Tap a UI element whose text or content-desc is exactly the given string.
+tap_text_exact() {
+  local text="$1"
+  local dump centre x y
+  dump=$(ui_dump)
+  centre=$(perl -lne '
+    if (/(?:text|content-desc)="'"${text}"'"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/i) {
+      printf "%d %d\n", int(($1+$3)/2), int(($2+$4)/2);
+      last;
+    }
+  ' "$dump" 2>/dev/null)
+  rm -f "$dump"
+  if [[ -z "$centre" ]]; then
+    warn "Could not find UI element with exact text \"$text\" — skipping tap."
+    return 1
+  fi
+  read -r x y <<< "$centre"
+  log "Tapping \"$text\" (exact) at ($x, $y)"
+  $ADB shell input tap "$x" "$y"
+}
+
 # Tap a UI element by text/content-desc, but only match nodes whose vertical
 # centre is at or below min_y. Filters out closed-drawer items that remain in
 # the semantics tree and would otherwise ambiguate IdleScreen card taps.
@@ -183,6 +204,7 @@ pause_for_user() {
 # and create a minimal one-waypoint route so step 10 (route detail) can proceed.
 seed_route_if_needed() {
   log "Checking if a route exists..."
+  wait_s 2 "Routes list settling"
   local dump
   dump=$(ui_dump)
   if grep -q 'Menu' "$dump" 2>/dev/null; then
@@ -200,15 +222,20 @@ seed_route_if_needed() {
   tap_text "from map"
   wait_s 4 "Route creator loading"
   local cx=$(( SCREEN_W / 2 ))
-  local cy=$(( SCREEN_H / 2 ))
-  log "Tapping map at ($cx,$cy) to place waypoint"
-  $ADB shell input tap "$cx" "$cy"
-  wait_s 2 "Placing waypoint"
+  # Need ≥2 waypoints before Save FAB appears — tap two distinct map positions.
+  local y1=$(( SCREEN_H * 35 / 100 ))
+  local y2=$(( SCREEN_H * 55 / 100 ))
+  log "Placing waypoint 1 at ($cx,$y1)"
+  $ADB shell input tap "$cx" "$y1"
+  wait_s 2 "Placing waypoint 1"
+  log "Placing waypoint 2 at ($cx,$y2)"
+  $ADB shell input tap "$cx" "$y2"
+  wait_s 2 "Placing waypoint 2"
   tap_text "Save route"
   wait_s 1 "Save dialog opening"
   $ADB shell input text "Auto"
   wait_s 1
-  tap_text "Save"
+  tap_text_exact "Save"
   wait_s 2 "Saving route"
   go_idle
   tap_text_below "Routes" "$CARD_Y_MIN"
@@ -392,7 +419,8 @@ else
   pause_for_user "Ensure at least one route exists in the Routes list, then press ENTER."
 fi
 # Open the overflow menu on the first visible route and tap Edit.
-tap_text "Menu"
+# tap_text_below filters out the TopAppBar hamburger which shares content-desc "Menu".
+tap_text_below "Menu" 230
 wait_s 1 "Menu opening"
 tap_text "Edit"
 wait_s 2 "Route detail loading"
