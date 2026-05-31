@@ -17,6 +17,10 @@
 # Overlay screens (joystick + widget) require manual activation — the script
 # will pause and prompt you at those steps.
 #
+# Android Demo Mode is enabled for the duration of the run so screenshots show
+# a clean status bar (neutral clock, full battery/signal, no notifications).
+# Demo mode exits automatically on completion or error.
+#
 # Output files (15 canonical PNGs):
 #   01_idle, 02_map, 03_routes, 04_favorites, 05_settings,
 #   06_map_routes_sheet, 07_map_favorites_sheet, 08_map_roaming_sheet,
@@ -127,6 +131,31 @@ wait_s() {
   printf "\r%*s\r" 40 ""
 }
 
+# Enter Android Demo Mode: clean status bar (neutral clock, full battery/signal,
+# no notifications) so screenshots don't leak personal phone information.
+demo_mode_enter() {
+  log "Entering demo mode (clean status bar)..."
+  $ADB shell settings put global sysui_demo_allowed 1 2>/dev/null || true
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command enter >/dev/null 2>&1 || true
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command clock -e hhmm 1200 >/dev/null 2>&1 || true
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command battery -e level 100 -e plugged false >/dev/null 2>&1 || true
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command network -e mobile show -e level 4 -e datatype lte \
+    -e wifi show -e level 4 >/dev/null 2>&1 || true
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command notifications -e visible false >/dev/null 2>&1 || true
+}
+
+# Exit Android Demo Mode and restore the real status bar.
+demo_mode_exit() {
+  $ADB shell am broadcast -a com.android.systemui.demo \
+    -e command exit >/dev/null 2>&1 || true
+  log "Demo mode exited"
+}
+
 # Capture screen and pull to OUTPUT_DIR/<name>.png (idempotent overwrite).
 screenshot() {
   local name="$1"
@@ -172,6 +201,9 @@ fi
 DEVICE_MODEL=$($ADB shell getprop ro.product.model | tr -d '\r')
 SCREEN_SIZE=$($ADB shell wm size | awk '{print $NF}')
 log "Device: $DEVICE_MODEL ($SCREEN_SIZE)"
+
+demo_mode_enter
+trap demo_mode_exit EXIT
 
 # Screen height for Y-threshold disambiguation of IdleScreen card taps.
 SCREEN_H=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $2}')
@@ -342,6 +374,9 @@ pause_for_user "Dismiss the joystick (if open) and enable the Floating Widget in
 screenshot "15_widget_overlay"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
+
+demo_mode_exit
+trap - EXIT
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
