@@ -319,6 +319,42 @@ ul.trouble li{
   margin:40px 0;
 }
 
+/* ── GitHub star button ── */
+.gh-star{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 7px 3px 5px;
+  border:1px solid var(--border);
+  border-radius:4px;
+  background:var(--surface);
+  color:var(--muted);
+  text-decoration:none;
+  font-family:var(--mono);
+  font-size:0.70rem;
+  line-height:1;
+  transition:border-color 0.12s,color 0.12s,background 0.12s;
+  white-space:nowrap;
+  vertical-align:middle;
+}
+.gh-star:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  background:var(--accent-bg);
+  text-decoration:none;
+}
+.gh-star svg{flex-shrink:0;opacity:0.65;transition:opacity 0.12s}
+.gh-star:hover svg{opacity:1}
+.gh-star-sep{
+  display:inline-block;
+  width:1px;
+  height:10px;
+  background:var(--border);
+  margin:0 1px;
+}
+.gh-star-count{font-weight:600}
+.sidebar-foot-lic{margin-left:4px}
+
 /* ── Nav extras ── */
 .nav-sep{
   display:block;
