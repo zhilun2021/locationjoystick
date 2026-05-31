@@ -6,10 +6,10 @@ description: Refresh all wiki/Play Store gallery screenshots from a connected An
 # Screenshots Skill
 
 Captures all 15 canonical gallery screenshots from a connected Android device using
-`scripts/screenshot-gallery.sh`, saving them to `docs/wiki/screenshots/`.
+`scripts/screenshot-gallery.sh --auto`, saving them to `docs/wiki/screenshots/`.
 
-The script has interactive prompts that require a real terminal — the agent handles
-pre/post steps via adb and guides the user through every manual pause point.
+In `--auto` mode the script runs fully non-interactively: the agent executes it
+directly via the Bash tool. No manual terminal steps needed.
 
 ---
 
@@ -31,83 +31,25 @@ complete onboarding before continuing.
 
 ---
 
-## Step 2 — Tell the user to run the script
+## Step 2 — Run the script (agent runs this)
 
-Because `scripts/screenshot-gallery.sh` contains interactive `read` prompts, it must
-run in a real interactive terminal — not via the agent's Bash tool. Tell the user:
+```bash
+cd /path/to/project && ./scripts/screenshot-gallery.sh --auto --output docs/wiki/screenshots
+```
 
-> **Open a terminal in the project root and run:**
-> ```bash
-> make screenshot
-> ```
-> The script will navigate the app automatically but will pause 3 times for manual
-> steps. Instructions for each pause are below — read them before pressing ENTER.
+The `--auto` flag replaces the 3 former manual pause points with adb automation:
+
+| Pause | What `--auto` does |
+|-------|--------------------|
+| A (step 10: route detail) | Checks UI dump for existing route; if none, navigates to route creator, drops a waypoint, saves "Auto" route |
+| B (step 14: joystick overlay) | Navigates to Map, starts `MockLocationService` via `am start-foreground-service`, starts `JoystickOverlayService` with `extra_show_overlay=true` |
+| C (step 15: widget overlay) | Stops joystick service, starts `FloatingWidgetService` (auto-shows on start) |
+
+The script will print progress for every step. Total runtime ~2–3 minutes.
 
 ---
 
-## Step 3 — Guide through the 3 manual pause points
-
-Tell the user what to do at each pause **before** they start the script, so they're
-prepared when the prompts appear.
-
-### Pause A — Step 10: Route Detail
-
-The terminal will print:
-```
-MANUAL STEP:
-  Ensure at least one route exists in the Routes list, then press ENTER.
-```
-
-Instructions for the user:
-1. Look at the device — the app should be on the Routes screen.
-2. **If a route already exists** in the list → press ENTER now.
-3. **If no routes exist:**
-   - Tap **Add route** → **from map**
-   - Tap anywhere on the map to drop a waypoint, then tap **Save**
-   - Give it any name and confirm
-   - Press ENTER once the route appears in the list
-
-### Pause B — Step 14: Joystick Overlay
-
-The terminal will print:
-```
-MANUAL STEP:
-  Start mock location then enable the Floating Joystick.
-  The joystick overlay should be visible on screen before you press ENTER.
-```
-
-Instructions for the user:
-1. The app is still open on the device.
-2. Navigate to the **Map** screen.
-3. Tap the **Start Simulation** FAB (▶ play button) to begin mock location.
-4. Enable the Floating Joystick using either method:
-   - Open the nav drawer → toggle **Floating Joystick**
-   - Or tap the joystick icon in the floating widget if it's already visible
-5. Confirm the **circular joystick overlay** is visible over the current screen.
-6. Press ENTER in the terminal.
-
-### Pause C — Step 15: Widget Overlay
-
-The terminal will print:
-```
-MANUAL STEP:
-  Dismiss the joystick (if open) and enable the Floating Widget instead.
-  The widget bubble should be visible on screen before you press ENTER.
-```
-
-Instructions for the user:
-1. Dismiss the joystick overlay: open the nav drawer → toggle **Floating Joystick** off.
-2. Enable the Floating Widget using either method:
-   - Open the nav drawer → toggle **Floating Widget**
-   - Or go to **Settings** → Widget section → enable **Floating Widget**
-3. Confirm the small **widget bubble** is visible on screen.
-4. Press ENTER in the terminal.
-
----
-
-## Step 4 — Verify output (agent runs this)
-
-After the user reports the script finished, verify all 15 files were captured:
+## Step 3 — Verify output (agent runs this)
 
 ```bash
 ls docs/wiki/screenshots/*.png | sort
@@ -133,20 +75,33 @@ Expected files:
 ```
 
 If any file is missing:
-- **14_joystick_overlay.png / 15_widget_overlay.png**: overlay services couldn't
-  be reached automatically. Tell the user they can capture these manually with
+- **14_joystick_overlay.png / 15_widget_overlay.png**: overlay service failed to start.
+  Capture manually: put the overlay on screen, then run
   `adb exec-out screencap -p > docs/wiki/screenshots/14_joystick_overlay.png`
-  while the overlay is visible, then repeat for 15.
-- **Any other file**: report which step failed and suggest re-running the script.
+- **Any other file**: report which step failed and suggest re-running.
 
 ---
 
-## Step 5 — Stage for commit (agent runs this)
+## Step 4 — Stage for commit (agent runs this)
 
 ```bash
 git add docs/wiki/screenshots/
 git diff --cached --name-only | grep screenshots/
 ```
 
-Report how many files changed. Offer to commit them alongside the user's next code
-change, or commit immediately if requested.
+Report how many files changed. Offer to commit alongside the user's next code change,
+or commit immediately if requested.
+
+---
+
+## Manual mode (fallback)
+
+If `--auto` fails or device state requires human intervention, drop the flag:
+
+```bash
+./scripts/screenshot-gallery.sh --output docs/wiki/screenshots
+```
+
+The script will pause at steps 10, 14, and 15 and print instructions. Tell the user
+what to do at each pause before they start — the pause descriptions are in the script
+output itself.

@@ -178,6 +178,7 @@ object AppConstants {
         const val EXTRA_EPHEMERAL_WAYPOINTS = "extra_ephemeral_waypoints"
         const val ACTION_OVERLAY_SHOW = "com.locationjoystick.action.OVERLAY_SHOW"
         const val ACTION_OVERLAY_HIDE = "com.locationjoystick.action.OVERLAY_HIDE"
+        const val EXTRA_SHOW_OVERLAY = "extra_show_overlay"
     }
 
     object DataStoreConstants {

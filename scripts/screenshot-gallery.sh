@@ -36,6 +36,7 @@ PACKAGE="com.locationjoystick.app"
 ACTIVITY=".MainActivity"
 OUTPUT_DIR="./screenshots"
 ADB_DEVICE=""
+AUTO=false
 
 # ── Arg parsing ──────────────────────────────────────────────────────────────
 
@@ -43,6 +44,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --output)  OUTPUT_DIR="$2"; shift 2 ;;
     --device)  ADB_DEVICE="-s $2"; shift 2 ;;
+    --auto)    AUTO=true; shift ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
@@ -177,6 +179,76 @@ pause_for_user() {
   echo ""
 }
 
+# Ensure at least one route exists. If the Routes list is empty, navigate there
+# and create a minimal one-waypoint route so step 10 (route detail) can proceed.
+seed_route_if_needed() {
+  log "Checking if a route exists..."
+  local dump
+  dump=$(ui_dump)
+  if grep -q 'Menu' "$dump" 2>/dev/null; then
+    rm -f "$dump"
+    log "Route found — no seeding needed."
+    return 0
+  fi
+  rm -f "$dump"
+  log "No routes — creating seed route..."
+  go_idle
+  tap_text_below "Routes" "$CARD_Y_MIN"
+  wait_s 2 "Routes loading"
+  tap_text "Add route"
+  wait_s 1 "Add menu opening"
+  tap_text "from map"
+  wait_s 4 "Route creator loading"
+  local cx=$(( SCREEN_W / 2 ))
+  local cy=$(( SCREEN_H / 2 ))
+  log "Tapping map at ($cx,$cy) to place waypoint"
+  $ADB shell input tap "$cx" "$cy"
+  wait_s 2 "Placing waypoint"
+  tap_text "Save route"
+  wait_s 1 "Save dialog opening"
+  $ADB shell input text "Auto"
+  wait_s 1
+  tap_text "Save"
+  wait_s 2 "Saving route"
+  go_idle
+  tap_text_below "Routes" "$CARD_Y_MIN"
+  wait_s 2 "Routes loading"
+}
+
+# Start MockLocationService via direct intent (ACTION_START with default coords).
+start_mock_location() {
+  log "Starting location simulation..."
+  $ADB shell am start-foreground-service \
+    -n "${PACKAGE}/com.locationjoystick.core.location.MockLocationService" \
+    -a "com.locationjoystick.core.location.ACTION_START" 2>/dev/null || true
+  wait_s 2 "Starting simulation"
+}
+
+# Start JoystickOverlayService and show overlay immediately via EXTRA_SHOW_OVERLAY.
+start_joystick_overlay() {
+  log "Starting joystick overlay..."
+  $ADB shell am startservice \
+    -n "${PACKAGE}/com.locationjoystick.feature.joystick.impl.JoystickOverlayService" \
+    --ez extra_show_overlay true 2>/dev/null || true
+  wait_s 2 "Joystick overlay appearing"
+}
+
+# Stop JoystickOverlayService (removes the overlay).
+stop_joystick_overlay() {
+  log "Stopping joystick overlay..."
+  $ADB shell am stopservice \
+    -n "${PACKAGE}/com.locationjoystick.feature.joystick.impl.JoystickOverlayService" 2>/dev/null || true
+  wait_s 1 "Stopping joystick"
+}
+
+# Start FloatingWidgetService (showOverlayOnStart=true, shows immediately).
+start_widget_overlay() {
+  log "Starting widget overlay..."
+  $ADB shell am startservice \
+    -n "${PACKAGE}/com.locationjoystick.feature.widget.impl.FloatingWidgetService" 2>/dev/null || true
+  wait_s 2 "Widget overlay appearing"
+}
+
 # Force-stop and restart the app to guarantee a clean IdleScreen landing.
 # --activity-single-top only redelivers the intent; the Compose nav stack stays
 # wherever it was. Force-stop is the only reliable way to reset it.
@@ -206,6 +278,7 @@ demo_mode_enter
 trap demo_mode_exit EXIT
 
 # Screen height for Y-threshold disambiguation of IdleScreen card taps.
+SCREEN_W=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $1}')
 SCREEN_H=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $2}')
 # IdleScreen cards live roughly in the bottom 70% of the display.
 CARD_Y_MIN=$(( SCREEN_H * 30 / 100 ))
@@ -313,7 +386,11 @@ wait_s 1 "Returning to Routes"
 # ── 10. Route detail ─────────────────────────────────────────────────────────
 
 log "=== 10 ROUTE DETAIL ==="
-pause_for_user "Ensure at least one route exists in the Routes list, then press ENTER."
+if $AUTO; then
+  seed_route_if_needed
+else
+  pause_for_user "Ensure at least one route exists in the Routes list, then press ENTER."
+fi
 # Open the overflow menu on the first visible route and tap Edit.
 tap_text "Menu"
 wait_s 1 "Menu opening"
@@ -361,16 +438,29 @@ wait_s 1 "Dismissing QR dialog"
 # ── 14. Joystick overlay ─────────────────────────────────────────────────────
 
 log "=== 14 JOYSTICK OVERLAY ==="
-pause_for_user "Start mock location then enable the Floating Joystick.
+if $AUTO; then
+  go_idle
+  tap_text_below "Map" "$CARD_Y_MIN"
+  wait_s 3 "Map loading"
+  start_mock_location
+  start_joystick_overlay
+else
+  pause_for_user "Start mock location then enable the Floating Joystick.
   The joystick overlay should be visible on screen before you press ENTER.
   Tip: Map screen → start spoofing → enable joystick from widget or drawer."
+fi
 screenshot "14_joystick_overlay"
 
 # ── 15. Floating widget ──────────────────────────────────────────────────────
 
 log "=== 15 FLOATING WIDGET ==="
-pause_for_user "Dismiss the joystick (if open) and enable the Floating Widget instead.
+if $AUTO; then
+  stop_joystick_overlay
+  start_widget_overlay
+else
+  pause_for_user "Dismiss the joystick (if open) and enable the Floating Widget instead.
   The widget bubble should be visible on screen before you press ENTER."
+fi
 screenshot "15_widget_overlay"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
