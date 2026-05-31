@@ -435,7 +435,6 @@ class FloatingWidgetService :
                         startRouteReplayWithMode(routeId, isLooping, isReverse, isReturnToLocation, teleportToStart)
                         moveAppToBack()
                     },
-                    onCreateFromMap = { openRouteCreator() },
                 )
             }
         }
@@ -852,20 +851,6 @@ class FloatingWidgetService :
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send add ephemeral waypoint", e)
             }
-        }
-    }
-
-    private fun openRouteCreator() {
-        try {
-            val intent =
-                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    putExtra("navigate_to_route_creator", true)
-                }
-            startActivity(intent)
-            Log.d(TAG, "Opened route creator")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to open route creator", e)
         }
     }
 

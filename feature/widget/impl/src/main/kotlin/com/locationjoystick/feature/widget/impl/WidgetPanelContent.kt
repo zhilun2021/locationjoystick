@@ -104,7 +104,7 @@ internal fun WidgetPanel(
             Image(
                 painter = painterResource(id = R.drawable.ic_app_launcher),
                 contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
-                modifier = Modifier.size(25.dp),
+                modifier = Modifier.fillMaxSize(),
             )
         }
 
@@ -357,7 +357,6 @@ internal fun RoutesFloatingView(
     routes: List<com.locationjoystick.core.model.Route>,
     onDismiss: () -> Unit,
     onStartRoute: (routeId: String, isLooping: Boolean, isReverse: Boolean, isReturnToLocation: Boolean, teleportToStart: Boolean) -> Unit,
-    onCreateFromMap: () -> Unit,
 ) {
     var selectedRouteId by remember { mutableStateOf<String?>(null) }
 
@@ -474,18 +473,6 @@ internal fun RoutesFloatingView(
                                 }
                             }
                         }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = {
-                            onCreateFromMap()
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(LjIcons.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Create route from map")
                     }
                 }
             }
