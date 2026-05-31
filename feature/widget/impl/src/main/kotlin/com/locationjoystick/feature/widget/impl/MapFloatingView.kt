@@ -362,7 +362,7 @@ internal fun MapFloatingView(
                         500,
                     )
                     showSearch = false
-                    onTeleport(position)
+                    pendingTap = position
                 },
                 recentSearches = recentSearches,
                 onSearchCommitted = onSearchCommitted,
@@ -492,6 +492,19 @@ internal fun MapFloatingView(
                         .background(LjBg, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                         .clickable {}, // consume touches so they don't fall through to scrim
             ) {
+                // Drag handle indicator — matches ModalBottomSheet visual
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = 8.dp)
+                            .width(32.dp)
+                            .height(4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
+                            ),
+                )
                 RoamingSheetContent(
                     draft = draft,
                     speedUnit = speedUnit,
@@ -602,14 +615,22 @@ internal fun MapFloatingView(
             }
         }
 
-        // Favorites picker overlay (slides over the map)
+        // Favorites picker — bottom sheet capped at 80% height
         if (showFavoritesPicker) {
-            Column(
+            Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(LjBg)
-                        .clickable { }
+                        .clickable { showFavoritesPicker = false },
+            )
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.8f)
+                        .background(LjBg, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .clickable {}
                         .padding(16.dp),
             ) {
                 Row(
