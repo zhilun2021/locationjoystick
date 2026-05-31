@@ -47,13 +47,17 @@ class ZxingImageAnalyzer(
 
             val yPlane = image.planes[0]
             val yBuffer = yPlane.buffer
-            val yBytes = ByteArray(yBuffer.remaining())
-            yBuffer.get(yBytes)
+            val yStride = yPlane.rowStride
+            // PlanarYUVLuminanceSource requires dataWidth * dataHeight bytes.
+            // yBuffer.remaining() is typically rowStride*(height-1)+width (last row has no padding),
+            // so allocate the full rowStride*height and fill what the buffer provides.
+            val yBytes = ByteArray(yStride * image.height)
+            yBuffer.get(yBytes, 0, minOf(yBytes.size, yBuffer.remaining()))
 
             val source =
                 PlanarYUVLuminanceSource(
                     yBytes,
-                    yPlane.rowStride,
+                    yStride,
                     image.height,
                     0,
                     0,
