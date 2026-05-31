@@ -42,6 +42,14 @@ import javax.inject.Inject
 
 private const val TAG = "MapViewModel"
 
+/** Holder for the four location-state flows combined in [MapViewModel.observeLocationState]. */
+private data class LocationStateSnapshot(
+    val position: LatLng?,
+    val state: com.locationjoystick.core.model.MockLocationState,
+    val walkPaused: Boolean,
+    val mode: MockMode,
+)
+
 /**
  * ViewModel for the Map screen.
  *
@@ -92,7 +100,6 @@ class MapViewModel
 
         init {
             observeLocationState()
-            observeMockMode()
             observeRoutes()
             observeFavorites()
             observeRouteWaypoints()
@@ -109,24 +116,18 @@ class MapViewModel
                     locationRepository.currentPosition,
                     locationRepository.mockLocationState,
                     locationRepository.isWalkPaused,
-                ) { position, state, walkPaused ->
-                    Triple(position, state, walkPaused)
-                }.collect { (position, state, walkPaused) ->
+                    locationRepository.currentMode,
+                ) { position, state, walkPaused, mode ->
+                    LocationStateSnapshot(position, state, walkPaused, mode)
+                }.collect { snapshot ->
                     _uiState.update { current ->
                         current.copy(
-                            currentPosition = position,
-                            mockLocationState = state,
-                            isWalkPaused = walkPaused,
+                            currentPosition = snapshot.position,
+                            mockLocationState = snapshot.state,
+                            isWalkPaused = snapshot.walkPaused,
+                            isRouteReplay = snapshot.mode == MockMode.ROUTE_REPLAY,
                         )
                     }
-                }
-            }
-        }
-
-        private fun observeMockMode() {
-            viewModelScope.launch {
-                locationRepository.currentMode.collect { mode ->
-                    _uiState.update { it.copy(isRouteReplay = mode == MockMode.ROUTE_REPLAY) }
                 }
             }
         }

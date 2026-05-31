@@ -215,7 +215,9 @@ class FloatingWidgetService :
         walkCoordinator.cancel()
         serviceScope.cancel()
         hidePanelView()
-        composeView?.visibility = View.GONE
+        // Tear down the FAB composition so the Recomposer and any captured state holders are
+        // released. The base OverlayService.onDestroy() removes the view from the WindowManager.
+        composeView?.disposeComposition()
         composeView = null
         overlayHelper.cleanupOverlayBindings(this)
         if (joystickBound) {
@@ -338,6 +340,9 @@ class FloatingWidgetService :
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to remove panel view", e)
             }
+            // Dispose the composition so the panel's Recomposer and collected flows are released.
+            // Without this the previous panel's composition leaks each time a new panel is shown.
+            view.disposeComposition()
         }
         panelComposeView = null
     }
