@@ -1,9 +1,11 @@
 package com.locationjoystick.feature.map.impl
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -66,21 +68,31 @@ internal fun RoutesPickerSheet(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             } else {
-                LazyColumn {
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     items(uiState.routes, key = { it.id }) { route ->
                         Row(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                    .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = route.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.weight(1f),
-                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = route.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(
+                                    text = "${route.waypoints.size} waypoints",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                             Button(onClick = { selectedRouteId = route.id }) {
                                 Icon(LjIcons.PlayArrow, contentDescription = "Start route")
                             }
@@ -130,8 +142,7 @@ internal fun FavoritesPickerSheet(
             FavoriteTargetDetail(
                 favorite = target,
                 onSetLocation = { onAction(MapAction.SetLocationTo(target.position)) },
-                onGoToLocation = { onAction(MapAction.WalkStraightTo(target.position)) },
-                onGoToLocationViaRoads = { onAction(MapAction.WalkViaRoadsTo(target.position)) },
+                onGoToLocation = { onAction(MapAction.WalkViaRoadsTo(target.position)) },
                 onDismiss = { onAction(MapAction.CloseFavoritesPicker) },
             )
         }
@@ -222,22 +233,12 @@ internal fun PendingTapSheet(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = {
-                        onAction(MapAction.LongPressTapToWalk(position))
-                        onAction(MapAction.ClearPendingTap)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Walk here")
-                }
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = {
                         onAction(MapAction.WalkViaRoadsTo(position))
                         onAction(MapAction.ClearPendingTap)
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Walk here via roads")
+                    Text("Walk here")
                 }
                 if (isWalkActive) {
                     Spacer(Modifier.height(8.dp))
@@ -265,7 +266,6 @@ internal fun FavoriteTargetDetail(
     favorite: FavoriteLocation,
     onSetLocation: () -> Unit,
     onGoToLocation: () -> Unit,
-    onGoToLocationViaRoads: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -299,15 +299,6 @@ internal fun FavoriteTargetDetail(
                     .padding(top = 8.dp),
         ) {
             Text("Walk to location")
-        }
-        OutlinedButton(
-            onClick = onGoToLocationViaRoads,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-        ) {
-            Text("Walk via roads")
         }
         TextButton(
             onClick = onDismiss,

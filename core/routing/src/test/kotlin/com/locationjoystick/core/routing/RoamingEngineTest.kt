@@ -80,7 +80,7 @@ class RoamingEngineTest {
     }
 
     @Test
-    fun `returnToInitialLocation does not double total distance`() {
+    fun `returnToInitialLocation uses full distanceMeters for outward journey then adds return`() {
         val center = LatLng(0.0, 0.0)
         val distanceMeters = 200.0
         val speedMs = 1.4
@@ -106,11 +106,12 @@ class RoamingEngineTest {
         val ticksNoReturn = runAndCount(returnToStart = false)
         val ticksWithReturn = runAndCount(returnToStart = true)
 
-        // Without the fix, ticksWithReturn ≈ 2x ticksNoReturn.
-        // With the fix, both should be in the same ballpark (within 60% overhead for return leg).
+        // With the fix, outward journey uses the full distanceMeters regardless of returnToInitialLocation.
+        // ticksWithReturn >= ticksNoReturn because the outward legs are equal and return adds ≥0 ticks.
+        // (Old broken code halved distanceMeters, giving ticksWithReturn < ticksNoReturn.)
         assertTrue(
-            "returnToStart should not double total distance: noReturn=$ticksNoReturn withReturn=$ticksWithReturn",
-            ticksWithReturn <= ticksNoReturn * 1.6,
+            "outward journey must use full distanceMeters (not halved): noReturn=$ticksNoReturn withReturn=$ticksWithReturn",
+            ticksWithReturn >= ticksNoReturn,
         )
     }
 

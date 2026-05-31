@@ -176,8 +176,16 @@ class RouteCreatorViewModel
             if (current.waypoints.size < 2) return
 
             val uuid = UUID.randomUUID().toString()
+            // For GUIDED routes, persist the dense OSRM-interpolated segment points so replay
+            // is immutable and never needs to re-fetch from OSRM.
+            val waypointPositions =
+                if (routeType == RouteType.GUIDED && current.segments.isNotEmpty()) {
+                    current.segments.flatMapIndexed { i, seg -> if (i == 0) seg else seg.drop(1) }
+                } else {
+                    current.waypoints
+                }
             val waypoints =
-                current.waypoints.mapIndexed { idx, latLng ->
+                waypointPositions.mapIndexed { idx, latLng ->
                     Waypoint(
                         id = UUID.randomUUID().toString(),
                         position = latLng,

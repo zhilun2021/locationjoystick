@@ -254,41 +254,55 @@ internal fun FavoritesFloatingView(
                             color = LjText.copy(alpha = 0.6f),
                         )
                     } else {
-                        LazyColumn {
+                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(favorites, key = { it.id }) { fav ->
-                                Row(
+                                Column(
                                     modifier =
                                         Modifier
                                             .fillMaxWidth()
-                                            .padding(vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
+                                            .background(
+                                                androidx.compose.ui.graphics.Color.White
+                                                    .copy(alpha = 0.12f),
+                                                androidx.compose.foundation.shape
+                                                    .RoundedCornerShape(8.dp),
+                                            ).padding(12.dp),
                                 ) {
                                     Text(
                                         text = fav.name,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.titleMedium,
                                         color = LjText,
-                                        modifier = Modifier.weight(1f),
                                     )
-                                    Button(onClick = {
-                                        onTeleport(fav)
-                                        onDismiss()
-                                    }) {
-                                        Text("Teleport")
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Button(onClick = {
-                                        onWalk(fav)
-                                        onDismiss()
-                                    }) {
-                                        Text("Walk")
-                                    }
-                                    Spacer(Modifier.width(8.dp))
-                                    Button(onClick = {
-                                        onWalkViaRoads(fav)
-                                        onDismiss()
-                                    }) {
-                                        Text("Via roads")
+                                    Text(
+                                        text = "${String.format(
+                                            "%.4f",
+                                            fav.position.latitude,
+                                        )}, ${String.format("%.4f", fav.position.longitude)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = LjText.copy(alpha = 0.7f),
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Button(
+                                            onClick = {
+                                                onTeleport(fav)
+                                                onDismiss()
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                        ) { Text("Teleport") }
+                                        Button(
+                                            onClick = {
+                                                onWalk(fav)
+                                                onDismiss()
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                        ) { Text("Walk") }
+                                        Button(
+                                            onClick = {
+                                                onWalkViaRoads(fav)
+                                                onDismiss()
+                                            },
+                                            modifier = Modifier.weight(1f),
+                                        ) { Text("Via roads") }
                                     }
                                 }
                             }
@@ -452,22 +466,31 @@ internal fun RoutesFloatingView(
                                 color = LjText.copy(alpha = 0.6f),
                             )
                         } else {
-                            LazyColumn {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 items(routes, key = { it.id }) { route ->
                                     Row(
                                         modifier =
                                             Modifier
                                                 .fillMaxWidth()
-                                                .padding(vertical = 6.dp),
+                                                .background(
+                                                    Color.White.copy(alpha = 0.12f),
+                                                    RoundedCornerShape(8.dp),
+                                                ).padding(12.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
-                                        Text(
-                                            text = route.name,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = LjText,
-                                            modifier = Modifier.weight(1f),
-                                        )
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = route.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = LjText,
+                                            )
+                                            Text(
+                                                text = "${route.waypoints.size} waypoints",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = LjText.copy(alpha = 0.7f),
+                                            )
+                                        }
                                         Button(onClick = { selectedRouteId = route.id }) {
                                             Icon(LjIcons.PlayArrow, contentDescription = null)
                                         }

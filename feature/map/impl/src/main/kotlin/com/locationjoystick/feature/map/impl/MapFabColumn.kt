@@ -31,8 +31,8 @@ internal fun MapFabColumn(
             LjMapIconButton(
                 icon = LjIcons.MyLocation,
                 contentDescription = "Re-center on location",
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 onClick = { onAction(MapAction.RecenterCamera) },
             )
         }
@@ -167,13 +167,13 @@ internal fun MapFabColumn(
                     when {
                         uiState.isRoaming -> Color.Black
                         uiState.isRoamingSheetMinimized -> MaterialTheme.colorScheme.tertiary
-                        else -> MaterialTheme.colorScheme.tertiaryContainer
+                        else -> MaterialTheme.colorScheme.primaryContainer
                     },
                 contentColor =
                     when {
                         uiState.isRoaming -> LjSuccess
                         uiState.isRoamingSheetMinimized -> Color.White
-                        else -> MaterialTheme.colorScheme.onTertiaryContainer
+                        else -> MaterialTheme.colorScheme.onPrimaryContainer
                     },
                 onClick = {
                     when {

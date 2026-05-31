@@ -119,10 +119,7 @@ class RoamingEngine
                     isPaused = false
                     val initialLocation = config.centerPosition
                     var currentPosition = config.centerPosition
-                    // When returning to start, reserve half the budget for the return leg so
-                    // the total distance (outward + return) equals distanceMeters.
-                    var remainingMeters =
-                        if (config.returnToInitialLocation) config.distanceMeters / 2.0 else config.distanceMeters
+                    var remainingMeters = config.distanceMeters
                     val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
 
                     val firstLegPreview = config.previewWaypoints?.takeIf { it.size >= 2 }
@@ -153,12 +150,13 @@ class RoamingEngine
                     }
 
                     if (config.returnToInitialLocation && isActive) {
-                        val returnRoute = fetchRoute(config, currentPosition, initialLocation)
+                        val returnRoute = fetchReturnRoute(config, currentPosition, initialLocation)
                         onRouteUpdate(returnRoute)
                         if (returnRoute.size >= 2) {
                             currentPosition =
                                 walkRouteSegment(returnRoute, currentPosition, speedMs, onPositionUpdate)
                         }
+                        onRouteUpdate(emptyList())
                     }
 
                     onComplete()
@@ -272,6 +270,36 @@ class RoamingEngine
                 Log.w(TAG, "Preview route fetch failed, using straight-line fallback", e)
                 osrmClient.straightLineRoute(from, to)
             }
+        }
+
+        /**
+         * Fetches the return-to-start route, routing via a random intermediate point within the
+         * roaming area so the return leg looks like a loop rather than retracing the outward path.
+         * Falls back to a direct route, then to straight-line, on OSRM failure.
+         */
+        private suspend fun fetchReturnRoute(
+            config: RoamingConfig,
+            from: LatLng,
+            to: LatLng,
+        ): List<LatLng> {
+            if (!config.useRoadSnapping) return osrmClient.straightLineRoute(from, to)
+            val profile =
+                when (config.speedProfileId) {
+                    "bike" -> AppConstants.RoamingConstants.OSRM_PROFILE_CYCLING
+                    else -> AppConstants.RoamingConstants.OSRM_PROFILE_FOOT
+                }
+            val mid = randomPointInRadius(config.centerPosition, config.radiusMeters * 0.4)
+            return osrmClient
+                .getRoute(profile, listOf(from, mid, to))
+                .getOrElse { e ->
+                    Log.w(TAG, "OSRM loop return via midpoint failed, trying direct return", e)
+                    osrmClient
+                        .getRoute(profile, listOf(from, to))
+                        .getOrElse {
+                            Log.w(TAG, "OSRM direct return failed, using straight-line", it)
+                            osrmClient.straightLineRoute(from, to)
+                        }
+                }
         }
 
         /**
