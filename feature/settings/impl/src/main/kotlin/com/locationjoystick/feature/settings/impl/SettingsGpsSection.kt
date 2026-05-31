@@ -104,7 +104,7 @@ internal fun GpsJitterSection(
     onSetJitterSpeedIdleVariationPct: (Int) -> Unit,
     onSetJitterSpeedMovingVariationPct: (Int) -> Unit,
 ) {
-    Text("GPS Jitter", style = MaterialTheme.typography.titleMedium)
+    Text("GPS Jitter", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
     Text(
         "Adds noise to each location update. Set 0 to disable.",
@@ -167,7 +167,7 @@ internal fun GpsRealismSection(
     onSetRealismSatelliteExtrasEnabled: (Boolean) -> Unit,
     onSetRealismSuspendedMockingEnabled: (Boolean) -> Unit,
 ) {
-    Text("GPS Realism", style = MaterialTheme.typography.titleMedium)
+    Text("GPS Realism", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
     Text(
         "Controls how the spoofed GPS signal behaves. These options add metadata and variation that real GPS chips produce — some apps and games inspect these signals to detect mock providers.",
@@ -212,7 +212,7 @@ internal fun SettingsCheckboxRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     title: String,
-    description: String,
+    description: String? = null,
 ) {
     Row(
         modifier =
@@ -224,11 +224,13 @@ internal fun SettingsCheckboxRow(
         Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         Column(modifier = Modifier.padding(start = 8.dp)) {
             Text(title)
-            Text(
-                description,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (description != null) {
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

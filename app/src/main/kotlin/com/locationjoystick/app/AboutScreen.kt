@@ -43,7 +43,7 @@ internal fun AboutScreen(
     }
 
     LjScaffold(
-        title = "Lj",
+        title = "About",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.background,
@@ -66,6 +66,8 @@ internal fun AboutScreen(
                 text = "locationjoystick",
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(4.dp))

@@ -30,16 +30,15 @@ class NavigateToMapFlowTest {
     }
 
     @Test
-    fun `navigate_to_map true emits on flow`() =
-        runTest {
-            val flow = MutableSharedFlow<Unit>(replay = 1)
-            val intent = mockk<Intent>()
-            every { intent.getBooleanExtra(MainActivity.EXTRA_NAVIGATE_TO_MAP, false) } returns true
+    fun `navigate_to_map true emits on flow`() {
+        val flow = MutableSharedFlow<Unit>(replay = 1)
+        val intent = mockk<Intent>()
+        every { intent.getBooleanExtra(MainActivity.EXTRA_NAVIGATE_TO_MAP, false) } returns true
 
-            handleIntent(intent, flow)
+        handleIntent(intent, flow)
 
-            assertEquals(1, flow.replayCache.size)
-        }
+        assertEquals(1, flow.replayCache.size)
+    }
 
     @Test
     fun `navigate_to_map false does not emit`() =

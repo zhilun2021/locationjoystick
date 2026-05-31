@@ -14,16 +14,19 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.locationjoystick.app.ABOUT_ROUTE
 import com.locationjoystick.app.IDLE_ROUTE
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
+import com.locationjoystick.feature.favorites.api.MAP_PICKER_ROUTE
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.routes.api.ROUTES_ROUTE
 import com.locationjoystick.feature.settings.api.SETTINGS_ROUTE
@@ -35,6 +38,8 @@ fun LjDrawerContent(
     drawerState: DrawerState,
 ) {
     val scope = rememberCoroutineScope()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     ModalDrawerSheet(modifier = Modifier.widthIn(max = 320.dp).semantics { testTag = "nav_drawer" }) {
         Row(
@@ -49,7 +54,7 @@ fun LjDrawerContent(
         NavigationDrawerItem(
             icon = { Icon(LjIcons.LocationOn, "Map") },
             label = { Text("Map") },
-            selected = false,
+            selected = currentRoute == MAP_ROUTE,
             onClick = {
                 navController.navigate(MAP_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
@@ -62,7 +67,7 @@ fun LjDrawerContent(
         NavigationDrawerItem(
             icon = { Icon(LjIcons.Route, "Routes") },
             label = { Text("Routes") },
-            selected = false,
+            selected = currentRoute != null && (currentRoute == ROUTES_ROUTE || currentRoute.startsWith("route_")),
             onClick = {
                 navController.navigate(ROUTES_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
@@ -75,7 +80,7 @@ fun LjDrawerContent(
         NavigationDrawerItem(
             icon = { Icon(LjIcons.Favorite, "Favorites") },
             label = { Text("Favorites") },
-            selected = false,
+            selected = currentRoute == FAVORITES_ROUTE || currentRoute == MAP_PICKER_ROUTE,
             onClick = {
                 navController.navigate(FAVORITES_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
@@ -88,7 +93,7 @@ fun LjDrawerContent(
         NavigationDrawerItem(
             icon = { Icon(LjIcons.Settings, "Settings") },
             label = { Text("Settings") },
-            selected = false,
+            selected = currentRoute == SETTINGS_ROUTE,
             onClick = {
                 navController.navigate(SETTINGS_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }
@@ -101,7 +106,7 @@ fun LjDrawerContent(
         NavigationDrawerItem(
             icon = { Icon(LjIcons.Info, "About") },
             label = { Text("About") },
-            selected = false,
+            selected = currentRoute == ABOUT_ROUTE,
             onClick = {
                 navController.navigate(ABOUT_ROUTE) {
                     popUpTo(IDLE_ROUTE) { saveState = true }

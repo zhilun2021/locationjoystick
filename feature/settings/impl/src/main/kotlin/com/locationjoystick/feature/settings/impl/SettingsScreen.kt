@@ -21,11 +21,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -48,6 +46,7 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjAccent
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.LjScaffold
+import com.locationjoystick.core.designsystem.component.LjSegmentedControl
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
@@ -327,7 +326,7 @@ internal fun SettingsScreen(
     snackbarHost: @Composable () -> Unit = {},
 ) {
     LjScaffold(
-        title = "Lj",
+        title = "Settings",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         snackbarHost = snackbarHost,
@@ -445,6 +444,7 @@ internal fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         MapSection(uiState, onSetRememberLastLocation, onSetMapFollowsLocation)
+                        Spacer(modifier = Modifier.height(24.dp))
                         FloatingWidgetSection(uiState, onSetWidgetFeatures)
                         Spacer(modifier = Modifier.height(24.dp))
                         RoamingSection(roamingDefaults, isMph, onUpdateRoamingDefaults)
@@ -525,7 +525,7 @@ private fun SpeedProfileInput(
 private fun AntiCheatWarning() {
     Text(
         text = "Speed exceeds 8 m/s — may trigger anti-cheat in some games",
-        color = MaterialTheme.colorScheme.errorContainer,
+        color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.labelSmall,
         modifier = Modifier.padding(start = 4.dp, top = 2.dp),
     )
@@ -547,24 +547,13 @@ private fun SpeedProfilesSection(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("Unit: ", modifier = Modifier.weight(0.3f))
-        Row(modifier = Modifier.weight(0.7f)) {
-            val units = listOf(SpeedUnit.KMH to "km/h", SpeedUnit.MPH to "mph")
-            units.forEachIndexed { index, (unit, label) ->
-                val padding = if (index == 0) Modifier.padding(end = 4.dp) else Modifier.padding(start = 4.dp)
-                if (uiState.speedUnit == unit) {
-                    OutlinedButton(
-                        onClick = { onSetSpeedUnit(unit) },
-                        modifier = Modifier.weight(0.5f).then(padding),
-                    ) { Text(label) }
-                } else {
-                    FilledTonalButton(
-                        onClick = { onSetSpeedUnit(unit) },
-                        modifier = Modifier.weight(0.5f).then(padding),
-                    ) { Text(label) }
-                }
-            }
-        }
+        Text("Unit", modifier = Modifier.weight(0.3f))
+        LjSegmentedControl(
+            options = listOf(SpeedUnit.KMH to "km/h", SpeedUnit.MPH to "mph"),
+            selected = uiState.speedUnit,
+            onSelect = onSetSpeedUnit,
+            modifier = Modifier.weight(0.7f),
+        )
     }
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -634,23 +623,15 @@ private fun WidgetFeatureRow(
     enabledFeatures: Set<WidgetFeature>,
     onSetWidgetFeatures: (Set<WidgetFeature>) -> Unit,
 ) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(
-            checked = feature in enabledFeatures,
-            onCheckedChange = { isChecked ->
-                val updated = enabledFeatures.toMutableSet()
-                if (isChecked) updated.add(feature) else updated.remove(feature)
-                onSetWidgetFeatures(updated)
-            },
-        )
-        Text(label, modifier = Modifier.padding(start = 8.dp))
-    }
+    SettingsCheckboxRow(
+        checked = feature in enabledFeatures,
+        onCheckedChange = { isChecked ->
+            val updated = enabledFeatures.toMutableSet()
+            if (isChecked) updated.add(feature) else updated.remove(feature)
+            onSetWidgetFeatures(updated)
+        },
+        title = label,
+    )
 }
 
 @Composable
@@ -738,43 +719,23 @@ private fun RoamingSection(
 
     Text("Speed profile", style = MaterialTheme.typography.labelLarge)
     Spacer(modifier = Modifier.height(4.dp))
-    Row(modifier = Modifier.fillMaxWidth()) {
-        listOf("walk" to "Walk", "run" to "Run", "bike" to "Bike").forEach { (id, label) ->
-            if (roamingDefaults.speedProfileId == id) {
-                OutlinedButton(
-                    onClick = { onUpdateRoamingDefaults(roamingDefaults.copy(speedProfileId = id)) },
-                    modifier = Modifier.padding(end = 4.dp),
-                ) { Text(label) }
-            } else {
-                FilledTonalButton(
-                    onClick = { onUpdateRoamingDefaults(roamingDefaults.copy(speedProfileId = id)) },
-                    modifier = Modifier.padding(end = 4.dp),
-                ) { Text(label) }
-            }
-        }
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+    LjSegmentedControl(
+        options = listOf("walk" to "Walk", "run" to "Run", "bike" to "Bike"),
+        selected = roamingDefaults.speedProfileId,
+        onSelect = { onUpdateRoamingDefaults(roamingDefaults.copy(speedProfileId = it)) },
         modifier = Modifier.fillMaxWidth(),
-    ) {
-        Checkbox(
-            checked = roamingDefaults.followRoads,
-            onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(followRoads = it)) },
-        )
-        Text("Follow roads", style = MaterialTheme.typography.bodyMedium)
-    }
+    )
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Checkbox(
-            checked = roamingDefaults.returnToInitialLocation,
-            onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(returnToInitialLocation = it)) },
-        )
-        Text("Return to start", style = MaterialTheme.typography.bodyMedium)
-    }
+    SettingsCheckboxRow(
+        checked = roamingDefaults.followRoads,
+        onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(followRoads = it)) },
+        title = "Follow roads",
+    )
+    SettingsCheckboxRow(
+        checked = roamingDefaults.returnToInitialLocation,
+        onCheckedChange = { onUpdateRoamingDefaults(roamingDefaults.copy(returnToInitialLocation = it)) },
+        title = "Return to start",
+    )
 }
 
 @Composable

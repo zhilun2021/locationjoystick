@@ -73,7 +73,7 @@ fun QrShareDialog(
                             .padding(bottom = 8.dp),
                     colors =
                         CardDefaults.cardColors(
-                            containerColor = Color(0xFFFFF3CD),
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         ),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {

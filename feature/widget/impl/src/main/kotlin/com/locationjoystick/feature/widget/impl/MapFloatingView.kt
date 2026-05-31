@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
@@ -439,7 +440,7 @@ internal fun MapFloatingView(
                 LjMapIconButton(
                     icon = LjIcons.Explore,
                     contentDescription = if (isRoaming) "Roaming active" else "Start roaming",
-                    containerColor = if (isRoaming) Color(0xFF388E3C) else MaterialTheme.colorScheme.tertiaryContainer,
+                    containerColor = if (isRoaming) LjSuccess else MaterialTheme.colorScheme.tertiaryContainer,
                     contentColor = if (isRoaming) Color.White else MaterialTheme.colorScheme.onTertiaryContainer,
                     onClick = { if (!isRoaming) showRoamingSheet = true },
                 )
@@ -502,7 +503,8 @@ internal fun MapFloatingView(
                             .height(4.dp)
                             .background(
                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                                androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
+                                androidx.compose.foundation.shape
+                                    .RoundedCornerShape(2.dp),
                             ),
                 )
                 RoamingSheetContent(

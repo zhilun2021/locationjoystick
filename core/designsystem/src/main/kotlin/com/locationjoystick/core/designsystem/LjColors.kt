@@ -4,36 +4,42 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.graphics.Color
 
 val LjBg = Color(0xFF1E1E24)
+val LjSurface = Color(0xFF252530)
+val LjSurfaceVariant = Color(0xFF2D2D3A)
 val LjText = Color(0xFFF7EBE8)
+val LjTextSecondary = Color(0xFFB0A8B4)
 val LjAccent = Color(0xFFF79D5C)
 val LjError = Color(0xFFEF4444)
+val LjErrorContainer = Color(0xFF3D1A1A)
+val LjSuccess = Color(0xFF4CAF50)
+val LjInactive = Color(0xFF757575)
 
 val LjDarkColorScheme =
     darkColorScheme(
         primary = LjAccent,
         onPrimary = LjBg,
-        primaryContainer = LjBg,
-        onPrimaryContainer = LjText,
+        primaryContainer = Color(0xFF3D2E1E),
+        onPrimaryContainer = LjAccent,
         secondary = LjAccent,
         onSecondary = LjBg,
-        secondaryContainer = LjBg,
-        onSecondaryContainer = LjText,
+        secondaryContainer = Color(0xFF3D2E1E),
+        onSecondaryContainer = LjAccent,
         tertiary = LjAccent,
         onTertiary = LjBg,
-        tertiaryContainer = LjBg,
-        onTertiaryContainer = LjText,
+        tertiaryContainer = Color(0xFF2A2E3D),
+        onTertiaryContainer = LjAccent,
         error = LjError,
         onError = LjText,
-        errorContainer = LjBg,
-        onErrorContainer = LjText,
+        errorContainer = LjErrorContainer,
+        onErrorContainer = LjError,
         background = LjBg,
         onBackground = LjText,
-        surface = LjBg,
+        surface = LjSurface,
         onSurface = LjText,
-        surfaceVariant = LjBg,
-        onSurfaceVariant = LjText,
+        surfaceVariant = LjSurfaceVariant,
+        onSurfaceVariant = LjTextSecondary,
         outline = LjAccent,
-        outlineVariant = LjBg,
+        outlineVariant = Color(0xFF3A3A48),
         inverseSurface = LjText,
         inverseOnSurface = LjBg,
         inversePrimary = LjAccent,

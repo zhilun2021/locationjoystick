@@ -216,7 +216,7 @@ internal fun MapScreen(
     }
 
     LjScaffold(
-        title = "Lj",
+        title = "Map",
         onNavigationClick = onOpenDrawer,
         contentWindowInsets = WindowInsets.safeDrawing,
         containerColor = MaterialTheme.colorScheme.background,

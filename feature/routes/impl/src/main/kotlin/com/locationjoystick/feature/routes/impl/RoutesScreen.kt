@@ -119,7 +119,7 @@ internal fun RoutesScreen(
     var showAddMenu by remember { mutableStateOf(false) }
 
     LjScaffold(
-        title = "Lj",
+        title = "Routes",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         actions = {

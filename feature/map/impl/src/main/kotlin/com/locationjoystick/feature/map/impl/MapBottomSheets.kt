@@ -289,16 +289,16 @@ internal fun FavoriteTargetDetail(
                     .fillMaxWidth()
                     .padding(top = 16.dp),
         ) {
-            Text("Set Location")
+            Text("Set location")
         }
-        Button(
+        OutlinedButton(
             onClick = onGoToLocation,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
         ) {
-            Text("Walk To Location")
+            Text("Walk to location")
         }
         OutlinedButton(
             onClick = onGoToLocationViaRoads,

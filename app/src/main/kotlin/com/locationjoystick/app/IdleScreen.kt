@@ -51,7 +51,7 @@ internal fun IdleScreen(
     val isWide = LocalConfiguration.current.screenWidthDp >= 600
 
     LjScaffold(
-        title = "Lj",
+        title = "Home",
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.background,

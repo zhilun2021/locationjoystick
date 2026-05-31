@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjInactive
+import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.model.FavoriteLocation
@@ -112,7 +114,7 @@ internal fun WidgetPanel(
         if (isPanelExpanded) {
             features.forEach { feature ->
                 if (feature == WidgetFeature.ROUTES_FLOATING) {
-                    val routeIconTint = if (isActivityActive) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
+                    val routeIconTint = if (isActivityActive) LjSuccess else MaterialTheme.colorScheme.primary
                     // Route icon + active controls in a horizontal row
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
@@ -135,7 +137,7 @@ internal fun WidgetPanel(
                         if (isActivityActive && routeExpanded) {
                             if (isActivityPausable) {
                                 val pauseResumeIcon = if (isActivityPaused) LjIcons.PlayArrow else LjIcons.Pause
-                                val pauseResumeTint = if (isActivityPaused) Color(0xFF4CAF50) else Color(0xFF757575)
+                                val pauseResumeTint = if (isActivityPaused) LjSuccess else LjInactive
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier =
@@ -165,7 +167,7 @@ internal fun WidgetPanel(
                                 Icon(
                                     imageVector = LjIcons.Stop,
                                     contentDescription = "Stop",
-                                    tint = Color(0xFFF44336),
+                                    tint = MaterialTheme.colorScheme.error,
                                     modifier = Modifier.size(UiConstants.FAB_ICON_SIZE),
                                 )
                             }
@@ -173,7 +175,7 @@ internal fun WidgetPanel(
                     }
                 } else {
                     val (icon, active) = featureIconAndState(feature, joystickVisible, joystickLocked, activeProfileId)
-                    val iconTint = if (active) MaterialTheme.colorScheme.primary else Color(0xFF757575)
+                    val iconTint = if (active) MaterialTheme.colorScheme.primary else LjInactive
                     Box(
                         contentAlignment = Alignment.Center,
                         modifier =
