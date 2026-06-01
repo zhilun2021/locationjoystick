@@ -273,6 +273,10 @@ object AppConstants {
         const val ENDPOINT_STROKE_COLOR = 0xFFFFFFFFL
         const val ROUTE_LINE_COLOR = 0xFFFF9800L
         const val ACTIVE_BUTTON_COLOR = 0xFF43A047L
+        const val WAYPOINT_CIRCLE_COLOR = 0xFF1976D2L
+        const val ROUTE_CREATOR_LINE_COLOR = 0xFF2196F3L
+        const val START_POINT_COLOR = 0xFF4CAF50L
+        const val SELECTED_POINT_COLOR = 0xFFFF5722L
     }
 
     object AnimationConstants {

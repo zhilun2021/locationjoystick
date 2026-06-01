@@ -264,8 +264,10 @@ internal fun MapFloatingView(
                                 CircleLayer(MapLibreLayerIds.ENDPOINTS, MapLibreSourceIds.ENDPOINTS)
                                     .withProperties(
                                         PropertyFactory.circleRadius(8f),
-                                        PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
-                                        PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                        PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
+                                        PropertyFactory.circleStrokeColor(
+                                            Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                        ),
                                         PropertyFactory.circleStrokeWidth(2f),
                                     ),
                             )
@@ -282,8 +284,10 @@ internal fun MapFloatingView(
                                 CircleLayer(MapLibreLayerIds.POSITION, MapLibreSourceIds.POSITION)
                                     .withProperties(
                                         PropertyFactory.circleRadius(10f),
-                                        PropertyFactory.circleColor(Color(0xFF1E88E5).toArgb()),
-                                        PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                        PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
+                                        PropertyFactory.circleStrokeColor(
+                                            Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                        ),
                                         PropertyFactory.circleStrokeWidth(2f),
                                     ),
                             )

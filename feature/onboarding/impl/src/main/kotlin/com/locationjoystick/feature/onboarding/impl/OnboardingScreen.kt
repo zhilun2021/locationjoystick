@@ -37,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -52,13 +51,12 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
+import com.locationjoystick.core.designsystem.LjWarning
+import com.locationjoystick.core.designsystem.LjWarningContainer
 import com.locationjoystick.core.designsystem.component.AppIcon
 import com.locationjoystick.core.designsystem.component.LjPrimaryButton
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.feature.onboarding.api.ONBOARDING_ROUTE
-
-private val AmberPending = Color(0xFFF59E0B)
-private val AmberPendingContainer = Color(0xFF451A03)
 
 fun NavGraphBuilder.onboardingScreen(onSetupComplete: () -> Unit) {
     composable(route = ONBOARDING_ROUTE) {
@@ -233,12 +231,12 @@ private fun OnboardingStepCard(
     onExtraAction: (() -> Unit)? = null,
 ) {
     val statusColor by animateColorAsState(
-        targetValue = if (isGranted) MaterialTheme.colorScheme.secondary else AmberPending,
+        targetValue = if (isGranted) MaterialTheme.colorScheme.secondary else LjWarning,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "statusColor",
     )
     val statusContainerColor by animateColorAsState(
-        targetValue = if (isGranted) MaterialTheme.colorScheme.secondaryContainer else AmberPendingContainer,
+        targetValue = if (isGranted) MaterialTheme.colorScheme.secondaryContainer else LjWarningContainer,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "statusContainerColor",
     )

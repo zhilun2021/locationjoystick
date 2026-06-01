@@ -337,7 +337,7 @@ internal fun MapScreen(
                                     CircleLayer(MapLibreLayerIds.SEARCH_MARKER, MapLibreSourceIds.SEARCH_MARKER)
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
-                                            PropertyFactory.circleColor(Color(0xFFFF9800).toArgb()),
+                                            PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
                                             PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),

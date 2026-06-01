@@ -295,8 +295,12 @@ internal fun RouteCreatorScreen(
                                         CircleLayer(MapLibreLayerIds.CURRENT_POS, MapLibreSourceIds.CURRENT_POS)
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
-                                                PropertyFactory.circleColor(Color(0xFF1976D2).toArgb()),
-                                                PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                                PropertyFactory.circleColor(
+                                                    Color(AppConstants.MapColorConstants.WAYPOINT_CIRCLE_COLOR).toArgb(),
+                                                ),
+                                                PropertyFactory.circleStrokeColor(
+                                                    Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                ),
                                                 PropertyFactory.circleStrokeWidth(2f),
                                             ),
                                     )
@@ -308,7 +312,7 @@ internal fun RouteCreatorScreen(
                                     LineLayer(MapLibreLayerIds.ROUTE_SEGMENTS, MapLibreSourceIds.ROUTE_SEGMENTS)
                                         .withProperties(
                                             PropertyFactory.lineColor(
-                                                Color(0xFF2196F3).toArgb(),
+                                                Color(AppConstants.MapColorConstants.ROUTE_CREATOR_LINE_COLOR).toArgb(),
                                             ),
                                             PropertyFactory.lineWidth(3f),
                                         ),
@@ -322,10 +326,10 @@ internal fun RouteCreatorScreen(
                                         .withProperties(
                                             PropertyFactory.circleRadius(8f),
                                             PropertyFactory.circleColor(
-                                                Color(0xFF4CAF50).toArgb(),
+                                                Color(AppConstants.MapColorConstants.START_POINT_COLOR).toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeColor(
-                                                Color(0xFFFFFFFF).toArgb(),
+                                                Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),

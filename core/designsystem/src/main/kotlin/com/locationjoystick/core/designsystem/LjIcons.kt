@@ -23,6 +23,8 @@ import androidx.compose.material.icons.rounded.Directions
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LocationOn
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Route
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Search
@@ -56,6 +59,9 @@ object LjIcons {
     val DirectionsWalk = Icons.AutoMirrored.Rounded.DirectionsWalk
     val Directions = Icons.Rounded.Directions
     val Edit = Icons.Outlined.EditNote
+    val ElevationDown = Icons.Rounded.KeyboardArrowDown
+    val ElevationNeutral = Icons.Rounded.RadioButtonUnchecked
+    val ElevationUp = Icons.Rounded.KeyboardArrowUp
     val Explore = Icons.Rounded.Explore
     val Favorite = Icons.Rounded.Favorite
     val FavoriteBorder = Icons.Outlined.FavoriteBorder

@@ -21,10 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -184,9 +180,9 @@ internal fun WidgetPanel(
                 } else if (feature == WidgetFeature.ELEVATION_CONTROLS) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         listOf(
-                            Triple(ElevationMode.TiltUp, Icons.Rounded.KeyboardArrowUp, "Tilt up"),
-                            Triple(ElevationMode.Neutral, Icons.Rounded.RadioButtonUnchecked, "Neutral"),
-                            Triple(ElevationMode.TiltDown, Icons.Rounded.KeyboardArrowDown, "Tilt down"),
+                            Triple(ElevationMode.TiltUp, LjIcons.ElevationUp, "Tilt up"),
+                            Triple(ElevationMode.Neutral, LjIcons.ElevationNeutral, "Neutral"),
+                            Triple(ElevationMode.TiltDown, LjIcons.ElevationDown, "Tilt down"),
                         ).forEach { (mode, icon, desc) ->
                             val active = elevationMode == mode
                             val tint = if (active) MaterialTheme.colorScheme.primary else LjInactive
@@ -607,7 +603,7 @@ private fun featureIconAndState(
         }
 
         WidgetFeature.ELEVATION_CONTROLS -> {
-            Pair(Icons.Rounded.KeyboardArrowUp, false)
+            Pair(LjIcons.ElevationUp, false)
         }
     }
 

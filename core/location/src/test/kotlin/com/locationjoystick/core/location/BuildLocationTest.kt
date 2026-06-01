@@ -98,7 +98,11 @@ class BuildLocationTest {
         repeat(10) { tick ->
             val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick))
             assertNotNull(fix)
-            assertEquals(AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS, fix!!.altitudeMeters - fix.humanAltitudeOffsetMeters, 0.0001)
+            assertEquals(
+                AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS,
+                fix!!.altitudeMeters - fix.humanAltitudeOffsetMeters,
+                0.0001,
+            )
         }
     }
 

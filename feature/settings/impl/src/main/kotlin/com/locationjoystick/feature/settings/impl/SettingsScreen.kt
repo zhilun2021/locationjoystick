@@ -43,7 +43,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.designsystem.LjAccent
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.LjSegmentedControl
@@ -408,7 +407,7 @@ internal fun SettingsScreen(
                 ) { Text("Discard") }
                 TextButton(
                     onClick = onSaveChanges,
-                    colors = ButtonDefaults.textButtonColors(contentColor = LjAccent),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
                 ) { Text("Save") }
             }
         },

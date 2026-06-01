@@ -13,6 +13,8 @@ val LjError = Color(0xFFEF4444)
 val LjErrorContainer = Color(0xFF3D1A1A)
 val LjSuccess = Color(0xFF4CAF50)
 val LjInactive = Color(0xFF757575)
+val LjWarning = Color(0xFFF59E0B)
+val LjWarningContainer = Color(0xFF451A03)
 
 val LjDarkColorScheme =
     darkColorScheme(

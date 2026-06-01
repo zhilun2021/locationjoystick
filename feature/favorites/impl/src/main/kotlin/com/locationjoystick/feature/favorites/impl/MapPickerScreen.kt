@@ -225,8 +225,12 @@ internal fun MapPickerScreen(
                                         CircleLayer(MapLibreLayerIds.CURRENT_POS, MapLibreSourceIds.CURRENT_POS)
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
-                                                PropertyFactory.circleColor(Color(0xFF1976D2).toArgb()),
-                                                PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                                PropertyFactory.circleColor(
+                                                    Color(AppConstants.MapColorConstants.WAYPOINT_CIRCLE_COLOR).toArgb(),
+                                                ),
+                                                PropertyFactory.circleStrokeColor(
+                                                    Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                ),
                                                 PropertyFactory.circleStrokeWidth(2f),
                                             ),
                                     )
@@ -238,8 +242,12 @@ internal fun MapPickerScreen(
                                     CircleLayer(MapLibreLayerIds.MARKER, MapLibreSourceIds.MARKER)
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
-                                            PropertyFactory.circleColor(Color(0xFFFF5722).toArgb()),
-                                            PropertyFactory.circleStrokeColor(Color(0xFFFFFFFF).toArgb()),
+                                            PropertyFactory.circleColor(
+                                                Color(AppConstants.MapColorConstants.SELECTED_POINT_COLOR).toArgb(),
+                                            ),
+                                            PropertyFactory.circleStrokeColor(
+                                                Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                            ),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),
                                 )
