@@ -106,7 +106,7 @@ internal fun WidgetPanel(
             Image(
                 painter = painterResource(id = R.drawable.ic_app_launcher),
                 contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().clip(CircleShape),
             )
         }
 
