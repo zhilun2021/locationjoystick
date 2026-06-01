@@ -114,6 +114,22 @@ internal fun RoutesPickerSheet(
     }
 }
 
+private fun formatCooldownLabel(state: CooldownState.Cooling): String {
+    val remaining = state.remainingSeconds
+    val hours = remaining / AppConstants.TimeConstants.SECONDS_PER_HOUR
+    val minutes = (remaining % AppConstants.TimeConstants.SECONDS_PER_HOUR) / AppConstants.TimeConstants.SECONDS_PER_MINUTE
+    val seconds = remaining % AppConstants.TimeConstants.SECONDS_PER_MINUTE
+    val timeLabel =
+        when {
+            hours > 0 -> "%dh %dm".format(hours, minutes)
+            minutes > 0 -> "%dm %ds".format(minutes, seconds)
+            else -> "%ds".format(seconds)
+        }
+    val distKm = state.distanceMeters / 1000.0
+    val distLabel = if (distKm >= 1.0) "%.1f km".format(distKm) else "%.0f m".format(state.distanceMeters)
+    return "$timeLabel · $distLabel teleport"
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FavoritesPickerSheet(
@@ -137,6 +153,10 @@ internal fun FavoritesPickerSheet(
                     } else {
                         null
                     },
+                cooldownLabel = { fav ->
+                    val state = uiState.favoriteCooldownStates[fav.id]
+                    if (state is CooldownState.Cooling) formatCooldownLabel(state) else null
+                },
             )
         } else {
             FavoriteTargetDetail(
@@ -168,12 +188,13 @@ internal fun PendingTapSheet(
     isWalkActive: Boolean,
     cooldownState: CooldownState,
     onAction: (MapAction) -> Unit,
+    isEphemeralReplay: Boolean = false,
 ) {
     ModalBottomSheet(
         onDismissRequest = { onAction(MapAction.ClearPendingTap) },
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
-            if (isRouteReplay) {
+            if (isRouteReplay && !isEphemeralReplay) {
                 Text("Route in progress", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(16.dp))
                 Button(
@@ -200,25 +221,13 @@ internal fun PendingTapSheet(
                 Text("Move to this location?", style = MaterialTheme.typography.titleMedium)
                 if (cooldownState is CooldownState.Cooling) {
                     Spacer(Modifier.height(12.dp))
-                    val distKm = cooldownState.distanceMeters / 1000.0
-                    val distLabel = if (distKm >= 1.0) "%.1f km".format(distKm) else "%.0f m".format(cooldownState.distanceMeters)
-                    val remaining = cooldownState.remainingSeconds
-                    val hours = remaining / AppConstants.TimeConstants.SECONDS_PER_HOUR
-                    val minutes = (remaining % AppConstants.TimeConstants.SECONDS_PER_HOUR) / AppConstants.TimeConstants.SECONDS_PER_MINUTE
-                    val seconds = remaining % AppConstants.TimeConstants.SECONDS_PER_MINUTE
-                    val timeLabel =
-                        when {
-                            hours > 0 -> "%dh %dm".format(hours, minutes)
-                            minutes > 0 -> "%dm %ds".format(minutes, seconds)
-                            else -> "%ds".format(seconds)
-                        }
                     androidx.compose.material3.Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text(
-                            text = "Suggested wait: $timeLabel · $distLabel teleport",
+                            text = "Suggested wait: ${formatCooldownLabel(cooldownState)}",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         )

@@ -488,6 +488,7 @@ internal fun MapScreen(
             isRouteReplay = uiState.isRouteReplay,
             isWalkActive = uiState.isWalkActive,
             cooldownState = uiState.cooldownState,
+            isEphemeralReplay = uiState.ephemeralWaypoints.isNotEmpty(),
             onAction = onAction,
         )
     }
