@@ -442,6 +442,7 @@ internal fun RoutesFloatingView(
                         onClick = {
                             onStartRoute(routeId, loop, reverse, returnToLocation && !loop, false)
                             selectedRouteId = null
+                            onDismiss()
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
@@ -452,6 +453,7 @@ internal fun RoutesFloatingView(
                         onClick = {
                             onStartRoute(routeId, loop, reverse, returnToLocation && !loop, true)
                             selectedRouteId = null
+                            onDismiss()
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) {

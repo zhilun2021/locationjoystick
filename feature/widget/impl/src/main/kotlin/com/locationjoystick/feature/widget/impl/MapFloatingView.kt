@@ -672,11 +672,13 @@ internal fun MapFloatingView(
                                 Button(onClick = {
                                     onTeleport(fav.position)
                                     showFavoritesPicker = false
+                                    onDismiss()
                                 }) { Text("Teleport") }
                                 Spacer(Modifier.width(8.dp))
                                 Button(onClick = {
                                     onWalkTo(fav.position)
                                     showFavoritesPicker = false
+                                    onDismiss()
                                 }) { Text("Walk") }
                             }
                         }
