@@ -26,7 +26,7 @@ internal interface OsrmApi {
     @GET("route/v1/{profile}/{coordinates}")
     suspend fun getRoute(
         @Path("profile") profile: String,
-        @Path("coordinates") coordinates: String,
+        @Path(value = "coordinates", encoded = true) coordinates: String,
         @Query("overview") overview: String = AppConstants.OsrmConstants.OVERVIEW,
         @Query("geometries") geometries: String = AppConstants.OsrmConstants.GEOMETRIES,
     ): Response<OsrmRouteResponse>
