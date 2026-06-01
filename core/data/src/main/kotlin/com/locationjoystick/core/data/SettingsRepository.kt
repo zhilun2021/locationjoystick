@@ -12,7 +12,6 @@ import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -73,13 +72,9 @@ class SettingsRepository
             }
 
         fun getWidgetFeatures(): Flow<List<WidgetFeature>> =
-            combine(
-                dataSource.getWidgetItems(),
-                dataSource.getElevationControlsEnabled(),
-            ) { keys, elevationEnabled ->
+            dataSource.getWidgetItems().map { keys ->
                 keys
                     .mapNotNull { key -> key.toWidgetFeature() }
-                    .filter { it != WidgetFeature.ELEVATION_CONTROLS || elevationEnabled }
                     .sortedBy { widgetDisplayOrder.indexOf(it) }
             }
 
@@ -192,12 +187,4 @@ class SettingsRepository
         suspend fun setJitterSpeedIdleVariationPct(pct: Int) = dataSource.setJitterSpeedIdleVariationPct(pct)
 
         suspend fun setJitterSpeedMovingVariationPct(pct: Int) = dataSource.setJitterSpeedMovingVariationPct(pct)
-
-        fun getElevationControlsEnabled(): Flow<Boolean> = dataSource.getElevationControlsEnabled()
-
-        suspend fun setElevationControlsEnabled(enabled: Boolean) = dataSource.setElevationControlsEnabled(enabled)
-
-        fun getElevationTiltDegrees(): Flow<Float> = dataSource.getElevationTiltDegrees()
-
-        suspend fun setElevationTiltDegrees(degrees: Float) = dataSource.setElevationTiltDegrees(degrees)
     }

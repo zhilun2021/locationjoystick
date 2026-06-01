@@ -29,6 +29,7 @@ import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -168,8 +169,6 @@ class MockLocationService : Service() {
 
     @Volatile private var elevationControlsEnabled = false
 
-    @Volatile private var elevationTiltDegrees = AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES
-
     @Volatile private var currentElevationMode: ElevationMode? = null
 
     @Volatile private var rememberLastLocation: Boolean = false
@@ -300,14 +299,9 @@ class MockLocationService : Service() {
         observeSetting("speedMovingVariationPct", settingsRepository.getJitterSpeedMovingVariationPct()) { speedMovingVariationPct = it }
         observeSetting("activeProfileSpeed", settingsRepository.getActiveSpeedProfile()) { activeProfileSpeedMs = it.speedMetersPerSecond }
         serviceScope.launch {
-            settingsRepository.getElevationControlsEnabled().collect { enabled ->
-                elevationControlsEnabled = enabled
-                if (!enabled) currentElevationMode = null
-            }
-        }
-        serviceScope.launch {
-            settingsRepository.getElevationTiltDegrees().collect { degrees ->
-                elevationTiltDegrees = degrees
+            settingsRepository.getWidgetFeatures().collect { features ->
+                elevationControlsEnabled = WidgetFeature.ELEVATION_CONTROLS in features
+                if (!elevationControlsEnabled) currentElevationMode = null
             }
         }
     }
@@ -779,7 +773,7 @@ class MockLocationService : Service() {
             applyToProvider(fix, nowNanos)
             val elevMode = currentElevationMode
             if (elevationControlsEnabled && elevMode != null) {
-                sensorInjector.inject(elevMode, elevationTiltDegrees, Random.Default)
+                sensorInjector.inject(elevMode, AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES, Random.Default)
             }
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Failed to push location update", e)

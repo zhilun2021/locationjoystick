@@ -17,58 +17,78 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 @Singleton
-class SensorInjector @Inject constructor(
-    @ApplicationContext private val context: Context,
-) {
-    private val tag = "SensorInjector"
-    private val sensorManager = context.getSystemService(SensorManager::class.java)
+class SensorInjector
+    @Inject
+    constructor(
+        @ApplicationContext private val context: Context,
+    ) {
+        private val tag = "SensorInjector"
+        private val sensorManager = context.getSystemService(SensorManager::class.java)
 
-    private val injectMethod: Method? by lazy {
-        try {
-            SensorManager::class.java
-                .getDeclaredMethod(
-                    "injectSensorData",
-                    Sensor::class.java,
-                    FloatArray::class.java,
-                    Int::class.javaPrimitiveType,
-                    Long::class.javaPrimitiveType,
-                ).also { it.isAccessible = true }
-        } catch (e: NoSuchMethodException) {
-            Log.w(tag, "injectSensorData not available on this device: ${e.message}")
-            null
+        private val injectMethod: Method? by lazy {
+            try {
+                SensorManager::class.java
+                    .getDeclaredMethod(
+                        "injectSensorData",
+                        Sensor::class.java,
+                        FloatArray::class.java,
+                        Int::class.javaPrimitiveType,
+                        Long::class.javaPrimitiveType,
+                    ).also { it.isAccessible = true }
+            } catch (e: NoSuchMethodException) {
+                Log.w(tag, "injectSensorData not available on this device: ${e.message}")
+                null
+            }
+        }
+
+        fun inject(
+            mode: ElevationMode,
+            tiltDegrees: Float,
+            random: Random,
+        ) {
+            val method = injectMethod ?: return
+            val noisyTilt = tiltDegrees + (random.nextFloat() * 2f - 1f) * TILT_JITTER_DEGREES
+            val accelValues = computeGravityVector(mode, noisyTilt, random)
+            val rotValues = computeRotationVector(mode, noisyTilt)
+            val timestamp = System.nanoTime()
+
+            injectSensor(method, Sensor.TYPE_ACCELEROMETER, accelValues, timestamp)
+            injectSensor(method, Sensor.TYPE_ROTATION_VECTOR, rotValues, timestamp)
+        }
+
+        private fun computeGravityVector(
+            mode: ElevationMode,
+            tiltDeg: Float,
+            random: Random,
+        ): FloatArray = elevationGravityVector(mode, tiltDeg, random)
+
+        private fun computeRotationVector(
+            mode: ElevationMode,
+            tiltDeg: Float,
+        ): FloatArray = elevationRotationVector(mode, tiltDeg)
+
+        private fun noise(r: Random) = elevationNoise(r)
+
+        private fun injectSensor(
+            method: Method,
+            sensorType: Int,
+            values: FloatArray,
+            timestamp: Long,
+        ) {
+            val sensor = sensorManager.getDefaultSensor(sensorType) ?: return
+            try {
+                method.invoke(sensorManager, sensor, values, SensorManager.SENSOR_STATUS_ACCURACY_HIGH, timestamp)
+            } catch (e: Exception) {
+                Log.w(tag, "Failed to inject sensor type $sensorType: ${e.message}")
+            }
         }
     }
 
-    fun inject(mode: ElevationMode, tiltDegrees: Float, random: Random) {
-        val method = injectMethod ?: return
-        val noisyTilt = tiltDegrees + (random.nextFloat() * 2f - 1f) * TILT_JITTER_DEGREES
-        val accelValues = computeGravityVector(mode, noisyTilt, random)
-        val rotValues = computeRotationVector(mode, noisyTilt)
-        val timestamp = System.nanoTime()
-
-        injectSensor(method, Sensor.TYPE_ACCELEROMETER, accelValues, timestamp)
-        injectSensor(method, Sensor.TYPE_ROTATION_VECTOR, rotValues, timestamp)
-    }
-
-    private fun computeGravityVector(mode: ElevationMode, tiltDeg: Float, random: Random): FloatArray =
-        elevationGravityVector(mode, tiltDeg, random)
-
-    private fun computeRotationVector(mode: ElevationMode, tiltDeg: Float): FloatArray =
-        elevationRotationVector(mode, tiltDeg)
-
-    private fun noise(r: Random) = elevationNoise(r)
-
-    private fun injectSensor(method: Method, sensorType: Int, values: FloatArray, timestamp: Long) {
-        val sensor = sensorManager.getDefaultSensor(sensorType) ?: return
-        try {
-            method.invoke(sensorManager, sensor, values, SensorManager.SENSOR_STATUS_ACCURACY_HIGH, timestamp)
-        } catch (e: Exception) {
-            Log.w(tag, "Failed to inject sensor type $sensorType: ${e.message}")
-        }
-    }
-}
-
-internal fun elevationGravityVector(mode: ElevationMode, tiltDeg: Float, random: Random): FloatArray {
+internal fun elevationGravityVector(
+    mode: ElevationMode,
+    tiltDeg: Float,
+    random: Random,
+): FloatArray {
     val tiltRad = Math.toRadians(tiltDeg.toDouble()).toFloat()
     val yBase: Float
     val zBase: Float
@@ -77,10 +97,12 @@ internal fun elevationGravityVector(mode: ElevationMode, tiltDeg: Float, random:
             yBase = 0f
             zBase = GRAVITY
         }
+
         ElevationMode.TiltUp -> {
             yBase = -sin(tiltRad) * GRAVITY
             zBase = cos(tiltRad) * GRAVITY
         }
+
         ElevationMode.TiltDown -> {
             yBase = sin(tiltRad) * GRAVITY
             zBase = cos(tiltRad) * GRAVITY
@@ -93,7 +115,10 @@ internal fun elevationGravityVector(mode: ElevationMode, tiltDeg: Float, random:
     )
 }
 
-internal fun elevationRotationVector(mode: ElevationMode, tiltDeg: Float): FloatArray {
+internal fun elevationRotationVector(
+    mode: ElevationMode,
+    tiltDeg: Float,
+): FloatArray {
     val halfTilt = Math.toRadians(tiltDeg / 2.0)
     return when (mode) {
         ElevationMode.Neutral -> floatArrayOf(0f, 0f, 0f, 1f)

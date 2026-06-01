@@ -192,11 +192,12 @@ internal fun WidgetPanel(
                             val tint = if (active) MaterialTheme.colorScheme.primary else LjInactive
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .size(UiConstants.FAB_CONTAINER_SIZE)
-                                    .background(Color.Black, CircleShape)
-                                    .clickable { onElevationModeSelected(mode) },
+                                modifier =
+                                    Modifier
+                                        .padding(4.dp)
+                                        .size(UiConstants.FAB_CONTAINER_SIZE)
+                                        .background(Color.Black, CircleShape)
+                                        .clickable { onElevationModeSelected(mode) },
                             ) {
                                 Icon(
                                     imageVector = icon,

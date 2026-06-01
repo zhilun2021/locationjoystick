@@ -224,6 +224,7 @@ internal fun SettingsCheckboxRow(
     onCheckedChange: (Boolean) -> Unit,
     title: String,
     description: String? = null,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier =
@@ -232,9 +233,19 @@ internal fun SettingsCheckboxRow(
                 .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange)
+        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
         Column(modifier = Modifier.padding(start = 8.dp)) {
-            Text(title)
+            Text(
+                title,
+                color =
+                    if (enabled) {
+                        androidx.compose.ui.graphics.Color.Unspecified
+                    } else {
+                        MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.38f,
+                        )
+                    },
+            )
             if (description != null) {
                 Text(
                     description,

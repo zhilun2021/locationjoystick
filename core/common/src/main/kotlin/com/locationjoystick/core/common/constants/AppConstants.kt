@@ -289,7 +289,7 @@ object AppConstants {
         const val MIN_TILT_DEGREES = 20f
         const val MAX_TILT_DEGREES = 75f
         const val NOISE_AMPLITUDE_MS2 = 0.35f
-        const val TILT_JITTER_DEGREES = 2.5f
+        const val TILT_JITTER_DEGREES = 2.25f
         const val GRAVITY = 9.80665f
     }
 }

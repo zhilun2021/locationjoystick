@@ -11,11 +11,11 @@ import kotlin.math.sqrt
 import kotlin.random.Random
 
 class SensorInjectorTest {
-
-    private val zeroNoiseRandom = object : Random() {
-        override fun nextBits(bitCount: Int) = 0
-        // nextFloat() returns 0f → noise = (0*2-1)*AMP = -AMP; use seed 0 for fixed behaviour
-    }
+    private val zeroNoiseRandom =
+        object : Random() {
+            override fun nextBits(bitCount: Int) = 0
+            // nextFloat() returns 0f → noise = (0*2-1)*AMP = -AMP; use seed 0 for fixed behaviour
+        }
     private val seededRandom = Random(42)
 
     // -------------------------------------------------------------------------

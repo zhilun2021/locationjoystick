@@ -453,12 +453,30 @@ class FloatingWidgetService :
 
     private fun onFeatureButtonClicked(feature: WidgetFeature) {
         when (feature) {
-            WidgetFeature.JOYSTICK_TOGGLE -> toggleJoystick()
-            WidgetFeature.JOYSTICK_LOCK -> toggleJoystickLock()
-            WidgetFeature.ROUTES_FLOATING -> onRouteIconClicked()
-            WidgetFeature.FAVORITES_FLOATING -> showFavoritesFloatingView()
-            WidgetFeature.SPEED_CYCLE -> cycleSpeedProfile()
-            WidgetFeature.MAP_FLOATING -> showMapFloatingView()
+            WidgetFeature.JOYSTICK_TOGGLE -> {
+                toggleJoystick()
+            }
+
+            WidgetFeature.JOYSTICK_LOCK -> {
+                toggleJoystickLock()
+            }
+
+            WidgetFeature.ROUTES_FLOATING -> {
+                onRouteIconClicked()
+            }
+
+            WidgetFeature.FAVORITES_FLOATING -> {
+                showFavoritesFloatingView()
+            }
+
+            WidgetFeature.SPEED_CYCLE -> {
+                cycleSpeedProfile()
+            }
+
+            WidgetFeature.MAP_FLOATING -> {
+                showMapFloatingView()
+            }
+
             WidgetFeature.ELEVATION_CONTROLS -> { /* handled by sub-buttons */ }
         }
     }
