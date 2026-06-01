@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -171,6 +172,18 @@ interface PreferencesDataSource {
 
     /** Sets the GPS jitter moving speed variation percentage. */
     suspend fun setJitterSpeedMovingVariationPct(pct: Int)
+
+    /** Gets the elevation tilt jitter in degrees (0 = disabled). */
+    fun getElevationTiltJitterDegrees(): Flow<Float>
+
+    /** Sets the elevation tilt jitter in degrees. */
+    suspend fun setElevationTiltJitterDegrees(degrees: Float)
+
+    /** Gets the elevation accelerometer noise amplitude in m/s² (0 = disabled). */
+    fun getElevationNoiseAmplitudeMs2(): Flow<Float>
+
+    /** Sets the elevation accelerometer noise amplitude in m/s². */
+    suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float)
 }
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -231,6 +244,8 @@ class AppPreferencesDataSource
             val FAVORITES_SORT_NEWEST_FIRST = booleanPreferencesKey("favorites_sort_newest_first")
             val JITTER_SPEED_IDLE_VARIATION_PCT = intPreferencesKey("jitter_speed_idle_variation_pct")
             val JITTER_SPEED_MOVING_VARIATION_PCT = intPreferencesKey("jitter_speed_moving_variation_pct")
+            val ELEVATION_TILT_JITTER_DEGREES = floatPreferencesKey("elevation_tilt_jitter_degrees")
+            val ELEVATION_NOISE_AMPLITUDE_MS2 = floatPreferencesKey("elevation_noise_amplitude_ms2")
         }
 
         override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -648,6 +663,48 @@ class AppPreferencesDataSource
             }
         }
 
+        override fun getElevationTiltJitterDegrees(): Flow<Float> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading elevation tilt jitter preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.ELEVATION_TILT_JITTER_DEGREES] ?: DEFAULT_ELEVATION_TILT_JITTER_DEGREES }
+
+        override suspend fun setElevationTiltJitterDegrees(degrees: Float) {
+            dataStore.edit { prefs ->
+                prefs[Keys.ELEVATION_TILT_JITTER_DEGREES] =
+                    degrees.coerceIn(
+                        AppConstants.ElevationConstants.MIN_TILT_JITTER_DEGREES,
+                        AppConstants.ElevationConstants.MAX_TILT_JITTER_DEGREES,
+                    )
+            }
+        }
+
+        override fun getElevationNoiseAmplitudeMs2(): Flow<Float> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading elevation noise amplitude preference", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs -> prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2] ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2 }
+
+        override suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float) {
+            dataStore.edit { prefs ->
+                prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2] =
+                    amplitude.coerceIn(
+                        AppConstants.ElevationConstants.MIN_NOISE_AMPLITUDE_MS2,
+                        AppConstants.ElevationConstants.MAX_NOISE_AMPLITUDE_MS2,
+                    )
+            }
+        }
+
         companion object {
             const val DATASTORE_FILE_NAME = AppConstants.DataStoreConstants.FILE_NAME
 
@@ -685,6 +742,9 @@ class AppPreferencesDataSource
 
             const val DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT = AppConstants.JitterConstants.SPEED_IDLE_VARIATION_PCT_DEFAULT
             const val DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT = AppConstants.JitterConstants.SPEED_MOVING_VARIATION_PCT_DEFAULT
+
+            const val DEFAULT_ELEVATION_TILT_JITTER_DEGREES = AppConstants.ElevationConstants.DEFAULT_TILT_JITTER_DEGREES
+            const val DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2 = AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2
         }
     }
 

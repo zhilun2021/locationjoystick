@@ -25,5 +25,7 @@ data class SettingsUiState(
     val realismSuspendedMockingEnabled: Boolean = AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT,
     val jitterSpeedIdleVariationPct: Int = AppConstants.JitterConstants.SPEED_IDLE_VARIATION_PCT_DEFAULT,
     val jitterSpeedMovingVariationPct: Int = AppConstants.JitterConstants.SPEED_MOVING_VARIATION_PCT_DEFAULT,
+    val elevationTiltJitterDegrees: Float = AppConstants.ElevationConstants.DEFAULT_TILT_JITTER_DEGREES,
+    val elevationNoiseAmplitudeMs2: Float = AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2,
     val isDirty: Boolean = false,
 )

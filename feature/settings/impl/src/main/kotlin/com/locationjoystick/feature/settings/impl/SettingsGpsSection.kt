@@ -159,6 +159,36 @@ internal fun GpsJitterSection(
 }
 
 @Composable
+internal fun ElevationJitterSection(
+    uiState: SettingsUiState,
+    onSetTiltJitterDegrees: (Float) -> Unit,
+    onSetNoiseAmplitudeMs2: (Float) -> Unit,
+) {
+    Text("Elevation Jitter", style = MaterialTheme.typography.headlineSmall)
+    Spacer(modifier = Modifier.height(4.dp))
+    Text(
+        "Noise applied to sensor injection each tick. Set 0 to disable.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        JitterInput(
+            value = uiState.elevationTiltJitterDegrees.toDouble(),
+            onValueChange = { onSetTiltJitterDegrees(it.toFloat()) },
+            label = "Tilt jitter (°)",
+            modifier = Modifier.weight(1f),
+        )
+        JitterInput(
+            value = uiState.elevationNoiseAmplitudeMs2.toDouble(),
+            onValueChange = { onSetNoiseAmplitudeMs2(it.toFloat()) },
+            label = "Accel noise (m/s²)",
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
 internal fun GpsRealismSection(
     uiState: SettingsUiState,
     onSetRealismBearingHoldIdle: (Boolean) -> Unit,

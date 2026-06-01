@@ -797,6 +797,31 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
             )
     }
 
+    private val elevationTiltJitterDegreesFlow =
+        MutableStateFlow(AppPreferencesDataSource.DEFAULT_ELEVATION_TILT_JITTER_DEGREES)
+    private val elevationNoiseAmplitudeMs2Flow =
+        MutableStateFlow(AppPreferencesDataSource.DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2)
+
+    override fun getElevationTiltJitterDegrees(): Flow<Float> = elevationTiltJitterDegreesFlow
+
+    override suspend fun setElevationTiltJitterDegrees(degrees: Float) {
+        elevationTiltJitterDegreesFlow.value =
+            degrees.coerceIn(
+                AppConstants.ElevationConstants.MIN_TILT_JITTER_DEGREES,
+                AppConstants.ElevationConstants.MAX_TILT_JITTER_DEGREES,
+            )
+    }
+
+    override fun getElevationNoiseAmplitudeMs2(): Flow<Float> = elevationNoiseAmplitudeMs2Flow
+
+    override suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float) {
+        elevationNoiseAmplitudeMs2Flow.value =
+            amplitude.coerceIn(
+                AppConstants.ElevationConstants.MIN_NOISE_AMPLITUDE_MS2,
+                AppConstants.ElevationConstants.MAX_NOISE_AMPLITUDE_MS2,
+            )
+    }
+
     val recentSearchesFlow = MutableStateFlow<List<RecentSearch>>(emptyList())
 
     override fun getRecentSearches(): Flow<List<RecentSearch>> = recentSearchesFlow

@@ -92,6 +92,11 @@ class SettingsViewModel
             val suspendedMockingEnabled: Boolean,
         )
 
+        private data class ElevationJitterChunk(
+            val tiltJitterDegrees: Float,
+            val noiseAmplitudeMs2: Float,
+        )
+
         private data class RepoState(
             val walkSpeed: Double,
             val runSpeed: Double,
@@ -111,6 +116,8 @@ class SettingsViewModel
             val realismSuspendedMockingEnabled: Boolean,
             val jitterSpeedIdleVariationPct: Int,
             val jitterSpeedMovingVariationPct: Int,
+            val elevationTiltJitterDegrees: Float,
+            val elevationNoiseAmplitudeMs2: Float,
         )
 
         private data class DraftState(
@@ -133,6 +140,8 @@ class SettingsViewModel
             val realismSuspendedMockingEnabled: Boolean? = null,
             val jitterSpeedIdleVariationPct: Int? = null,
             val jitterSpeedMovingVariationPct: Int? = null,
+            val elevationTiltJitterDegrees: Float? = null,
+            val elevationNoiseAmplitudeMs2: Float? = null,
         )
 
         private val mutableDraft = MutableStateFlow(DraftState())
@@ -140,60 +149,73 @@ class SettingsViewModel
         private val repoStateFlow =
             combine(
                 combine(
-                    settingsRepository.getWalkSpeed(),
-                    settingsRepository.getRunSpeed(),
-                    settingsRepository.getBikeSpeed(),
-                ) { walkSpeed, runSpeed, bikeSpeed ->
-                    Triple(walkSpeed, runSpeed, bikeSpeed)
+                    combine(
+                        settingsRepository.getWalkSpeed(),
+                        settingsRepository.getRunSpeed(),
+                        settingsRepository.getBikeSpeed(),
+                    ) { walkSpeed, runSpeed, bikeSpeed ->
+                        Triple(walkSpeed, runSpeed, bikeSpeed)
+                    },
+                    combine(
+                        settingsRepository.getSpeedUnit(),
+                        settingsRepository.getWidgetFeatures(),
+                        settingsRepository.getRememberLastLocation(),
+                    ) { speedUnit, features, rememberLastLocation ->
+                        Triple(speedUnit, features, rememberLastLocation)
+                    },
+                    combine(
+                        combine(
+                            settingsRepository.getJitterIdleRadius(),
+                            settingsRepository.getJitterMovingRadius(),
+                            settingsRepository.getJitterIntervalSeconds(),
+                        ) { idle, moving, interval -> Triple(idle, moving, interval) },
+                        settingsRepository.getJitterIdleIntervalSeconds(),
+                        settingsRepository.getJitterSpeedIdleVariationPct(),
+                        settingsRepository.getJitterSpeedMovingVariationPct(),
+                    ) { triple, idleInterval, idleVarPct, movingVarPct ->
+                        JitterChunk(
+                            idleRadius = triple.first,
+                            movingRadius = triple.second,
+                            intervalSeconds = triple.third,
+                            idleIntervalSeconds = idleInterval,
+                            speedIdleVariationPct = idleVarPct,
+                            speedMovingVariationPct = movingVarPct,
+                        )
+                    },
+                    combine(
+                        settingsRepository.getMapFollowsLocation(),
+                        combine(
+                            settingsRepository.getRealismBearingHoldIdle(),
+                            settingsRepository.getRealismAltitudeEnabled(),
+                            settingsRepository.getRealismWarmupEnabled(),
+                        ) { bearing, altitude, warmup -> Triple(bearing, altitude, warmup) },
+                        combine(
+                            settingsRepository.getRealismSatelliteExtrasEnabled(),
+                            settingsRepository.getRealismSuspendedMockingEnabled(),
+                        ) { satellites, suspended -> Pair(satellites, suspended) },
+                    ) { mapFollows, realism1, realism2 ->
+                        RepoRealismChunk(
+                            mapFollowsLocation = mapFollows,
+                            bearingHoldIdle = realism1.first,
+                            altitudeEnabled = realism1.second,
+                            warmupEnabled = realism1.third,
+                            satelliteExtrasEnabled = realism2.first,
+                            suspendedMockingEnabled = realism2.second,
+                        )
+                    },
+                ) { speeds, settings, jitter, chunk ->
+                    Pair(Pair(speeds, settings), Pair(jitter, chunk))
                 },
                 combine(
-                    settingsRepository.getSpeedUnit(),
-                    settingsRepository.getWidgetFeatures(),
-                    settingsRepository.getRememberLastLocation(),
-                ) { speedUnit, features, rememberLastLocation ->
-                    Triple(speedUnit, features, rememberLastLocation)
+                    settingsRepository.getElevationTiltJitterDegrees(),
+                    settingsRepository.getElevationNoiseAmplitudeMs2(),
+                ) { tiltJitter, noiseAmp ->
+                    ElevationJitterChunk(tiltJitterDegrees = tiltJitter, noiseAmplitudeMs2 = noiseAmp)
                 },
-                combine(
-                    combine(
-                        settingsRepository.getJitterIdleRadius(),
-                        settingsRepository.getJitterMovingRadius(),
-                        settingsRepository.getJitterIntervalSeconds(),
-                    ) { idle, moving, interval -> Triple(idle, moving, interval) },
-                    settingsRepository.getJitterIdleIntervalSeconds(),
-                    settingsRepository.getJitterSpeedIdleVariationPct(),
-                    settingsRepository.getJitterSpeedMovingVariationPct(),
-                ) { triple, idleInterval, idleVarPct, movingVarPct ->
-                    JitterChunk(
-                        idleRadius = triple.first,
-                        movingRadius = triple.second,
-                        intervalSeconds = triple.third,
-                        idleIntervalSeconds = idleInterval,
-                        speedIdleVariationPct = idleVarPct,
-                        speedMovingVariationPct = movingVarPct,
-                    )
-                },
-                combine(
-                    settingsRepository.getMapFollowsLocation(),
-                    combine(
-                        settingsRepository.getRealismBearingHoldIdle(),
-                        settingsRepository.getRealismAltitudeEnabled(),
-                        settingsRepository.getRealismWarmupEnabled(),
-                    ) { bearing, altitude, warmup -> Triple(bearing, altitude, warmup) },
-                    combine(
-                        settingsRepository.getRealismSatelliteExtrasEnabled(),
-                        settingsRepository.getRealismSuspendedMockingEnabled(),
-                    ) { satellites, suspended -> Pair(satellites, suspended) },
-                ) { mapFollows, realism1, realism2 ->
-                    RepoRealismChunk(
-                        mapFollowsLocation = mapFollows,
-                        bearingHoldIdle = realism1.first,
-                        altitudeEnabled = realism1.second,
-                        warmupEnabled = realism1.third,
-                        satelliteExtrasEnabled = realism2.first,
-                        suspendedMockingEnabled = realism2.second,
-                    )
-                },
-            ) { speeds, settings, jitter, chunk ->
+            ) { inner, elevChunk ->
+                val (speedsSettings, jitterChunk) = inner
+                val (speeds, settings) = speedsSettings
+                val (jitter, chunk) = jitterChunk
                 RepoState(
                     walkSpeed = speeds.first,
                     runSpeed = speeds.second,
@@ -213,6 +235,8 @@ class SettingsViewModel
                     realismSuspendedMockingEnabled = chunk.suspendedMockingEnabled,
                     jitterSpeedIdleVariationPct = jitter.speedIdleVariationPct,
                     jitterSpeedMovingVariationPct = jitter.speedMovingVariationPct,
+                    elevationTiltJitterDegrees = elevChunk.tiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2 = elevChunk.noiseAmplitudeMs2,
                 )
             }
 
@@ -255,6 +279,8 @@ class SettingsViewModel
                     realismSuspendedMockingEnabled = draftState.realismSuspendedMockingEnabled ?: repoState.realismSuspendedMockingEnabled,
                     jitterSpeedIdleVariationPct = draftState.jitterSpeedIdleVariationPct ?: repoState.jitterSpeedIdleVariationPct,
                     jitterSpeedMovingVariationPct = draftState.jitterSpeedMovingVariationPct ?: repoState.jitterSpeedMovingVariationPct,
+                    elevationTiltJitterDegrees = draftState.elevationTiltJitterDegrees ?: repoState.elevationTiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2 = draftState.elevationNoiseAmplitudeMs2 ?: repoState.elevationNoiseAmplitudeMs2,
                     isDirty = isDirty,
                 )
             }.stateIn(
@@ -339,6 +365,14 @@ class SettingsViewModel
             mutableDraft.update { it.copy(jitterSpeedMovingVariationPct = pct) }
         }
 
+        fun setElevationTiltJitterDegrees(degrees: Float) {
+            mutableDraft.update { it.copy(elevationTiltJitterDegrees = degrees) }
+        }
+
+        fun setElevationNoiseAmplitudeMs2(amplitude: Float) {
+            mutableDraft.update { it.copy(elevationNoiseAmplitudeMs2 = amplitude) }
+        }
+
         fun saveChanges() {
             viewModelScope.launch {
                 try {
@@ -377,6 +411,12 @@ class SettingsViewModel
                         null
                     ) {
                         settingsRepository.setJitterSpeedMovingVariationPct(d.jitterSpeedMovingVariationPct)
+                    }
+                    if (d.elevationTiltJitterDegrees != null) {
+                        settingsRepository.setElevationTiltJitterDegrees(d.elevationTiltJitterDegrees)
+                    }
+                    if (d.elevationNoiseAmplitudeMs2 != null) {
+                        settingsRepository.setElevationNoiseAmplitudeMs2(d.elevationNoiseAmplitudeMs2)
                     }
                     mutableDraft.value = DraftState()
                     userFeedback.emit(UserFeedback("Settings saved"))
@@ -440,6 +480,8 @@ class SettingsViewModel
                 jitterIdleIntervalSeconds = state.jitterIdleIntervalSeconds,
                 jitterSpeedIdleVariationPct = state.jitterSpeedIdleVariationPct,
                 jitterSpeedMovingVariationPct = state.jitterSpeedMovingVariationPct,
+                elevationTiltJitterDegrees = state.elevationTiltJitterDegrees,
+                elevationNoiseAmplitudeMs2 = state.elevationNoiseAmplitudeMs2,
             )
         }
 
@@ -513,6 +555,8 @@ class SettingsViewModel
                     setJitterIdleIntervalSeconds(exportData.jitterIdleIntervalSeconds)
                     setJitterSpeedIdleVariationPct(exportData.jitterSpeedIdleVariationPct)
                     setJitterSpeedMovingVariationPct(exportData.jitterSpeedMovingVariationPct)
+                    setElevationTiltJitterDegrees(exportData.elevationTiltJitterDegrees)
+                    setElevationNoiseAmplitudeMs2(exportData.elevationNoiseAmplitudeMs2)
                     userFeedback.emit(UserFeedback("Import complete"))
                 } catch (e: Exception) {
                     Log.e(TAG, "Import failed", e)
@@ -598,6 +642,8 @@ class SettingsViewModel
                     settingsRepository.setRealismSuspendedMockingEnabled(exportData.settings.suspendedMockingEnabled)
                     settingsRepository.setJitterSpeedIdleVariationPct(exportData.jitterSpeedIdleVariationPct)
                     settingsRepository.setJitterSpeedMovingVariationPct(exportData.jitterSpeedMovingVariationPct)
+                    settingsRepository.setElevationTiltJitterDegrees(exportData.elevationTiltJitterDegrees)
+                    settingsRepository.setElevationNoiseAmplitudeMs2(exportData.elevationNoiseAmplitudeMs2)
                     userFeedback.emit(UserFeedback("Import complete"))
                 } catch (e: Exception) {
                     Log.e(TAG, "Import from ExportData failed", e)

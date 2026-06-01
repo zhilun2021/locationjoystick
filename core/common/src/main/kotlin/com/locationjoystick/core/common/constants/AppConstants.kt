@@ -70,6 +70,9 @@ object AppConstants {
         const val ALTITUDE_ENABLED_DEFAULT = true
         const val SATELLITE_EXTRAS_ENABLED_DEFAULT = true
         const val RECOMMENDED_IDLE_RADIUS_METERS = 0.8
+        const val ALTITUDE_HUMAN_OFFSET_METERS = 0.8
+        const val ALTITUDE_HUMAN_OFFSET_JITTER_PCT = 0.05
+        const val ALTITUDE_HUMAN_OFFSET_CLAMP_FACTOR = 0.5
     }
 
     object RoamingConstants {
@@ -288,8 +291,12 @@ object AppConstants {
         const val DEFAULT_TILT_DEGREES = 45f
         const val MIN_TILT_DEGREES = 20f
         const val MAX_TILT_DEGREES = 75f
-        const val NOISE_AMPLITUDE_MS2 = 0.35f
-        const val TILT_JITTER_DEGREES = 2.25f
+        const val DEFAULT_NOISE_AMPLITUDE_MS2 = 0.35f
+        const val DEFAULT_TILT_JITTER_DEGREES = 2.25f
+        const val MIN_TILT_JITTER_DEGREES = 0f
+        const val MAX_TILT_JITTER_DEGREES = 10f
+        const val MIN_NOISE_AMPLITUDE_MS2 = 0f
+        const val MAX_NOISE_AMPLITUDE_MS2 = 2f
         const val GRAVITY = 9.80665f
     }
 }

@@ -1,8 +1,7 @@
 package com.locationjoystick.core.location
 
+import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2
 import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.GRAVITY
-import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.NOISE_AMPLITUDE_MS2
-import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.TILT_JITTER_DEGREES
 import com.locationjoystick.core.model.ElevationMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -24,15 +23,15 @@ class SensorInjectorTest {
 
     @Test
     fun `neutral gravity vector has z close to GRAVITY`() {
-        val v = elevationGravityVector(ElevationMode.Neutral, 45f, seededRandom)
+        val v = elevationGravityVector(ElevationMode.Neutral, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, seededRandom)
         // x is noise-only, y is noise-only, z ≈ GRAVITY ± noise
-        assertEquals(GRAVITY, v[2], NOISE_AMPLITUDE_MS2 + 0.01f)
+        assertEquals(GRAVITY, v[2], DEFAULT_NOISE_AMPLITUDE_MS2 + 0.01f)
     }
 
     @Test
     fun `neutral gravity vector y-base is zero within noise`() {
-        val v = elevationGravityVector(ElevationMode.Neutral, 45f, seededRandom)
-        assertTrue("y should be near 0 for neutral", kotlin.math.abs(v[1]) <= NOISE_AMPLITUDE_MS2 + 0.01f)
+        val v = elevationGravityVector(ElevationMode.Neutral, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, seededRandom)
+        assertTrue("y should be near 0 for neutral", kotlin.math.abs(v[1]) <= DEFAULT_NOISE_AMPLITUDE_MS2 + 0.01f)
     }
 
     // -------------------------------------------------------------------------
@@ -41,7 +40,7 @@ class SensorInjectorTest {
 
     @Test
     fun `tilt-up gravity vector y is negative`() {
-        val v = elevationGravityVector(ElevationMode.TiltUp, 45f, seededRandom)
+        val v = elevationGravityVector(ElevationMode.TiltUp, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, seededRandom)
         assertTrue("y should be negative when tilting up", v[1] < 0f)
     }
 
@@ -49,9 +48,9 @@ class SensorInjectorTest {
     fun `tilt-up gravity vector magnitude is approximately GRAVITY`() {
         // Run 20 samples; magnitude should always be within noise tolerance of GRAVITY
         repeat(20) {
-            val v = elevationGravityVector(ElevationMode.TiltUp, 45f, Random(it.toLong()))
+            val v = elevationGravityVector(ElevationMode.TiltUp, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, Random(it.toLong()))
             val mag = sqrt((v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).toDouble()).toFloat()
-            assertEquals("magnitude should be ~GRAVITY", GRAVITY, mag, NOISE_AMPLITUDE_MS2 * 3 + 0.05f)
+            assertEquals("magnitude should be ~GRAVITY", GRAVITY, mag, DEFAULT_NOISE_AMPLITUDE_MS2 * 3 + 0.05f)
         }
     }
 
@@ -61,7 +60,7 @@ class SensorInjectorTest {
 
     @Test
     fun `tilt-down gravity vector y is positive`() {
-        val v = elevationGravityVector(ElevationMode.TiltDown, 45f, seededRandom)
+        val v = elevationGravityVector(ElevationMode.TiltDown, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, seededRandom)
         assertTrue("y should be positive when tilting down", v[1] > 0f)
     }
 
@@ -72,14 +71,14 @@ class SensorInjectorTest {
         // To get zero noise we need nextFloat() == 0.5 exactly, which isn't guaranteed.
         // Instead verify magnitudes match within noise tolerance across many seeds.
         repeat(50) { seed ->
-            val up = elevationGravityVector(ElevationMode.TiltUp, 45f, Random(seed.toLong()))
-            val down = elevationGravityVector(ElevationMode.TiltDown, 45f, Random(seed.toLong()))
+            val up = elevationGravityVector(ElevationMode.TiltUp, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, Random(seed.toLong()))
+            val down = elevationGravityVector(ElevationMode.TiltDown, 45f, DEFAULT_NOISE_AMPLITUDE_MS2, Random(seed.toLong()))
             // Same seed → same noise values; y_up = -base+noise, y_down = +base+noise
             // So y_up + y_down = 2*noise, and |y_down| - |y_up| ≈ 0 when base >> noise
             val sumY = up[1] + down[1] // = 2 * noise(r1) for this seed
             assertTrue(
                 "sum of y-components should be small (2*noise), got $sumY",
-                kotlin.math.abs(sumY) <= 2 * NOISE_AMPLITUDE_MS2 + 0.01f,
+                kotlin.math.abs(sumY) <= 2 * DEFAULT_NOISE_AMPLITUDE_MS2 + 0.01f,
             )
         }
     }
@@ -126,8 +125,8 @@ class SensorInjectorTest {
     @Test
     fun `noise stays within amplitude bounds`() {
         repeat(1000) { seed ->
-            val n = elevationNoise(Random(seed.toLong()))
-            assertTrue("noise $n out of bounds", kotlin.math.abs(n) <= NOISE_AMPLITUDE_MS2 + 0.0001f)
+            val n = elevationNoise(DEFAULT_NOISE_AMPLITUDE_MS2, Random(seed.toLong()))
+            assertTrue("noise $n out of bounds", kotlin.math.abs(n) <= DEFAULT_NOISE_AMPLITUDE_MS2 + 0.0001f)
         }
     }
 
@@ -137,8 +136,8 @@ class SensorInjectorTest {
 
     @Test
     fun `larger tilt angle produces larger y deflection for TiltUp`() {
-        val small = elevationGravityVector(ElevationMode.TiltUp, 20f, Random(0))
-        val large = elevationGravityVector(ElevationMode.TiltUp, 70f, Random(0))
+        val small = elevationGravityVector(ElevationMode.TiltUp, 20f, DEFAULT_NOISE_AMPLITUDE_MS2, Random(0))
+        val large = elevationGravityVector(ElevationMode.TiltUp, 70f, DEFAULT_NOISE_AMPLITUDE_MS2, Random(0))
         assertTrue(
             "larger tilt should produce more negative y",
             large[1] < small[1],

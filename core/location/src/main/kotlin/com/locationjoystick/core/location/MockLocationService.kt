@@ -167,9 +167,15 @@ class MockLocationService : Service() {
 
     @Volatile private var activeProfileSpeedMs: Double = AppConstants.ProfileConstants.WALK_SPEED_MPS
 
+    @Volatile private var humanAltitudeOffsetMeters: Double = AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_METERS
+
     @Volatile private var elevationControlsEnabled = false
 
     @Volatile private var currentElevationMode: ElevationMode? = null
+
+    @Volatile private var elevationTiltJitterDegrees: Float = AppConstants.ElevationConstants.DEFAULT_TILT_JITTER_DEGREES
+
+    @Volatile private var elevationNoiseAmplitudeMs2: Float = AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2
 
     @Volatile private var rememberLastLocation: Boolean = false
 
@@ -297,6 +303,8 @@ class MockLocationService : Service() {
         observeSetting("rememberLastLocation", settingsRepository.getRememberLastLocation()) { rememberLastLocation = it }
         observeSetting("speedIdleVariationPct", settingsRepository.getJitterSpeedIdleVariationPct()) { speedIdleVariationPct = it }
         observeSetting("speedMovingVariationPct", settingsRepository.getJitterSpeedMovingVariationPct()) { speedMovingVariationPct = it }
+        observeSetting("elevationTiltJitterDegrees", settingsRepository.getElevationTiltJitterDegrees()) { elevationTiltJitterDegrees = it }
+        observeSetting("elevationNoiseAmplitudeMs2", settingsRepository.getElevationNoiseAmplitudeMs2()) { elevationNoiseAmplitudeMs2 = it }
         observeSetting("activeProfileSpeed", settingsRepository.getActiveSpeedProfile()) { activeProfileSpeedMs = it.speedMetersPerSecond }
         serviceScope.launch {
             settingsRepository.getWidgetFeatures().collect { features ->
@@ -708,6 +716,7 @@ class MockLocationService : Service() {
             shouldApplyMovingJitter = shouldApplyMovingJitter,
             shouldApplyIdleJitter = shouldApplyIdleJitter,
             altitudeMeters = currentAltitudeMeters,
+            humanAltitudeOffsetMeters = humanAltitudeOffsetMeters,
             warmupStartMs = warmupStartMs,
             warmupEnabled = warmupEnabled,
             bearingHoldEnabled = bearingHoldEnabled,
@@ -762,7 +771,8 @@ class MockLocationService : Service() {
             val nowMs = nowNanos / 1_000_000L
             val snapshot = captureSnapshot(nowMs)
             val fix = buildLocation(snapshot, nowMs, Random.Default) ?: return
-            currentAltitudeMeters = fix.altitudeMeters
+            currentAltitudeMeters = fix.altitudeMeters - fix.humanAltitudeOffsetMeters
+            humanAltitudeOffsetMeters = fix.humanAltitudeOffsetMeters
             if (snapshot.speedMs > 0f) lastNonZeroBearing = snapshot.bearing
             if (snapshot.shouldApplyMovingJitter && snapshot.mode != MockMode.TELEPORT) {
                 lastJitterTimestampMs = nowMs
@@ -773,7 +783,13 @@ class MockLocationService : Service() {
             applyToProvider(fix, nowNanos)
             val elevMode = currentElevationMode
             if (elevationControlsEnabled && elevMode != null) {
-                sensorInjector.inject(elevMode, AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES, Random.Default)
+                sensorInjector.inject(
+                    elevMode,
+                    AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES,
+                    elevationTiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2,
+                    Random.Default,
+                )
             }
         } catch (e: IllegalArgumentException) {
             Log.e(TAG, "Failed to push location update", e)

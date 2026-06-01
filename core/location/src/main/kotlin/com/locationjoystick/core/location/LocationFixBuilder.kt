@@ -64,6 +64,7 @@ internal data class LocationSnapshot(
     val isSuspendedPhase: Boolean,
     val cachedSatelliteCount: Int,
     val cachedUsedInFixCount: Int,
+    val humanAltitudeOffsetMeters: Double,
 )
 
 /**
@@ -94,6 +95,7 @@ internal data class LocationFix(
     val speedAccuracyMps: Float,
     val satelliteCount: Int?,
     val usedInFixCount: Int?,
+    val humanAltitudeOffsetMeters: Double,
 )
 
 /** Atomic push/pause phase state for suspended mocking. */
@@ -244,6 +246,14 @@ internal fun buildLocation(
             AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS
         }
 
+    // Human-hold offset random walk: ±5% of base per tick, clamped to [50%, 150%] of base
+    val humanBase = AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_METERS
+    val humanStep = humanBase * AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_JITTER_PCT
+    val humanClamp = humanBase * AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_CLAMP_FACTOR
+    val newHumanOffset =
+        (state.humanAltitudeOffsetMeters + (random.nextDouble() * 2.0 - 1.0) * humanStep)
+            .coerceIn(humanBase - humanClamp, humanBase + humanClamp)
+
     // Bearing hold + noise
     val rawBearing =
         when {
@@ -327,7 +337,8 @@ internal fun buildLocation(
     return LocationFix(
         latitude = outLat,
         longitude = outLon,
-        altitudeMeters = newAltitude,
+        altitudeMeters = newAltitude + newHumanOffset,
+        humanAltitudeOffsetMeters = newHumanOffset,
         speedMs = outSpeed,
         bearing = outBearing,
         accuracyMeters = outAccuracy,

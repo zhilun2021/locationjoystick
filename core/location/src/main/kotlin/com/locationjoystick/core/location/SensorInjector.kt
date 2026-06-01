@@ -5,8 +5,6 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.util.Log
 import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.GRAVITY
-import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.NOISE_AMPLITUDE_MS2
-import com.locationjoystick.core.common.constants.AppConstants.ElevationConstants.TILT_JITTER_DEGREES
 import com.locationjoystick.core.model.ElevationMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.lang.reflect.Method
@@ -44,11 +42,13 @@ class SensorInjector
         fun inject(
             mode: ElevationMode,
             tiltDegrees: Float,
+            tiltJitterDegrees: Float,
+            noiseAmplitudeMs2: Float,
             random: Random,
         ) {
             val method = injectMethod ?: return
-            val noisyTilt = tiltDegrees + (random.nextFloat() * 2f - 1f) * TILT_JITTER_DEGREES
-            val accelValues = computeGravityVector(mode, noisyTilt, random)
+            val noisyTilt = tiltDegrees + (random.nextFloat() * 2f - 1f) * tiltJitterDegrees
+            val accelValues = computeGravityVector(mode, noisyTilt, noiseAmplitudeMs2, random)
             val rotValues = computeRotationVector(mode, noisyTilt)
             val timestamp = System.nanoTime()
 
@@ -59,15 +59,14 @@ class SensorInjector
         private fun computeGravityVector(
             mode: ElevationMode,
             tiltDeg: Float,
+            noiseAmplitude: Float,
             random: Random,
-        ): FloatArray = elevationGravityVector(mode, tiltDeg, random)
+        ): FloatArray = elevationGravityVector(mode, tiltDeg, noiseAmplitude, random)
 
         private fun computeRotationVector(
             mode: ElevationMode,
             tiltDeg: Float,
         ): FloatArray = elevationRotationVector(mode, tiltDeg)
-
-        private fun noise(r: Random) = elevationNoise(r)
 
         private fun injectSensor(
             method: Method,
@@ -87,6 +86,7 @@ class SensorInjector
 internal fun elevationGravityVector(
     mode: ElevationMode,
     tiltDeg: Float,
+    noiseAmplitude: Float,
     random: Random,
 ): FloatArray {
     val tiltRad = Math.toRadians(tiltDeg.toDouble()).toFloat()
@@ -109,9 +109,9 @@ internal fun elevationGravityVector(
         }
     }
     return floatArrayOf(
-        elevationNoise(random),
-        yBase + elevationNoise(random),
-        zBase + elevationNoise(random),
+        elevationNoise(noiseAmplitude, random),
+        yBase + elevationNoise(noiseAmplitude, random),
+        zBase + elevationNoise(noiseAmplitude, random),
     )
 }
 
@@ -127,4 +127,7 @@ internal fun elevationRotationVector(
     }
 }
 
-internal fun elevationNoise(r: Random) = (r.nextFloat() * 2f - 1f) * NOISE_AMPLITUDE_MS2
+internal fun elevationNoise(
+    amplitude: Float,
+    r: Random,
+) = (r.nextFloat() * 2f - 1f) * amplitude

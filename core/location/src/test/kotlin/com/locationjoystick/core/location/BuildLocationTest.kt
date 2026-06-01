@@ -31,6 +31,7 @@ class BuildLocationTest {
         isSuspendedPhase: Boolean = false,
         cachedSatelliteCount: Int = 10,
         cachedUsedInFixCount: Int = 8,
+        humanAltitudeOffsetMeters: Double = AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_METERS,
     ) = LocationSnapshot(
         latitude = 48.8566,
         longitude = 2.3522,
@@ -55,6 +56,7 @@ class BuildLocationTest {
         isSuspendedPhase = isSuspendedPhase,
         cachedSatelliteCount = cachedSatelliteCount,
         cachedUsedInFixCount = cachedUsedInFixCount,
+        humanAltitudeOffsetMeters = humanAltitudeOffsetMeters,
     )
 
     @Test
@@ -81,9 +83,10 @@ class BuildLocationTest {
             val fix = buildLocation(snap, tick.toLong() * 1000, random)
             assertNotNull(fix)
             fix!!
-            assertTrue("Altitude ${fix.altitudeMeters} out of bounds [$min, $max]", fix.altitudeMeters in min..max)
-            altitudes.add(fix.altitudeMeters)
-            altitude = fix.altitudeMeters
+            val terrainAlt = fix.altitudeMeters - fix.humanAltitudeOffsetMeters
+            assertTrue("Terrain altitude $terrainAlt out of bounds [$min, $max]", terrainAlt in min..max)
+            altitudes.add(terrainAlt)
+            altitude = terrainAlt
         }
         val variance = altitudes.map { (it - altitudes.average()) * (it - altitudes.average()) }.average()
         assertTrue("Altitude variance $variance should be > 0", variance > 0.0)
@@ -95,7 +98,7 @@ class BuildLocationTest {
         repeat(10) { tick ->
             val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick))
             assertNotNull(fix)
-            assertEquals(AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS, fix!!.altitudeMeters, 0.0001)
+            assertEquals(AppConstants.RealismConstants.DEFAULT_ALTITUDE_METERS, fix!!.altitudeMeters - fix.humanAltitudeOffsetMeters, 0.0001)
         }
     }
 

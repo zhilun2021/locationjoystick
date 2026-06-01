@@ -245,6 +245,8 @@ fun SettingsRoute(
         onSetRealismSuspendedMockingEnabled = viewModel::setRealismSuspendedMockingEnabled,
         onSetJitterSpeedIdleVariationPct = viewModel::setJitterSpeedIdleVariationPct,
         onSetJitterSpeedMovingVariationPct = viewModel::setJitterSpeedMovingVariationPct,
+        onSetElevationTiltJitterDegrees = viewModel::setElevationTiltJitterDegrees,
+        onSetElevationNoiseAmplitudeMs2 = viewModel::setElevationNoiseAmplitudeMs2,
         convertMsToDisplay = viewModel::convertMsToDisplay,
         onUpdateRoamingDefaults = viewModel::updateRoamingDefaults,
         onExport = { exportLauncher.launch("${AppConstants.ExportConstants.FILENAME_PREFIX}-${System.currentTimeMillis()}.json") },
@@ -284,6 +286,8 @@ private fun SettingsScreenPreview() {
         onSetRealismSuspendedMockingEnabled = {},
         onSetJitterSpeedIdleVariationPct = {},
         onSetJitterSpeedMovingVariationPct = {},
+        onSetElevationTiltJitterDegrees = {},
+        onSetElevationNoiseAmplitudeMs2 = {},
         convertMsToDisplay = { v, _ -> v },
         onExport = {},
         onImport = {},
@@ -318,6 +322,8 @@ internal fun SettingsScreen(
     onSetRealismSuspendedMockingEnabled: (Boolean) -> Unit,
     onSetJitterSpeedIdleVariationPct: (Int) -> Unit,
     onSetJitterSpeedMovingVariationPct: (Int) -> Unit,
+    onSetElevationTiltJitterDegrees: (Float) -> Unit,
+    onSetElevationNoiseAmplitudeMs2: (Float) -> Unit,
     convertMsToDisplay: (Double, SpeedUnit) -> Double,
     onUpdateRoamingDefaults: (RoamingDefaults) -> Unit = {},
     onExport: () -> Unit,
@@ -447,6 +453,12 @@ internal fun SettingsScreen(
                             onSetRealismWarmupEnabled,
                             onSetRealismSatelliteExtrasEnabled,
                             onSetRealismSuspendedMockingEnabled,
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        ElevationJitterSection(
+                            uiState,
+                            onSetElevationTiltJitterDegrees,
+                            onSetElevationNoiseAmplitudeMs2,
                         )
                         Spacer(modifier = Modifier.height(24.dp))
                         MapSection(uiState, onSetRememberLastLocation, onSetMapFollowsLocation)
