@@ -11,10 +11,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +42,7 @@ private const val RADIUS_MAX_METERS = 100_000.0
 private const val DISTANCE_MIN_METERS = 50.0
 private const val DISTANCE_MAX_METERS = 50_000.0
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoamingSheetContent(
     draft: RoamingDefaults,
@@ -152,18 +156,14 @@ fun RoamingSheetContent(
         // Speed profile selector
         Text("Speed profile", style = MaterialTheme.typography.labelLarge)
         Spacer(Modifier.height(4.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            SPEED_PROFILES.forEach { id ->
-                if (draft.speedProfileId == id) {
-                    OutlinedButton(
-                        onClick = { onDraftChange(draft.copy(speedProfileId = id)) },
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) { Text(SPEED_PROFILE_LABELS[id] ?: id) }
-                } else {
-                    FilledTonalButton(
-                        onClick = { onDraftChange(draft.copy(speedProfileId = id)) },
-                        modifier = Modifier.padding(end = 4.dp),
-                    ) { Text(SPEED_PROFILE_LABELS[id] ?: id) }
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SPEED_PROFILES.forEachIndexed { index, id ->
+                SegmentedButton(
+                    selected = draft.speedProfileId == id,
+                    onClick = { onDraftChange(draft.copy(speedProfileId = id)) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = SPEED_PROFILES.size),
+                ) {
+                    Text(SPEED_PROFILE_LABELS[id] ?: id)
                 }
             }
         }
