@@ -5,6 +5,9 @@
         <service
             android:name=".FloatingWidgetService"
             android:exported="false" />
+        <service
+            android:name=".ElevationOverlayService"
+            android:exported="false" />
     </application>
 
 </manifest>

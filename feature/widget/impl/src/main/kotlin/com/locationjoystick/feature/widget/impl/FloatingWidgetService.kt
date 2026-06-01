@@ -33,7 +33,6 @@ import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
-import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RoamingConfig
@@ -128,7 +127,27 @@ class FloatingWidgetService :
     // Master panel expand/collapse
     private val isPanelExpandedFlow = MutableStateFlow(false)
 
-    private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
+    private val elevationOverlayVisibleFlow = MutableStateFlow(false)
+
+    private var elevationOverlayService: ElevationOverlayService? = null
+    private var elevationOverlayBound = false
+    private val elevationOverlayConnection =
+        object : ServiceConnection {
+            override fun onServiceConnected(
+                name: ComponentName,
+                binder: IBinder,
+            ) {
+                elevationOverlayService = (binder as ElevationOverlayService.LocalBinder).getService()
+                Log.d(TAG, "Bound to ElevationOverlayService")
+            }
+
+            override fun onServiceDisconnected(name: ComponentName) {
+                elevationOverlayService = null
+                elevationOverlayBound = false
+                elevationOverlayVisibleFlow.value = false
+                Log.d(TAG, "Unbound from ElevationOverlayService")
+            }
+        }
 
     // Drag position — class-level so onConfigurationChanged can re-clamp them after rotation.
     private var dragOffsetX = 0f
@@ -192,6 +211,8 @@ class FloatingWidgetService :
                 setClassName(packageName, "com.locationjoystick.feature.joystick.impl.JoystickOverlayService")
             }
         joystickBound = bindService(joystickIntent, joystickConnection, Context.BIND_AUTO_CREATE)
+        elevationOverlayBound =
+            bindService(Intent(this, ElevationOverlayService::class.java), elevationOverlayConnection, Context.BIND_AUTO_CREATE)
         lifecycleScope.launch {
             settingsRepository.getActiveSpeedProfile().collect { profile ->
                 activeProfileIdFlow.value = profile.id
@@ -228,6 +249,13 @@ class FloatingWidgetService :
                 unbindService(joystickConnection)
             } catch (e: IllegalArgumentException) {
                 Log.e(TAG, "Joystick service was not bound when attempting to unbind", e)
+            }
+        }
+        if (elevationOverlayBound) {
+            try {
+                unbindService(elevationOverlayConnection)
+            } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "Elevation overlay service was not bound when attempting to unbind", e)
             }
         }
         super.onDestroy()
@@ -285,7 +313,7 @@ class FloatingWidgetService :
                     (mockMode == com.locationjoystick.core.model.MockMode.ROAMING && isRoamingPausedWidget)
             val routeExpanded by routeExpandedFlow.collectAsStateWithLifecycle()
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
-            val elevationMode by elevationModeFlow.collectAsStateWithLifecycle()
+            val elevationOverlayVisible by elevationOverlayVisibleFlow.collectAsStateWithLifecycle()
 
             LjTheme {
                 WidgetPanel(
@@ -298,10 +326,9 @@ class FloatingWidgetService :
                     isActivityPausable = isActivityPausable,
                     routeExpanded = routeExpanded,
                     isPanelExpanded = isPanelExpanded,
-                    elevationMode = elevationMode,
+                    elevationOverlayVisible = elevationOverlayVisible,
                     onToggleMaster = { isPanelExpandedFlow.value = !isPanelExpandedFlow.value },
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature) },
-                    onElevationModeSelected = { mode -> onElevationModeSelected(mode) },
                     onRouteClicked = { onRouteIconClicked() },
                     onRoutePauseResume = { onRoutePauseResumeClicked() },
                     onRouteStop = { onRouteStopClicked() },
@@ -477,13 +504,25 @@ class FloatingWidgetService :
                 showMapFloatingView()
             }
 
-            WidgetFeature.ELEVATION_CONTROLS -> { /* handled by sub-buttons */ }
+            WidgetFeature.ELEVATION_CONTROLS -> {
+                toggleElevationOverlay()
+            }
         }
     }
 
-    private fun onElevationModeSelected(mode: ElevationMode) {
-        elevationModeFlow.value = mode
-        mockLocationService?.setElevationMode(mode)
+    private fun toggleElevationOverlay() {
+        val svc =
+            elevationOverlayService ?: run {
+                Log.w(TAG, "Cannot toggle elevation overlay: service not bound")
+                return
+            }
+        try {
+            svc.toggleOverlay()
+            elevationOverlayVisibleFlow.value = svc.isOverlayVisible
+            Log.d(TAG, "Toggled elevation overlay visibility")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to toggle elevation overlay", e)
+        }
     }
 
     private fun onRouteIconClicked() {
@@ -739,6 +778,7 @@ class FloatingWidgetService :
                     } else {
                         locationRepository.updatePosition(pos)
                     }
+                    hidePanelView()
                     moveAppToBack()
                 },
                 onWalkTo = { pos ->
@@ -753,6 +793,7 @@ class FloatingWidgetService :
                             ),
                         )
                     }
+                    hidePanelView()
                     moveAppToBack()
                 },
                 onStopRouteAndTeleport = { pos ->
@@ -763,6 +804,7 @@ class FloatingWidgetService :
                     } else {
                         locationRepository.updatePosition(pos)
                     }
+                    hidePanelView()
                     moveAppToBack()
                 },
                 onStopRouteAndWalkTo = { pos ->
@@ -778,6 +820,7 @@ class FloatingWidgetService :
                             ),
                         )
                     }
+                    hidePanelView()
                     moveAppToBack()
                 },
                 onFinishRouteAndWalkTo = { pos ->
