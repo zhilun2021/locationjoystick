@@ -137,4 +137,6 @@ sealed interface MapAction {
     data object ToggleRouteControls : MapAction
 
     data object ToggleRoamingControls : MapAction
+
+    data object ToggleWalkControls : MapAction
 }

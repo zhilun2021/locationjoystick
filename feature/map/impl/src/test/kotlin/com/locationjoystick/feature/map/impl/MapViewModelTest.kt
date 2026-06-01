@@ -101,6 +101,7 @@ class MapViewModelTest {
             flowOf(SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = 1.39))
         every { settingsRepository.getRememberLastLocation() } returns flowOf(false)
         every { settingsRepository.getLastLocation() } returns flowOf(null)
+        every { settingsRepository.getLastTeleportTime() } returns flowOf(0L)
 
         viewModel =
             MapViewModel(
@@ -662,5 +663,68 @@ class MapViewModelTest {
             val state = viewModel.uiState.value
             assertEquals(emptyList<LatLng>(), state.ephemeralWaypoints)
             assertNull(state.walkTarget)
+        }
+
+    // Walk controls expansion tests
+
+    @Test
+    fun `toggleWalkControls_expandsAndCollapsesControls`() =
+        runTest {
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.ToggleWalkControls)
+            assertEquals(true, viewModel.uiState.value.isWalkControlsExpanded)
+
+            viewModel.onAction(MapAction.ToggleWalkControls)
+            assertEquals(false, viewModel.uiState.value.isWalkControlsExpanded)
+        }
+
+    @Test
+    fun `stopWalk_resetsWalkControlsExpanded`() =
+        runTest {
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.ToggleWalkControls)
+            assertEquals(true, viewModel.uiState.value.isWalkControlsExpanded)
+
+            viewModel.onAction(MapAction.StopWalk)
+            assertEquals(false, viewModel.uiState.value.isWalkControlsExpanded)
+        }
+
+    @Test
+    fun `ephemeralReplay_ephemeralWaypointsNotEmpty_whenInEphemeralReplayMode`() =
+        runTest {
+            val currentPos = LatLng(48.8, 2.3)
+            val walkTarget = LatLng(48.9, 2.4)
+            val extra = LatLng(49.0, 2.5)
+            val waypoints = listOf(currentPos, walkTarget, extra)
+
+            every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns waypoints
+            viewModel =
+                MapViewModel(
+                    context,
+                    locationRepository,
+                    routeRepository,
+                    favoriteRepository,
+                    settingsRepository,
+                    roamingRepository,
+                    preferencesDataSource,
+                    walkCoordinator,
+                    teleportUseCase,
+                    ephemeralReplayController,
+                    osrmClient,
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
+            viewModel.onAction(MapAction.AddEphemeralWaypoint(extra))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                true,
+                viewModel.uiState.value.ephemeralWaypoints
+                    .isNotEmpty(),
+            )
         }
 }

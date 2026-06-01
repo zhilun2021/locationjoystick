@@ -38,26 +38,42 @@ internal fun MapFabColumn(
         }
 
         if (uiState.walkTarget != null) {
-            LjMapIconButton(
-                icon = LjIcons.Stop,
-                contentDescription = "Stop walk",
-                containerColor = MaterialTheme.colorScheme.error,
-                contentColor = MaterialTheme.colorScheme.onError,
-                onClick = { onAction(MapAction.StopWalk) },
-            )
-            LjMapIconButton(
-                icon = if (uiState.isWalkPaused) LjIcons.PlayArrow else LjIcons.Pause,
-                contentDescription = if (uiState.isWalkPaused) "Resume walk" else "Pause walk",
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                onClick = {
-                    if (uiState.isWalkPaused) {
-                        onAction(MapAction.ResumeWalk)
-                    } else {
-                        onAction(MapAction.PauseWalk)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4),
+            ) {
+                AnimatedVisibility(visible = uiState.isWalkControlsExpanded) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(UiConstants.FAB_CONTAINER_SIZE / 4)) {
+                        LjMapIconButton(
+                            icon = if (uiState.isWalkPaused) LjIcons.PlayArrow else LjIcons.Pause,
+                            contentDescription = if (uiState.isWalkPaused) "Resume walk" else "Pause walk",
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onClick = {
+                                if (uiState.isWalkPaused) {
+                                    onAction(MapAction.ResumeWalk)
+                                } else {
+                                    onAction(MapAction.PauseWalk)
+                                }
+                            },
+                        )
+                        LjMapIconButton(
+                            icon = LjIcons.Stop,
+                            contentDescription = "Stop walk",
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError,
+                            onClick = { onAction(MapAction.StopWalk) },
+                        )
                     }
-                },
-            )
+                }
+                LjMapIconButton(
+                    icon = LjIcons.DirectionsWalk,
+                    contentDescription = "Walk active",
+                    containerColor = LjAccent,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    onClick = { onAction(MapAction.ToggleWalkControls) },
+                )
+            }
         }
 
         // Start/Stop spoof — always visible

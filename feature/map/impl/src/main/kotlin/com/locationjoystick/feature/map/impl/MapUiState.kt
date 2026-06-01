@@ -37,6 +37,7 @@ data class MapUiState(
     val routeTrace: List<LatLng>? = null,
     val walkMode: WalkMode = WalkMode.Idle,
     val isWalkPaused: Boolean = false,
+    val isWalkControlsExpanded: Boolean = false,
     val isRouteReplay: Boolean = false,
     val showRoutesSheet: Boolean = false,
     val isRouteControlsExpanded: Boolean = false,
@@ -49,6 +50,7 @@ data class MapUiState(
     val isRoamingSheetMinimized: Boolean = false,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val cooldownState: CooldownState = CooldownState.Ready,
+    val favoriteCooldownStates: Map<String, CooldownState> = emptyMap(),
 )
 
 // Convenience accessors
