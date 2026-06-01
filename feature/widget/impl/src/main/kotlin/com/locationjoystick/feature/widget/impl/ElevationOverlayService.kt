@@ -81,7 +81,9 @@ class ElevationOverlayService :
                 name: ComponentName,
                 binder: IBinder,
             ) {
-                mockLocationService = (binder as MockLocationService.LocalBinder).getService()
+                val svc = (binder as MockLocationService.LocalBinder).getService()
+                mockLocationService = svc
+                _elevationMode.value?.let { svc.setElevationMode(it) }
                 Log.d(TAG, "Bound to MockLocationService")
             }
 
