@@ -55,15 +55,10 @@ class LjApplicationConventionPlugin : Plugin<Project> {
                     }
                 }
 
-                // Produce per-ABI APKs for GitHub Releases: arm64-v8a (~90 % of devices) and
-                // armeabi-v7a (older 32-bit devices). Drops x86/x86_64 emulator-only slices that
-                // inflate APK size significantly due to MapLibre native libraries.
+                // Produce a single universal APK for GitHub Releases.
                 splits {
                     abi {
-                        isEnable = true
-                        reset()
-                        include("arm64-v8a", "armeabi-v7a")
-                        isUniversalApk = true // also keep a universal fallback APK
+                        isEnable = false
                     }
                 }
 
