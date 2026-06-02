@@ -25,19 +25,17 @@ Everything code-side is already implemented.
 
 Complete at Play Console → App content → Data safety.
 
-AdMob collects the following — declare each:
+Declare the following:
 
 | Data type | Collected | Shared | Purpose | Required by user |
 |-----------|-----------|--------|---------|-----------------|
-| Advertising ID | Yes | Yes (Google) | Advertising | No |
-| Device or other IDs | Yes | Yes (Google) | Advertising | No |
-| Approximate location | Yes | Yes (Google) | Advertising | No |
-| App interactions | Yes | Yes (Google) | Analytics / Advertising | No |
+| Approximate location | No | No | App functionality | No |
+| App interactions | No | No | App functionality | No |
 
 Also declare:
 - Location data (fine) — collected, not shared — app functionality (map centre, route recording)
-- No data is encrypted in transit? → Mark as encrypted (HTTPS only)
-- Users can request deletion? → Yes (delete advertising ID on device; no account to delete)
+- Data is encrypted in transit (HTTPS only)
+- Users can request deletion? → No user data stored server-side; all data is on-device
 
 ---
 
@@ -63,13 +61,13 @@ Play Console → App content → Target audience and content.
 
 - Target age group: **Everyone** (no adult content, utility app)
 - Does the app appeal to children? **No** (technical developer tool — not designed for children)
-- This keeps content rating at E while avoiding child-directed ad restrictions (AdMob can still serve standard ads)
+- This keeps content rating at E (utility app, no adult content)
 
 ---
 
 ## Store Listing Assets
 
-- [ ] **Short description** (≤80 chars): e.g. `Mock your GPS location on Android — no root required.`
+- [ ] **Short description** (≤80 chars): `Mock your GPS location on Android — no root, no ads.`
 - [ ] **Full description** (≤4000 chars): explain all features
 - [ ] **Screenshots**: 15 already in `docs/wiki/screenshots/` — upload at least 2 phone screenshots
 - [ ] **Feature graphic** (1024×500 px): design and upload — shown at top of listing
@@ -81,7 +79,7 @@ Play Console → App content → Target audience and content.
 
 Play Console → App content:
 
-- [ ] Ads: **Yes, contains ads** (AdMob banners)
+- [ ] Ads: **No ads** — app contains no advertising SDKs or ad placements
 - [ ] Sensitive permissions: declare `ACCESS_FINE_LOCATION` and `SYSTEM_ALERT_WINDOW` usage
 - [ ] News app: No
 - [ ] COVID-19 contact tracing: No
@@ -94,10 +92,5 @@ Play Console → App content:
 - [ ] `make test` passes
 - [ ] `make bundle` produces a signed AAB (env vars set)
 - [ ] Internal test track upload succeeds in Play Console
-- [ ] UMP consent dialog appears on fresh install with EU locale:
-  ```bash
-  adb shell setprop persist.sys.locale de-DE && adb reboot
-  ```
-- [ ] Ads load after consent granted (check logcat for `Ads: Initialize`)
 - [ ] Privacy Policy URL resolves in browser
 - [ ] About screen Privacy Policy link opens correctly in-app

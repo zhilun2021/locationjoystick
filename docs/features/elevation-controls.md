@@ -16,6 +16,8 @@ The tilt angle is fixed at `AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES
 
 ## Root Requirement
 
+> **Root is not required to use locationjoystick.** This is the only feature in the app that optionally uses root. All core features (mock GPS, joystick, routes, favorites, roaming, widget) work without root via Android's built-in Developer Options mock location setting.
+
 `android.permission.INJECT_EVENTS` is a signature-level permission not grantable to third-party apps normally. On rooted devices, `SensorPermissionBootstrap` grants it via:
 
 ```

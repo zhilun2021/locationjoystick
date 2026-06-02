@@ -9,7 +9,8 @@ Spoof your GPS location on Android. Point your phone anywhere on the map using a
 
 ## Why locationjoystick?
 
-- **Free and open-source** — no subscriptions, no premium tiers, no paywalled features
+- **Free and open-source** — no subscriptions, no premium tiers, no paywalled features, no ads
+- **No root required** — works out of the box via Android's built-in Developer Options mock location setting
 - **Runs in the background** — joystick, widget, and routes all stay active while other apps run in the foreground
 - **Import in seconds** — bring your saved routes from GPS Joystick or YAMLA without starting from scratch
 
@@ -69,7 +70,7 @@ Open locationjoystick → tap **Grant Permission** → find locationjoystick in 
 
 Open locationjoystick → tap map to teleport or use joystick → open target app → locationjoystick keeps running in background.
 
-> **Note:** Some apps detect mock locations. Check the app's community for current workarounds.
+> **Note:** Some apps detect mock locations. Check the app's community for current workarounds. Root is not required for any core feature — the Elevation Controls widget (experimental) is the only feature that optionally uses root, and it can be ignored entirely.
 
 ---
 
@@ -117,16 +118,7 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ### Release build
 
-Set the following environment variables before building (or in CI secrets). The build falls back to Google's test-account IDs if unset, which is fine for debug but will not serve real ads.
-
-| Variable | Description |
-|---|---|
-| `ADMOB_APP_ID` | Your AdMob application ID (e.g. `ca-app-pub-XXXXXXXXXXXXXXXX~NNNNNNNNNN`) |
-| `ADMOB_BANNER_ID` | Your AdMob banner ad unit ID (e.g. `ca-app-pub-XXXXXXXXXXXXXXXX/NNNNNNNNNN`) |
-
 ```bash
-export ADMOB_APP_ID="ca-app-pub-..."
-export ADMOB_BANNER_ID="ca-app-pub-.../..."
 ./gradlew assembleRelease
 ```
 

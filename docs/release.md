@@ -23,8 +23,6 @@ export KEYSTORE_PATH=~/locationjoystick-release.jks
 export STORE_PASSWORD=<keystore-password>
 export KEY_ALIAS=locationjoystick
 export KEY_PASSWORD=<key-password>
-export ADMOB_APP_ID=ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX
-export ADMOB_BANNER_ID=ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX
 ```
 
 ## Build Outputs
