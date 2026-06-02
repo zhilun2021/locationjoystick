@@ -209,7 +209,7 @@ internal fun MapScreen(
     LaunchedEffect(uiState.pendingCameraTarget) {
         val target = uiState.pendingCameraTarget ?: return@LaunchedEffect
         mapRef.value?.animateCamera(
-            CameraUpdateFactory.newLatLng(MapLatLng(target.latitude, target.longitude)),
+            CameraUpdateFactory.newLatLngZoom(MapLatLng(target.latitude, target.longitude), AppConstants.MapConstants.DEFAULT_ZOOM),
             500,
         )
         onAction(MapAction.CameraTargetConsumed)
