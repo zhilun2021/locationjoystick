@@ -34,7 +34,7 @@ class FloatingWidgetSmokeTest : BaseSmokeTest() {
 
     @Test
     fun widget_shows_joystick_lock_feature() {
-        composeRule.onNodeWithText("Lock joystick position").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Lock joystick").performScrollTo().assertIsDisplayed()
     }
 
     @Test
