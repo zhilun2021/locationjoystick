@@ -218,13 +218,14 @@ internal fun FavoritesFloatingView(
 ) {
     var showAddForm by remember { mutableStateOf(false) }
     var newFavName by remember { mutableStateOf("") }
+    var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
 
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.7f))
-                .clickable { onDismiss() },
+                .clickable { if (selectedFavorite != null) selectedFavorite = null else onDismiss() },
     ) {
         Box(
             modifier =
@@ -245,131 +246,153 @@ internal fun FavoritesFloatingView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (selectedFavorite != null) {
+                        IconButton(onClick = { selectedFavorite = null }) {
+                            Icon(LjIcons.ArrowBack, contentDescription = "Back", tint = LjText)
+                        }
+                    }
                     Text(
-                        text = "Favorites",
+                        text = selectedFavorite?.name ?: "Favorites",
                         style = MaterialTheme.typography.titleLarge,
                         color = LjText,
+                        modifier = Modifier.weight(1f),
                     )
-                    IconButton(onClick = onDismiss) {
-                        Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
+                    if (selectedFavorite == null) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
+                        }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    if (favorites.isEmpty()) {
-                        Text(
-                            text = "No favorites saved",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = LjText.copy(alpha = 0.6f),
-                        )
-                    } else {
-                        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(favorites, key = { it.id }) { fav ->
-                                Column(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .background(
-                                                androidx.compose.ui.graphics.Color.White
-                                                    .copy(alpha = 0.12f),
-                                                androidx.compose.foundation.shape
-                                                    .RoundedCornerShape(8.dp),
-                                            ).padding(12.dp),
-                                ) {
-                                    Text(
-                                        text = fav.name,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = LjText,
-                                    )
-                                    Text(
-                                        text = "${String.format(
-                                            "%.4f",
-                                            fav.position.latitude,
-                                        )}, ${String.format("%.4f", fav.position.longitude)}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = LjText.copy(alpha = 0.7f),
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Button(
-                                            onClick = {
-                                                onTeleport(fav)
-                                                onDismiss()
-                                            },
-                                            modifier = Modifier.weight(1f),
-                                        ) { Text("Teleport") }
-                                        Button(
-                                            onClick = {
-                                                onWalk(fav)
-                                                onDismiss()
-                                            },
-                                            modifier = Modifier.weight(1f),
-                                        ) { Text("Walk") }
-                                        Button(
-                                            onClick = {
-                                                onWalkViaRoads(fav)
-                                                onDismiss()
-                                            },
-                                            modifier = Modifier.weight(1f),
-                                        ) { Text("Via roads") }
+
+                val selected = selectedFavorite
+                if (selected != null) {
+                    Button(
+                        onClick = {
+                            onTeleport(selected)
+                            selectedFavorite = null
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Teleport") }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            onWalk(selected)
+                            selectedFavorite = null
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Walk", color = LjText) }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = {
+                            onWalkViaRoads(selected)
+                            selectedFavorite = null
+                            onDismiss()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Via roads", color = LjText) }
+                } else {
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (favorites.isEmpty()) {
+                            Text(
+                                text = "No favorites saved",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = LjText.copy(alpha = 0.6f),
+                            )
+                        } else {
+                            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                items(favorites, key = { it.id }) { fav ->
+                                    Row(
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .background(
+                                                    androidx.compose.ui.graphics.Color.White
+                                                        .copy(alpha = 0.12f),
+                                                    androidx.compose.foundation.shape
+                                                        .RoundedCornerShape(8.dp),
+                                                ).padding(12.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = fav.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = LjText,
+                                            )
+                                            Text(
+                                                text = "${String.format(
+                                                    "%.4f",
+                                                    fav.position.latitude,
+                                                )}, ${String.format("%.4f", fav.position.longitude)}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = LjText.copy(alpha = 0.7f),
+                                            )
+                                        }
+                                        Button(onClick = { selectedFavorite = fav }) {
+                                            Icon(LjIcons.PlayArrow, contentDescription = null)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                Spacer(Modifier.height(12.dp))
-                if (showAddForm) {
-                    OutlinedTextField(
-                        value = newFavName,
-                        onValueChange = { newFavName = it },
-                        label = { Text("Name", color = LjText) },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions =
-                            KeyboardActions(
-                                onDone = {
+                    Spacer(Modifier.height(12.dp))
+                    if (showAddForm) {
+                        OutlinedTextField(
+                            value = newFavName,
+                            onValueChange = { newFavName = it },
+                            label = { Text("Name", color = LjText) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions =
+                                KeyboardActions(
+                                    onDone = {
+                                        if (newFavName.isNotBlank()) {
+                                            onAddFromHere(newFavName.trim())
+                                            newFavName = ""
+                                            showAddForm = false
+                                        }
+                                    },
+                                ),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.End,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            TextButton(onClick = {
+                                showAddForm = false
+                                newFavName = ""
+                            }) {
+                                Text("Cancel", color = LjText)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Button(
+                                onClick = {
                                     if (newFavName.isNotBlank()) {
                                         onAddFromHere(newFavName.trim())
                                         newFavName = ""
                                         showAddForm = false
                                     }
                                 },
-                            ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        TextButton(onClick = {
-                            showAddForm = false
-                            newFavName = ""
-                        }) {
-                            Text("Cancel", color = LjText)
+                            ) {
+                                Text("Save")
+                            }
                         }
-                        Spacer(Modifier.width(8.dp))
+                    } else {
                         Button(
-                            onClick = {
-                                if (newFavName.isNotBlank()) {
-                                    onAddFromHere(newFavName.trim())
-                                    newFavName = ""
-                                    showAddForm = false
-                                }
-                            },
+                            onClick = { showAddForm = true },
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("Save")
+                            Icon(LjIcons.Add, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Add from current location")
                         }
-                    }
-                } else {
-                    Button(
-                        onClick = { showAddForm = true },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(LjIcons.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Add from current location")
                     }
                 }
             }
