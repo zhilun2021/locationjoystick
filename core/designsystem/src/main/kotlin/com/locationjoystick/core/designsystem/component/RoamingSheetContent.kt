@@ -9,17 +9,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,7 +87,7 @@ fun RoamingSheetContent(
         Spacer(Modifier.height(8.dp))
 
         // "View on map" always visible; greyed out when no preview
-        TextButton(
+        LjTextButton(
             onClick = onViewOnMap,
             enabled = hasPreview,
             modifier =
@@ -198,14 +195,14 @@ fun RoamingSheetContent(
 
         // Generate + Start side by side
         Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
+            LjOutlinedButton(
                 onClick = onGenerate,
                 enabled = hasCurrentPosition,
                 modifier = Modifier.weight(1f).padding(end = 4.dp),
             ) {
                 Text("Generate")
             }
-            Button(
+            LjButton(
                 onClick = onStart,
                 enabled = hasCurrentPosition && isSpoofingActive,
                 modifier = Modifier.weight(1f).padding(start = 4.dp),
