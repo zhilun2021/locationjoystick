@@ -1,15 +1,10 @@
 package com.locationjoystick.feature.widget.impl
 
-import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
-import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
 import android.view.View
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -48,9 +43,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.util.UUID
 import javax.inject.Inject
 import android.view.WindowManager as AndroidWindowManager
 
@@ -114,7 +107,6 @@ class FloatingWidgetService :
     @Inject lateinit var osrmClient: com.locationjoystick.core.routing.OsrmClient
 
     private var composeView: ComposeView? = null
-    private var panelComposeView: ComposeView? = null
 
     // Joystick state
     private val joystickVisibleFlow = MutableStateFlow(false)
@@ -129,75 +121,21 @@ class FloatingWidgetService :
 
     private val elevationOverlayVisibleFlow = MutableStateFlow(false)
 
-    private var elevationOverlayService: ElevationOverlayService? = null
-    private var elevationOverlayBound = false
-    private val elevationOverlayConnection =
-        object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName,
-                binder: IBinder,
-            ) {
-                elevationOverlayService = (binder as ElevationOverlayService.LocalBinder).getService()
-                Log.d(TAG, "Bound to ElevationOverlayService")
-            }
-
-            override fun onServiceDisconnected(name: ComponentName) {
-                elevationOverlayService = null
-                elevationOverlayBound = false
-                elevationOverlayVisibleFlow.value = false
-                Log.d(TAG, "Unbound from ElevationOverlayService")
-            }
-        }
-
     // Drag position — class-level so onConfigurationChanged can read them after rotation.
     private var dragOffsetX = 0f
     private var dragOffsetY = 0f
 
-    // Floating panel data
-    private val favoritesDataFlow = MutableStateFlow<List<FavoriteLocation>>(emptyList())
-    private val routesDataFlow = MutableStateFlow<List<com.locationjoystick.core.model.Route>>(emptyList())
+    private lateinit var serviceBinder: WidgetServiceBinder
+    private lateinit var panelPresenter: WidgetPanelPresenter
 
-    private var mockLocationService: MockLocationService? = null
+    private val mockLocationService: MockLocationService?
+        get() = serviceBinder.mockLocationService
 
-    private var joystickService: JoystickOverlayService? = null
-    private val joystickConnection =
-        object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName,
-                binder: IBinder,
-            ) {
-                val svc = (binder as JoystickOverlayService.LocalBinder).getService()
-                joystickService = svc
-                serviceScope.launch { svc.isVisible.collect { joystickVisibleFlow.value = it } }
-                serviceScope.launch { svc.isLocked.collect { joystickLockedFlow.value = it } }
-                Log.d(TAG, "Bound to JoystickOverlayService")
-            }
+    private val joystickService: JoystickOverlayService?
+        get() = serviceBinder.joystickService
 
-            override fun onServiceDisconnected(name: ComponentName) {
-                joystickService = null
-                joystickBound = false
-                joystickVisibleFlow.value = false
-                joystickLockedFlow.value = false
-                Log.d(TAG, "Unbound from JoystickOverlayService")
-            }
-        }
-    private var joystickBound = false
-
-    private val mockLocationServiceConnection =
-        object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName,
-                binder: IBinder,
-            ) {
-                mockLocationService = (binder as MockLocationService.LocalBinder).getService()
-                Log.d(TAG, "Bound to MockLocationService")
-            }
-
-            override fun onServiceDisconnected(name: ComponentName) {
-                mockLocationService = null
-                Log.d(TAG, "Unbound from MockLocationService")
-            }
-        }
+    private val elevationOverlayService: ElevationOverlayService?
+        get() = serviceBinder.elevationOverlayService
 
     override fun onCreate() {
         savedStateRegistryController.performAttach()
@@ -205,14 +143,30 @@ class FloatingWidgetService :
         super.onCreate()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
         overlayHelper.registerOverlayVisibilityReceiver(this, this)
-        overlayHelper.bindTrackedService(this, Intent(this, MockLocationService::class.java), mockLocationServiceConnection)
-        val joystickIntent =
-            Intent().apply {
-                setClassName(packageName, "com.locationjoystick.feature.joystick.impl.JoystickOverlayService")
-            }
-        joystickBound = bindService(joystickIntent, joystickConnection, Context.BIND_AUTO_CREATE)
-        elevationOverlayBound =
-            bindService(Intent(this, ElevationOverlayService::class.java), elevationOverlayConnection, Context.BIND_AUTO_CREATE)
+        serviceBinder =
+            WidgetServiceBinder(
+                context = this,
+                serviceScope = serviceScope,
+                overlayHelper = overlayHelper,
+                joystickVisibleFlow = joystickVisibleFlow,
+                joystickLockedFlow = joystickLockedFlow,
+                elevationOverlayVisibleFlow = elevationOverlayVisibleFlow,
+            )
+        panelPresenter =
+            WidgetPanelPresenter(
+                context = this,
+                windowManager = windowManager,
+                lifecycleOwner = this,
+                savedStateRegistryOwner = this,
+                serviceScope = serviceScope,
+                settingsRepository = settingsRepository,
+                favoriteRepository = favoriteRepository,
+                routeRepository = routeRepository,
+                locationRepository = locationRepository,
+                roamingRepository = roamingRepository,
+                callbacks = panelCallbacks,
+            )
+        serviceBinder.bind()
         lifecycleScope.launch {
             settingsRepository.getActiveSpeedProfile().collect { profile ->
                 activeProfileIdFlow.value = profile.id
@@ -238,26 +192,13 @@ class FloatingWidgetService :
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         walkCoordinator.cancel()
         serviceScope.cancel()
-        hidePanelView()
+        panelPresenter.hidePanelView()
         // Tear down the FAB composition so the Recomposer and any captured state holders are
         // released. The base OverlayService.onDestroy() removes the view from the WindowManager.
         composeView?.disposeComposition()
         composeView = null
         overlayHelper.cleanupOverlayBindings(this)
-        if (joystickBound) {
-            try {
-                unbindService(joystickConnection)
-            } catch (e: IllegalArgumentException) {
-                Log.e(TAG, "Joystick service was not bound when attempting to unbind", e)
-            }
-        }
-        if (elevationOverlayBound) {
-            try {
-                unbindService(elevationOverlayConnection)
-            } catch (e: IllegalArgumentException) {
-                Log.e(TAG, "Elevation overlay service was not bound when attempting to unbind", e)
-            }
-        }
+        serviceBinder.unbind()
         super.onDestroy()
     }
 
@@ -344,140 +285,6 @@ class FloatingWidgetService :
         return view
     }
 
-    private fun panelLayoutParams() =
-        AndroidWindowManager.LayoutParams(
-            AndroidWindowManager.LayoutParams.MATCH_PARENT,
-            AndroidWindowManager.LayoutParams.MATCH_PARENT,
-            AndroidWindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            // FLAG_NOT_FOCUSABLE prevents stealing keyboard focus from games/apps behind the panel.
-            // FLAG_NOT_TOUCH_MODAL limits touch interception to panel bounds only.
-            AndroidWindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                AndroidWindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            android.graphics.PixelFormat.TRANSLUCENT,
-        )
-
-    // Map panel allows keyboard focus so the Nominatim search field accepts text input.
-    private fun mapPanelLayoutParams() =
-        AndroidWindowManager.LayoutParams(
-            AndroidWindowManager.LayoutParams.MATCH_PARENT,
-            AndroidWindowManager.LayoutParams.MATCH_PARENT,
-            AndroidWindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            AndroidWindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            android.graphics.PixelFormat.TRANSLUCENT,
-        )
-
-    private fun hidePanelView() {
-        panelComposeView?.let { view ->
-            try {
-                if (view.isAttachedToWindow) windowManager.removeViewImmediate(view)
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to remove panel view", e)
-            }
-            // Dispose the composition so the panel's Recomposer and collected flows are released.
-            // Without this the previous panel's composition leaks each time a new panel is shown.
-            view.disposeComposition()
-        }
-        panelComposeView = null
-    }
-
-    private fun showPanel(
-        params: AndroidWindowManager.LayoutParams = panelLayoutParams(),
-        logTag: String = "panel",
-        content: @androidx.compose.runtime.Composable () -> Unit,
-    ) {
-        serviceScope.launch {
-            val panel =
-                ComposeView(this@FloatingWidgetService).apply {
-                    setViewTreeLifecycleOwner(this@FloatingWidgetService)
-                    setViewTreeSavedStateRegistryOwner(this@FloatingWidgetService)
-                }
-            panel.setContent { LjTheme { content() } }
-            hidePanelView()
-            if (!isActive) {
-                Log.w(TAG, "Service destroyed before $logTag panel could be shown")
-                return@launch
-            }
-            panelComposeView = panel
-            try {
-                windowManager.addView(panel, params)
-            } catch (e: Exception) {
-                panelComposeView = null
-                Log.e(TAG, "Failed to show $logTag panel", e)
-            }
-        }
-    }
-
-    private fun showFavoritesFloatingView() {
-        serviceScope.launch {
-            val favSortNewestFirst = settingsRepository.getFavoritesSortNewestFirst().first()
-            val rawFavorites = favoriteRepository.getFavorites().first()
-            favoritesDataFlow.value =
-                if (favSortNewestFirst) rawFavorites.sortedByDescending { it.createdAt } else rawFavorites.sortedBy { it.createdAt }
-            showPanel(logTag = "favorites") {
-                val favs by favoritesDataFlow.collectAsStateWithLifecycle()
-                FavoritesFloatingView(
-                    favorites = favs,
-                    onDismiss = { hidePanelView() },
-                    onTeleport = { fav ->
-                        teleportToFavorite(fav)
-                        moveAppToBack()
-                    },
-                    onWalk = { fav ->
-                        startWalkToFavorite(fav)
-                        moveAppToBack()
-                    },
-                    onWalkViaRoads = { fav ->
-                        startWalkViaRoadsToFavorite(fav)
-                        moveAppToBack()
-                    },
-                    onAddFromHere = { name ->
-                        serviceScope.launch {
-                            val pos = locationRepository.currentPosition.value
-                            if (pos != null) {
-                                favoriteRepository.addFavorite(
-                                    id = UUID.randomUUID().toString(),
-                                    name = name,
-                                    position = pos,
-                                )
-                                val refreshed = favoriteRepository.getFavorites().first()
-                                favoritesDataFlow.value =
-                                    if (favSortNewestFirst) {
-                                        refreshed.sortedByDescending {
-                                            it.createdAt
-                                        }
-                                    } else {
-                                        refreshed.sortedBy { it.createdAt }
-                                    }
-                            } else {
-                                Log.w(TAG, "Cannot add favorite: no current position")
-                            }
-                        }
-                    },
-                )
-            }
-        }
-    }
-
-    private fun showRoutesFloatingView() {
-        serviceScope.launch {
-            val routeSortNewestFirst = settingsRepository.getRoutesSortNewestFirst().first()
-            val rawRoutes = routeRepository.getRoutes().first()
-            routesDataFlow.value =
-                if (routeSortNewestFirst) rawRoutes.sortedByDescending { it.createdAt } else rawRoutes.sortedBy { it.createdAt }
-            showPanel(logTag = "routes") {
-                val routes by routesDataFlow.collectAsStateWithLifecycle()
-                RoutesFloatingView(
-                    routes = routes,
-                    onDismiss = { hidePanelView() },
-                    onStartRoute = { routeId, isLooping, isReverse, isReturnToLocation, teleportToStart ->
-                        startRouteReplayWithMode(routeId, isLooping, isReverse, isReturnToLocation, teleportToStart)
-                        moveAppToBack()
-                    },
-                )
-            }
-        }
-    }
-
     private fun onFeatureButtonClicked(feature: WidgetFeature) {
         when (feature) {
             WidgetFeature.JOYSTICK_TOGGLE -> {
@@ -493,7 +300,7 @@ class FloatingWidgetService :
             }
 
             WidgetFeature.FAVORITES_FLOATING -> {
-                showFavoritesFloatingView()
+                panelPresenter.showFavoritesFloatingView()
             }
 
             WidgetFeature.SPEED_CYCLE -> {
@@ -501,7 +308,7 @@ class FloatingWidgetService :
             }
 
             WidgetFeature.MAP_FLOATING -> {
-                showMapFloatingView()
+                panelPresenter.showMapFloatingView()
             }
 
             WidgetFeature.ELEVATION_CONTROLS -> {
@@ -534,7 +341,7 @@ class FloatingWidgetService :
         if (isActive) {
             routeExpandedFlow.value = !routeExpandedFlow.value
         } else {
-            showRoutesFloatingView()
+            panelPresenter.showRoutesFloatingView()
         }
     }
 
@@ -722,129 +529,71 @@ class FloatingWidgetService :
         }
     }
 
-    private fun showMapFloatingView() {
-        showPanel(params = mapPanelLayoutParams(), logTag = "map") {
-            val currentPosition by locationRepository.currentPosition.collectAsStateWithLifecycle()
-            val initialPosition = remember { locationRepository.currentPosition.value }
-            val walkTarget by locationRepository.walkTarget.collectAsStateWithLifecycle()
-            val routeWaypoints by locationRepository.routeWaypoints.collectAsStateWithLifecycle()
-            val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
-            val mockLocationState by locationRepository.mockLocationState.collectAsStateWithLifecycle()
-            val isRoamingPaused by roamingRepository.isRoamingPaused.collectAsStateWithLifecycle(initialValue = false)
-            val favorites by remember { favoriteRepository.getFavorites() }.collectAsStateWithLifecycle(initialValue = emptyList())
-            val roamingDefaults by remember { settingsRepository.getRoamingDefaults() }.collectAsStateWithLifecycle(
-                initialValue =
-                    com.locationjoystick.core.model.RoamingDefaults(
-                        radiusMeters = 1000.0,
-                        distanceMeters = 200.0,
-                        speedProfileId = "walk",
-                        followRoads = false,
-                        returnToInitialLocation = false,
-                    ),
+    private val panelCallbacks =
+        object : WidgetPanelPresenter.Callbacks {
+            override fun teleportToFavorite(favorite: FavoriteLocation) = this@FloatingWidgetService.teleportToFavorite(favorite)
+
+            override fun startWalkToFavorite(favorite: FavoriteLocation) = this@FloatingWidgetService.startWalkToFavorite(favorite)
+
+            override fun startWalkViaRoadsToFavorite(favorite: FavoriteLocation) =
+                this@FloatingWidgetService.startWalkViaRoadsToFavorite(favorite)
+
+            override fun startRouteReplayWithMode(
+                routeId: String,
+                isLooping: Boolean,
+                isReverse: Boolean,
+                isReturnToLocation: Boolean,
+                teleportToStart: Boolean,
+            ) = this@FloatingWidgetService.startRouteReplayWithMode(
+                routeId,
+                isLooping,
+                isReverse,
+                isReturnToLocation,
+                teleportToStart,
             )
-            val speedUnit by remember {
-                settingsRepository.getSpeedUnit()
-            }.collectAsStateWithLifecycle(initialValue = com.locationjoystick.core.model.SpeedUnit.KMH)
-            val recentSearches by remember { settingsRepository.getRecentSearches() }.collectAsStateWithLifecycle(
-                initialValue = emptyList(),
-            )
-            MapFloatingView(
-                currentPosition = currentPosition,
-                initialPosition = initialPosition,
-                walkTarget = walkTarget,
-                routeWaypoints = routeWaypoints,
-                mockMode = mockMode,
-                mockLocationState = mockLocationState,
-                isRoamingPaused = isRoamingPaused,
-                favorites = favorites,
-                roamingDefaults = roamingDefaults,
-                speedUnit = speedUnit,
-                onStartSpoofing = { locationRepository.startSpoofing() },
-                onStopSpoofing = { locationRepository.stopSpoofing() },
-                onResumeRoaming = { roamingRepository.resumeRoaming() },
-                onPauseRoaming = { roamingRepository.pauseRoaming() },
-                onGeneratePreviewRoute = { center, radiusMeters, followRoads, speedProfileId ->
-                    roamingRepository.generatePreviewRoute(
-                        center = center,
-                        radiusMeters = radiusMeters,
-                        followRoads = followRoads,
-                        speedProfileId = speedProfileId,
+
+            override fun teleport(pos: LatLng) {
+                val svc = mockLocationService
+                if (svc != null) {
+                    svc.updatePosition(pos.latitude, pos.longitude)
+                } else {
+                    locationRepository.updatePosition(pos)
+                }
+            }
+
+            override fun walkTo(pos: LatLng) {
+                walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
+                    startService(
+                        MockLocationIntentBuilder.updatePosition(
+                            this@FloatingWidgetService,
+                            newPos.latitude,
+                            newPos.longitude,
+                            speedMs,
+                            bearing,
+                        ),
                     )
-                },
-                onTeleport = { pos ->
-                    val svc = mockLocationService
-                    if (svc != null) {
-                        svc.updatePosition(pos.latitude, pos.longitude)
-                    } else {
-                        locationRepository.updatePosition(pos)
-                    }
-                    hidePanelView()
-                    moveAppToBack()
-                },
-                onWalkTo = { pos ->
-                    walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
-                        startService(
-                            MockLocationIntentBuilder.updatePosition(
-                                this@FloatingWidgetService,
-                                newPos.latitude,
-                                newPos.longitude,
-                                speedMs,
-                                bearing,
-                            ),
-                        )
-                    }
-                    hidePanelView()
-                    moveAppToBack()
-                },
-                onStopRouteAndTeleport = { pos ->
-                    sendReplayCancel()
-                    val svc = mockLocationService
-                    if (svc != null) {
-                        svc.updatePosition(pos.latitude, pos.longitude)
-                    } else {
-                        locationRepository.updatePosition(pos)
-                    }
-                    hidePanelView()
-                    moveAppToBack()
-                },
-                onStopRouteAndWalkTo = { pos ->
-                    sendReplayCancel()
-                    walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
-                        startService(
-                            MockLocationIntentBuilder.updatePosition(
-                                this@FloatingWidgetService,
-                                newPos.latitude,
-                                newPos.longitude,
-                                speedMs,
-                                bearing,
-                            ),
-                        )
-                    }
-                    hidePanelView()
-                    moveAppToBack()
-                },
-                onFinishRouteAndWalkTo = { pos ->
-                    sendAppendWaypoint(pos)
-                    moveAppToBack()
-                },
-                onAddEphemeralWaypoint = { pos ->
-                    sendAddEphemeralWaypoint(pos)
-                    moveAppToBack()
-                },
-                onStartRoaming = { defaults -> startRoamingWith(defaults) },
-                onStopRoaming = {
-                    serviceScope.launch {
-                        roamingRepository.stopRoaming()
-                    }
-                },
-                onDismiss = { hidePanelView() },
-                recentSearches = recentSearches,
-                onSearchCommitted = { name, lat, lon ->
-                    serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }
-                },
-            )
+                }
+            }
+
+            override fun stopRouteAndTeleport(pos: LatLng) {
+                sendReplayCancel()
+                teleport(pos)
+            }
+
+            override fun stopRouteAndWalkTo(pos: LatLng) {
+                sendReplayCancel()
+                walkTo(pos)
+            }
+
+            override fun finishRouteAndWalkTo(pos: LatLng) = sendAppendWaypoint(pos)
+
+            override fun addEphemeralWaypoint(pos: LatLng) = sendAddEphemeralWaypoint(pos)
+
+            override fun startRoamingWith(defaults: com.locationjoystick.core.model.RoamingDefaults) =
+                this@FloatingWidgetService.startRoamingWith(defaults)
+
+            override fun moveAppToBack() = this@FloatingWidgetService.moveAppToBack()
         }
-    }
 
     private fun startRoamingWith(defaults: com.locationjoystick.core.model.RoamingDefaults) {
         serviceScope.launch {

@@ -366,7 +366,7 @@ internal fun RouteCreatorScreen(
                         showSearch = false
                         val map = mapRef.value ?: return@NominatimSearchBar
                         map.animateCamera(
-                            CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                            CameraUpdateFactory.newLatLngZoom(MapLatLng(lat, lon), AppConstants.MapConstants.DEFAULT_ZOOM),
                             500,
                         )
                     },

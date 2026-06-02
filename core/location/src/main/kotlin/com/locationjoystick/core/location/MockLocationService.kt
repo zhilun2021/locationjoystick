@@ -40,7 +40,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -131,53 +130,20 @@ class MockLocationService : Service() {
 
     @Volatile private var currentBearing: Float = 0.0f
 
-    @Volatile private var jitterIdleRadiusMeters: Double = 0.0
-
-    @Volatile private var jitterMovingRadiusMeters: Double = 1.0
-
-    @Volatile private var jitterIntervalSeconds: Int = AppConstants.JitterConstants.DEFAULT_MOVING_INTERVAL_SECONDS
-
     @Volatile private var lastJitterTimestampMs: Long = 0L
-
-    @Volatile private var jitterIdleIntervalSeconds: Int = AppConstants.JitterConstants.DEFAULT_IDLE_INTERVAL_SECONDS
 
     @Volatile private var lastIdleJitterTimestampMs: Long = 0L
 
     @Volatile private var providerAdded = false
 
-    // Realism setting flags (observed from SettingsRepository flows)
-    @Volatile private var bearingHoldEnabled: Boolean =
-        AppConstants.RealismConstants.BEARING_HOLD_ON_IDLE_DEFAULT
-
-    @Volatile private var altitudeEnabled: Boolean =
-        AppConstants.RealismConstants.ALTITUDE_ENABLED_DEFAULT
-
-    @Volatile private var warmupEnabled: Boolean =
-        AppConstants.RealismConstants.WARMUP_ENABLED_DEFAULT
-
-    @Volatile private var satelliteExtrasEnabled: Boolean =
-        AppConstants.RealismConstants.SATELLITE_EXTRAS_ENABLED_DEFAULT
-
-    @Volatile private var suspendedMockingEnabled: Boolean =
-        AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT
-
-    @Volatile private var speedIdleVariationPct: Int = AppConstants.JitterConstants.SPEED_IDLE_VARIATION_PCT_DEFAULT
-
-    @Volatile private var speedMovingVariationPct: Int = AppConstants.JitterConstants.SPEED_MOVING_VARIATION_PCT_DEFAULT
-
-    @Volatile private var activeProfileSpeedMs: Double = AppConstants.ProfileConstants.WALK_SPEED_MPS
+    /** Realism settings observed from [SettingsRepository] and read each tick in [captureSnapshot]. */
+    private val realism = RealismSettingsState()
 
     @Volatile private var humanAltitudeOffsetMeters: Double = AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_METERS
 
     @Volatile private var elevationControlsEnabled = false
 
     @Volatile private var currentElevationMode: ElevationMode? = null
-
-    @Volatile private var elevationTiltJitterDegrees: Float = AppConstants.ElevationConstants.DEFAULT_TILT_JITTER_DEGREES
-
-    @Volatile private var elevationNoiseAmplitudeMs2: Float = AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2
-
-    @Volatile private var rememberLastLocation: Boolean = false
 
     // Per-tick realism state
 
@@ -214,8 +180,7 @@ class MockLocationService : Service() {
                 scope = serviceScope,
                 onStateChange = { _state.value = it },
                 onPositionChange = { lat, lon ->
-                    currentLat = lat
-                    currentLon = lon
+                    writeCurrentPosition(lat, lon)
                 },
                 onSpeedChange = { currentSpeedMs = it },
                 pushLocationUpdate = ::pushLocationUpdate,
@@ -285,27 +250,12 @@ class MockLocationService : Service() {
         serviceScope.launch {
             locationRepository.currentPosition.collect { position ->
                 if (position != null) {
-                    currentLat = position.latitude
-                    currentLon = position.longitude
+                    writeCurrentPosition(position.latitude, position.longitude)
                 }
             }
         }
         // Jitter and realism settings — each updates a @Volatile field consumed by captureSnapshot().
-        observeSetting("jitterIdleRadius", settingsRepository.getJitterIdleRadius()) { jitterIdleRadiusMeters = it }
-        observeSetting("jitterMovingRadius", settingsRepository.getJitterMovingRadius()) { jitterMovingRadiusMeters = it }
-        observeSetting("jitterIntervalSeconds", settingsRepository.getJitterIntervalSeconds()) { jitterIntervalSeconds = it }
-        observeSetting("jitterIdleIntervalSeconds", settingsRepository.getJitterIdleIntervalSeconds()) { jitterIdleIntervalSeconds = it }
-        observeSetting("bearingHoldEnabled", settingsRepository.getRealismBearingHoldIdle()) { bearingHoldEnabled = it }
-        observeSetting("altitudeEnabled", settingsRepository.getRealismAltitudeEnabled()) { altitudeEnabled = it }
-        observeSetting("warmupEnabled", settingsRepository.getRealismWarmupEnabled()) { warmupEnabled = it }
-        observeSetting("satelliteExtrasEnabled", settingsRepository.getRealismSatelliteExtrasEnabled()) { satelliteExtrasEnabled = it }
-        observeSetting("suspendedMockingEnabled", settingsRepository.getRealismSuspendedMockingEnabled()) { suspendedMockingEnabled = it }
-        observeSetting("rememberLastLocation", settingsRepository.getRememberLastLocation()) { rememberLastLocation = it }
-        observeSetting("speedIdleVariationPct", settingsRepository.getJitterSpeedIdleVariationPct()) { speedIdleVariationPct = it }
-        observeSetting("speedMovingVariationPct", settingsRepository.getJitterSpeedMovingVariationPct()) { speedMovingVariationPct = it }
-        observeSetting("elevationTiltJitterDegrees", settingsRepository.getElevationTiltJitterDegrees()) { elevationTiltJitterDegrees = it }
-        observeSetting("elevationNoiseAmplitudeMs2", settingsRepository.getElevationNoiseAmplitudeMs2()) { elevationNoiseAmplitudeMs2 = it }
-        observeSetting("activeProfileSpeed", settingsRepository.getActiveSpeedProfile()) { activeProfileSpeedMs = it.speedMetersPerSecond }
+        realism.observe(serviceScope, settingsRepository)
         serviceScope.launch {
             settingsRepository.getWidgetFeatures().collect { features ->
                 elevationControlsEnabled = WidgetFeature.ELEVATION_CONTROLS in features
@@ -314,14 +264,19 @@ class MockLocationService : Service() {
         }
     }
 
-    private fun <T> observeSetting(
-        tag: String,
-        flow: Flow<T>,
-        assign: (T) -> Unit,
+    /**
+     * Single write entry point for [currentLat]/[currentLon]. All position writers — teleport,
+     * walk vectors, replay callbacks, and the repository position observer — funnel through here so
+     * the latitude/longitude pair is always written together, eliminating the interleaving between
+     * a mid-tick teleport and [updatePositionWithVector].
+     */
+    @Synchronized
+    private fun writeCurrentPosition(
+        lat: Double,
+        lon: Double,
     ) {
-        serviceScope.launch {
-            flow.collect(assign)
-        }
+        currentLat = lat
+        currentLon = lon
     }
 
     private fun hasLocationPermission(): Boolean =
@@ -491,8 +446,7 @@ class MockLocationService : Service() {
             _state.value = MockLocationState.IDLE
         }
 
-        currentLat = lat
-        currentLon = lon
+        writeCurrentPosition(lat, lon)
         currentSpeedMs = 0.0f
         currentBearing = 0.0f
         val now = SystemClock.elapsedRealtime()
@@ -527,8 +481,7 @@ class MockLocationService : Service() {
         lat: Double,
         lon: Double,
     ) {
-        currentLat = lat
-        currentLon = lon
+        writeCurrentPosition(lat, lon)
         locationRepository.setPositionInternal(LatLng(lat, lon))
     }
 
@@ -540,8 +493,7 @@ class MockLocationService : Service() {
         speedMs: Float,
         bearing: Float,
     ) {
-        currentLat = lat
-        currentLon = lon
+        writeCurrentPosition(lat, lon)
         currentSpeedMs = speedMs
         currentBearing = bearing
     }
@@ -554,7 +506,7 @@ class MockLocationService : Service() {
         if (roamingRepository.isRoaming.value) {
             serviceScope.launch { roamingRepository.stopRoaming() }
         }
-        if (rememberLastLocation) {
+        if (realism.rememberLastLocation) {
             val pos = LatLng(currentLat, currentLon)
             serviceScope.launch { settingsRepository.setLastLocation(pos) }
         }
@@ -667,7 +619,7 @@ class MockLocationService : Service() {
         val now = SystemClock.elapsedRealtime()
         val mode = locationRepository.currentMode.value
         val current = suspendedPhase.get()
-        val next = advanceSuspendedPhase(current, now, suspendedMockingEnabled, mode, Random.Default)
+        val next = advanceSuspendedPhase(current, now, realism.suspendedMockingEnabled, mode, Random.Default)
         if (next != current) {
             suspendedPhase.set(next)
             Log.i(TAG, "Realism: suspended phase=${if (next.isActive) "PAUSED" else "PUSHING"}")
@@ -681,14 +633,14 @@ class MockLocationService : Service() {
      */
     private fun captureSnapshot(nowMs: Long): LocationSnapshot {
         val mode = locationRepository.currentMode.value
-        val jitterIntervalMs = jitterIntervalSeconds * 1000L
+        val jitterIntervalMs = realism.jitterIntervalSeconds * 1000L
         val shouldApplyMovingJitter = (nowMs - lastJitterTimestampMs) >= jitterIntervalMs
-        val idleJitterIntervalMs = jitterIdleIntervalSeconds * 1000L
+        val idleJitterIntervalMs = realism.jitterIdleIntervalSeconds * 1000L
         val shouldApplyIdleJitter = (nowMs - lastIdleJitterTimestampMs) >= idleJitterIntervalMs
         val suspendedPhaseSnapshot = suspendedPhase.get()
 
         // Slow satellite churn
-        if (satelliteExtrasEnabled &&
+        if (realism.satelliteExtrasEnabled &&
             (nowMs - lastSatelliteUpdateMs) >= AppConstants.RealismConstants.SATELLITE_UPDATE_INTERVAL_MS
         ) {
             cachedSatelliteCount =
@@ -711,20 +663,20 @@ class MockLocationService : Service() {
             bearing = currentBearing,
             lastNonZeroBearing = lastNonZeroBearing,
             mode = mode,
-            jitterIdleRadiusMeters = jitterIdleRadiusMeters,
-            jitterMovingRadiusMeters = jitterMovingRadiusMeters,
+            jitterIdleRadiusMeters = realism.jitterIdleRadiusMeters,
+            jitterMovingRadiusMeters = realism.jitterMovingRadiusMeters,
             shouldApplyMovingJitter = shouldApplyMovingJitter,
             shouldApplyIdleJitter = shouldApplyIdleJitter,
             altitudeMeters = currentAltitudeMeters,
             humanAltitudeOffsetMeters = humanAltitudeOffsetMeters,
             warmupStartMs = warmupStartMs,
-            warmupEnabled = warmupEnabled,
-            bearingHoldEnabled = bearingHoldEnabled,
-            altitudeEnabled = altitudeEnabled,
-            satelliteExtrasEnabled = satelliteExtrasEnabled,
-            speedIdleVariationPct = speedIdleVariationPct,
-            speedMovingVariationPct = speedMovingVariationPct,
-            activeProfileSpeedMs = activeProfileSpeedMs,
+            warmupEnabled = realism.warmupEnabled,
+            bearingHoldEnabled = realism.bearingHoldEnabled,
+            altitudeEnabled = realism.altitudeEnabled,
+            satelliteExtrasEnabled = realism.satelliteExtrasEnabled,
+            speedIdleVariationPct = realism.speedIdleVariationPct,
+            speedMovingVariationPct = realism.speedMovingVariationPct,
+            activeProfileSpeedMs = realism.activeProfileSpeedMs,
             suspendedPhaseStartMs = suspendedPhaseSnapshot.startMs,
             isSuspendedPhase = suspendedPhaseSnapshot.isActive,
             cachedSatelliteCount = cachedSatelliteCount,
@@ -786,8 +738,8 @@ class MockLocationService : Service() {
                 sensorInjector.inject(
                     elevMode,
                     AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES,
-                    elevationTiltJitterDegrees,
-                    elevationNoiseAmplitudeMs2,
+                    realism.elevationTiltJitterDegrees,
+                    realism.elevationNoiseAmplitudeMs2,
                     Random.Default,
                 )
             }

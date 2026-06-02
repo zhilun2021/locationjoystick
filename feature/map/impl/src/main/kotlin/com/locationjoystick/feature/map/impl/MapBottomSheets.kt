@@ -53,6 +53,7 @@ internal fun RoutesPickerSheet(
 
     ModalBottomSheet(
         onDismissRequest = { onAction(MapAction.CloseRoutesSheet) },
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Text(
@@ -124,6 +125,7 @@ internal fun FavoritesPickerSheet(
 
     ModalBottomSheet(
         onDismissRequest = { onAction(MapAction.CloseFavoritesPicker) },
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         val target = uiState.favoriteTarget
         if (target == null) {
@@ -175,6 +177,7 @@ internal fun PendingTapSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = { onAction(MapAction.ClearPendingTap) },
+        containerColor = MaterialTheme.colorScheme.surface,
     ) {
         Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
             if (isRouteReplay && !isEphemeralReplay) {

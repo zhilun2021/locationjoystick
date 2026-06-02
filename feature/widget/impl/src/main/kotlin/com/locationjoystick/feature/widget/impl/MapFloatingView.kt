@@ -363,7 +363,7 @@ internal fun MapFloatingView(
                 onLocationSelected = { lat, lon, _ ->
                     val position = LatLng(latitude = lat, longitude = lon)
                     mapRef.value?.animateCamera(
-                        CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                        CameraUpdateFactory.newLatLngZoom(MapLatLng(lat, lon), AppConstants.MapConstants.DEFAULT_ZOOM),
                         500,
                     )
                     showSearch = false

@@ -208,6 +208,7 @@ internal fun FavoritesScreen(
     if (showAddSheet) {
         ModalBottomSheet(
             onDismissRequest = { showAddSheet = false },
+            containerColor = MaterialTheme.colorScheme.surface,
         ) {
             AddFavoriteSheet(
                 initialLat = prefillLat,

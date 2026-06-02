@@ -444,7 +444,7 @@ internal fun MapScreen(
                             com.locationjoystick.core.model
                                 .LatLng(latitude = lat, longitude = lon)
                         mapRef.value?.animateCamera(
-                            CameraUpdateFactory.newLatLng(MapLatLng(lat, lon)),
+                            CameraUpdateFactory.newLatLngZoom(MapLatLng(lat, lon), AppConstants.MapConstants.DEFAULT_ZOOM),
                             500,
                         )
                         val src = searchMarkerSource.value ?: return@NominatimSearchBar
