@@ -105,12 +105,7 @@ private fun JitterInput(
 internal fun GpsJitterSection(
     uiState: SettingsUiState,
     isMph: Boolean,
-    onSetJitterIdleRadius: (Double) -> Unit,
-    onSetJitterMovingRadius: (Double) -> Unit,
-    onSetJitterIntervalSeconds: (Int) -> Unit,
-    onSetJitterIdleIntervalSeconds: (Int) -> Unit,
-    onSetJitterSpeedIdleVariationPct: (Int) -> Unit,
-    onSetJitterSpeedMovingVariationPct: (Int) -> Unit,
+    onAction: (SettingsAction) -> Unit,
 ) {
     Text("GPS Jitter", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
@@ -123,13 +118,13 @@ internal fun GpsJitterSection(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         JitterInput(
             value = if (isMph) uiState.jitterIdleRadiusMeters * 3.28084 else uiState.jitterIdleRadiusMeters,
-            onValueChange = { onSetJitterIdleRadius(if (isMph) it / 3.28084 else it) },
+            onValueChange = { onAction(SettingsAction.SetJitterIdleRadius(if (isMph) it / 3.28084 else it)) },
             label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterIdleIntervalSeconds,
-            onValueChange = { onSetJitterIdleIntervalSeconds(it) },
+            onValueChange = { onAction(SettingsAction.SetJitterIdleIntervalSeconds(it)) },
             label = "Idle interval (s)",
             modifier = Modifier.weight(1f),
         )
@@ -138,13 +133,13 @@ internal fun GpsJitterSection(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         JitterInput(
             value = if (isMph) uiState.jitterMovingRadiusMeters * 3.28084 else uiState.jitterMovingRadiusMeters,
-            onValueChange = { onSetJitterMovingRadius(if (isMph) it / 3.28084 else it) },
+            onValueChange = { onAction(SettingsAction.SetJitterMovingRadius(if (isMph) it / 3.28084 else it)) },
             label = if (isMph) "Moving radius (ft)" else "Moving radius (m)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterIntervalSeconds,
-            onValueChange = { onSetJitterIntervalSeconds(it) },
+            onValueChange = { onAction(SettingsAction.SetJitterIntervalSeconds(it)) },
             label = "Moving interval (s)",
             modifier = Modifier.weight(1f),
         )
@@ -153,13 +148,13 @@ internal fun GpsJitterSection(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         JitterInput(
             value = uiState.jitterSpeedIdleVariationPct.toDouble(),
-            onValueChange = { onSetJitterSpeedIdleVariationPct(it.toInt()) },
+            onValueChange = { onAction(SettingsAction.SetJitterSpeedIdleVariationPct(it.toInt())) },
             label = "Idle speed variation (%)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterSpeedMovingVariationPct.toDouble(),
-            onValueChange = { onSetJitterSpeedMovingVariationPct(it.toInt()) },
+            onValueChange = { onAction(SettingsAction.SetJitterSpeedMovingVariationPct(it.toInt())) },
             label = "Moving speed variation (%)",
             modifier = Modifier.weight(1f),
         )
@@ -170,8 +165,7 @@ internal fun GpsJitterSection(
 internal fun ElevationJitterSection(
     uiState: SettingsUiState,
     elevationControlsEnabled: Boolean,
-    onSetTiltJitterDegrees: (Float) -> Unit,
-    onSetNoiseAmplitudeMs2: (Float) -> Unit,
+    onAction: (SettingsAction) -> Unit,
 ) {
     Text("Elevation Jitter", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
@@ -188,14 +182,14 @@ internal fun ElevationJitterSection(
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         JitterInput(
             value = uiState.elevationTiltJitterDegrees.toDouble(),
-            onValueChange = { onSetTiltJitterDegrees(it.toFloat()) },
+            onValueChange = { onAction(SettingsAction.SetElevationTiltJitterDegrees(it.toFloat())) },
             label = "Tilt jitter (°)",
             modifier = Modifier.weight(1f),
             enabled = elevationControlsEnabled,
         )
         JitterInput(
             value = uiState.elevationNoiseAmplitudeMs2.toDouble(),
-            onValueChange = { onSetNoiseAmplitudeMs2(it.toFloat()) },
+            onValueChange = { onAction(SettingsAction.SetElevationNoiseAmplitudeMs2(it.toFloat())) },
             label = "Accel noise (m/s²)",
             modifier = Modifier.weight(1f),
             enabled = elevationControlsEnabled,
@@ -206,11 +200,7 @@ internal fun ElevationJitterSection(
 @Composable
 internal fun GpsRealismSection(
     uiState: SettingsUiState,
-    onSetRealismBearingHoldIdle: (Boolean) -> Unit,
-    onSetRealismAltitudeEnabled: (Boolean) -> Unit,
-    onSetRealismWarmupEnabled: (Boolean) -> Unit,
-    onSetRealismSatelliteExtrasEnabled: (Boolean) -> Unit,
-    onSetRealismSuspendedMockingEnabled: (Boolean) -> Unit,
+    onAction: (SettingsAction) -> Unit,
 ) {
     Text("GPS Realism", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
@@ -222,7 +212,7 @@ internal fun GpsRealismSection(
     Spacer(modifier = Modifier.height(8.dp))
     SettingsCheckboxRow(
         checked = uiState.realismBearingHoldIdle,
-        onCheckedChange = onSetRealismBearingHoldIdle,
+        onCheckedChange = { onAction(SettingsAction.SetRealismBearingHoldIdle(it)) },
         title = "Hold bearing when stationary",
         description =
             "Keeps the last known direction when you stop moving instead of snapping to 0° (north). " +
@@ -230,7 +220,7 @@ internal fun GpsRealismSection(
     )
     SettingsCheckboxRow(
         checked = uiState.realismAltitudeEnabled,
-        onCheckedChange = onSetRealismAltitudeEnabled,
+        onCheckedChange = { onAction(SettingsAction.SetRealismAltitudeEnabled(it)) },
         title = "Vary altitude",
         description =
             "Simulates a plausible altitude with small random drift instead of always reporting 0 m. " +
@@ -238,7 +228,7 @@ internal fun GpsRealismSection(
     )
     SettingsCheckboxRow(
         checked = uiState.realismWarmupEnabled,
-        onCheckedChange = onSetRealismWarmupEnabled,
+        onCheckedChange = { onAction(SettingsAction.SetRealismWarmupEnabled(it)) },
         title = "GPS warm-up simulation",
         description =
             "Starts each session with degraded accuracy (like a cold GPS fix) that converges to normal over ~30 s. " +
@@ -246,7 +236,7 @@ internal fun GpsRealismSection(
     )
     SettingsCheckboxRow(
         checked = uiState.realismSatelliteExtrasEnabled,
-        onCheckedChange = onSetRealismSatelliteExtrasEnabled,
+        onCheckedChange = { onAction(SettingsAction.SetRealismSatelliteExtrasEnabled(it)) },
         title = "Realistic satellite count",
         description =
             "Attaches satellite metadata to each update (7–14 satellites visible, 6–12 in fix) instead of zero. " +
@@ -254,7 +244,7 @@ internal fun GpsRealismSection(
     )
     SettingsCheckboxRow(
         checked = uiState.realismSuspendedMockingEnabled,
-        onCheckedChange = onSetRealismSuspendedMockingEnabled,
+        onCheckedChange = { onAction(SettingsAction.SetRealismSuspendedMockingEnabled(it)) },
         title = "Suspended mocking",
         description =
             "Briefly pauses location updates (~2 s every ~10 s) to mimic real GPS dropouts. " +
