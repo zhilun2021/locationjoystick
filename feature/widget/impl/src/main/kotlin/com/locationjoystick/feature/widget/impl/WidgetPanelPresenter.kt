@@ -14,7 +14,9 @@ import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
@@ -47,10 +49,11 @@ internal class WidgetPanelPresenter(
     private val routeRepository: RouteRepository,
     private val locationRepository: LocationRepository,
     private val roamingRepository: RoamingRepository,
+    private val teleportUseCase: TeleportUseCase,
     private val callbacks: Callbacks,
 ) {
     companion object {
-        private const val TAG = "FloatingWidgetService"
+        private const val TAG = "WidgetPanelPresenter"
     }
 
     /**
@@ -166,7 +169,9 @@ internal class WidgetPanelPresenter(
             val rawFavorites = favoriteRepository.getFavorites().first()
             favoritesDataFlow.value =
                 if (favSortNewestFirst) rawFavorites.sortedByDescending { it.createdAt } else rawFavorites.sortedBy { it.createdAt }
-            showPanel(logTag = "favorites") {
+            // mapPanelLayoutParams() drops FLAG_NOT_FOCUSABLE so the keyboard can appear
+            // when the user taps "Add from current location" text field.
+            showPanel(params = mapPanelLayoutParams(), logTag = "favorites") {
                 val favs by favoritesDataFlow.collectAsStateWithLifecycle()
                 FavoritesFloatingView(
                     favorites = favs,
@@ -243,12 +248,12 @@ internal class WidgetPanelPresenter(
             val favorites by remember { favoriteRepository.getFavorites() }.collectAsStateWithLifecycle(initialValue = emptyList())
             val roamingDefaults by remember { settingsRepository.getRoamingDefaults() }.collectAsStateWithLifecycle(
                 initialValue =
-                    com.locationjoystick.core.model.RoamingDefaults(
-                        radiusMeters = 1000.0,
-                        distanceMeters = 200.0,
-                        speedProfileId = "walk",
-                        followRoads = false,
-                        returnToInitialLocation = false,
+                    RoamingDefaults(
+                        radiusMeters = AppConstants.RoamingConstants.DEFAULT_RADIUS_METERS,
+                        distanceMeters = AppConstants.RoamingConstants.DEFAULT_DISTANCE_METERS,
+                        speedProfileId = AppConstants.ProfileConstants.DEFAULT_ACTIVE_PROFILE_ID,
+                        followRoads = AppConstants.RoamingConstants.DEFAULT_FOLLOW_ROADS,
+                        returnToInitialLocation = AppConstants.RoamingConstants.DEFAULT_RETURN_TO_START,
                     ),
             )
             val speedUnit by remember {
@@ -319,6 +324,7 @@ internal class WidgetPanelPresenter(
                 onSearchCommitted = { name, lat, lon ->
                     serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }
                 },
+                cooldownForPosition = { pos -> teleportUseCase.cooldownFor(pos) },
             )
         }
     }

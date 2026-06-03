@@ -44,12 +44,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
+import com.locationjoystick.core.designsystem.component.CooldownAdvisoryBadge
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
 import com.locationjoystick.core.designsystem.component.RoamingSheetContent
@@ -68,6 +71,8 @@ import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 import org.maplibre.android.camera.CameraPosition
@@ -115,6 +120,7 @@ internal fun MapFloatingView(
     onDismiss: () -> Unit,
     recentSearches: List<RecentSearch> = emptyList(),
     onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
+    cooldownForPosition: ((LatLng) -> Flow<CooldownState>)? = null,
 ) {
     val isRoaming = mockMode == MockMode.ROAMING
     val isRouteReplay = mockMode == MockMode.ROUTE_REPLAY
@@ -579,6 +585,14 @@ internal fun MapFloatingView(
                     ) { Text("Finish route and walk here") }
                 } else {
                     Text("Move to this location?", style = MaterialTheme.typography.titleMedium, color = LjText)
+                    val cooldownState by remember(tap) {
+                        cooldownForPosition?.invoke(tap) ?: flowOf(CooldownState.Ready)
+                    }.collectAsStateWithLifecycle(initialValue = CooldownState.Ready)
+                    val cooling = cooldownState as? CooldownState.Cooling
+                    if (cooling != null) {
+                        Spacer(Modifier.height(8.dp))
+                        CooldownAdvisoryBadge(cooling.toAdvisoryLabel())
+                    }
                     Spacer(Modifier.height(16.dp))
                     Button(
                         onClick = {
