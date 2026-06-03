@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 import kotlin.math.roundToInt
@@ -82,7 +83,7 @@ fun RoamingSheetContent(
                 .padding(horizontal = 16.dp)
                 .padding(bottom = 24.dp),
     ) {
-        Text("Roaming", style = MaterialTheme.typography.headlineSmall)
+        Text("Roaming", style = MaterialTheme.typography.headlineSmall, color = LjText)
 
         Spacer(Modifier.height(8.dp))
 
@@ -151,7 +152,7 @@ fun RoamingSheetContent(
         Spacer(Modifier.height(12.dp))
 
         // Speed profile selector
-        Text("Speed profile", style = MaterialTheme.typography.labelLarge)
+        Text("Speed profile", style = MaterialTheme.typography.labelLarge, color = LjText)
         Spacer(Modifier.height(4.dp))
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             SPEED_PROFILES.forEachIndexed { index, id ->
@@ -177,7 +178,7 @@ fun RoamingSheetContent(
                     checked = draft.followRoads,
                     onCheckedChange = { onDraftChange(draft.copy(followRoads = it)) },
                 )
-                Text("Follow roads", style = MaterialTheme.typography.bodyMedium)
+                Text("Follow roads", style = MaterialTheme.typography.bodyMedium, color = LjText)
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -187,7 +188,7 @@ fun RoamingSheetContent(
                     checked = draft.returnToInitialLocation,
                     onCheckedChange = { onDraftChange(draft.copy(returnToInitialLocation = it)) },
                 )
-                Text("Return to start", style = MaterialTheme.typography.bodyMedium)
+                Text("Return to start", style = MaterialTheme.typography.bodyMedium, color = LjText)
             }
         }
 
