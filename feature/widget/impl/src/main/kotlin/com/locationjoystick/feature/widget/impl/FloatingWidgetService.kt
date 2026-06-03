@@ -646,7 +646,8 @@ class FloatingWidgetService :
         if (!isAppInForeground()) return
         try {
             val intent =
-                Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
+                Intent().apply {
+                    setClassName(packageName, "com.locationjoystick.app.MainActivity")
                     action = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 }
