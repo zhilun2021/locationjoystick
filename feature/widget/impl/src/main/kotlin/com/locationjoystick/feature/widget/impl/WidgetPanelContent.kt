@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -208,24 +209,19 @@ internal fun WidgetPanel(
 }
 
 @Composable
-internal fun FavoritesFloatingView(
-    favorites: List<FavoriteLocation>,
+private fun FloatingPickerShell(
+    title: String,
     onDismiss: () -> Unit,
-    onTeleport: (FavoriteLocation) -> Unit,
-    onWalk: (FavoriteLocation) -> Unit,
-    onWalkViaRoads: (FavoriteLocation) -> Unit,
-    onAddFromHere: (name: String) -> Unit,
+    hasBack: Boolean,
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    var showAddForm by remember { mutableStateOf(false) }
-    var newFavName by remember { mutableStateOf("") }
-    var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
-
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.7f))
-                .clickable { if (selectedFavorite != null) selectedFavorite = null else onDismiss() },
+                .clickable { if (hasBack) onBack() else onDismiss() },
     ) {
         Box(
             modifier =
@@ -246,154 +242,176 @@ internal fun FavoritesFloatingView(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (selectedFavorite != null) {
-                        IconButton(onClick = { selectedFavorite = null }) {
+                    if (hasBack) {
+                        IconButton(onClick = onBack) {
                             Icon(LjIcons.ArrowBack, contentDescription = "Back", tint = LjText)
                         }
                     }
                     Text(
-                        text = selectedFavorite?.name ?: "Favorites",
+                        text = title,
                         style = MaterialTheme.typography.titleLarge,
                         color = LjText,
                         modifier = Modifier.weight(1f),
                     )
-                    if (selectedFavorite == null) {
+                    if (!hasBack) {
                         IconButton(onClick = onDismiss) {
                             Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
                         }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
+                content()
+            }
+        }
+    }
+}
 
-                val selected = selectedFavorite
-                if (selected != null) {
-                    Button(
-                        onClick = {
-                            onTeleport(selected)
-                            selectedFavorite = null
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Teleport") }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            onWalk(selected)
-                            selectedFavorite = null
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Walk", color = LjText) }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            onWalkViaRoads(selected)
-                            selectedFavorite = null
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Via roads", color = LjText) }
+@Composable
+internal fun FavoritesFloatingView(
+    favorites: List<FavoriteLocation>,
+    onDismiss: () -> Unit,
+    onTeleport: (FavoriteLocation) -> Unit,
+    onWalk: (FavoriteLocation) -> Unit,
+    onWalkViaRoads: (FavoriteLocation) -> Unit,
+    onAddFromHere: (name: String) -> Unit,
+) {
+    var showAddForm by remember { mutableStateOf(false) }
+    var newFavName by remember { mutableStateOf("") }
+    var selectedFavorite by remember { mutableStateOf<FavoriteLocation?>(null) }
+
+    FloatingPickerShell(
+        title = selectedFavorite?.name ?: "Favorites",
+        onDismiss = onDismiss,
+        hasBack = selectedFavorite != null,
+        onBack = { selectedFavorite = null },
+    ) {
+        val selected = selectedFavorite
+        if (selected != null) {
+            Button(
+                onClick = {
+                    onTeleport(selected)
+                    selectedFavorite = null
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Teleport") }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    onWalk(selected)
+                    selectedFavorite = null
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Walk", color = LjText) }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    onWalkViaRoads(selected)
+                    selectedFavorite = null
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Via roads", color = LjText) }
+        } else {
+            Box(modifier = Modifier.weight(1f)) {
+                if (favorites.isEmpty()) {
+                    Text(
+                        text = "No favorites saved",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = LjText.copy(alpha = 0.6f),
+                    )
                 } else {
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (favorites.isEmpty()) {
-                            Text(
-                                text = "No favorites saved",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = LjText.copy(alpha = 0.6f),
-                            )
-                        } else {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(favorites, key = { it.id }) { fav ->
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .background(
-                                                    androidx.compose.ui.graphics.Color.White
-                                                        .copy(alpha = 0.12f),
-                                                    androidx.compose.foundation.shape
-                                                        .RoundedCornerShape(8.dp),
-                                                ).padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = fav.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = LjText,
-                                            )
-                                            Text(
-                                                text = "${String.format(
-                                                    "%.4f",
-                                                    fav.position.latitude,
-                                                )}, ${String.format("%.4f", fav.position.longitude)}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = LjText.copy(alpha = 0.7f),
-                                            )
-                                        }
-                                        Button(onClick = { selectedFavorite = fav }) {
-                                            Icon(LjIcons.PlayArrow, contentDescription = null)
-                                        }
-                                    }
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(favorites, key = { it.id }) { fav ->
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            androidx.compose.ui.graphics.Color.White
+                                                .copy(alpha = 0.12f),
+                                            androidx.compose.foundation.shape
+                                                .RoundedCornerShape(8.dp),
+                                        ).padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = fav.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = LjText,
+                                    )
+                                    Text(
+                                        text = "${String.format(
+                                            "%.4f",
+                                            fav.position.latitude,
+                                        )}, ${String.format("%.4f", fav.position.longitude)}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = LjText.copy(alpha = 0.7f),
+                                    )
+                                }
+                                Button(onClick = { selectedFavorite = fav }) {
+                                    Icon(LjIcons.PlayArrow, contentDescription = null)
                                 }
                             }
                         }
                     }
-                    Spacer(Modifier.height(12.dp))
-                    if (showAddForm) {
-                        OutlinedTextField(
-                            value = newFavName,
-                            onValueChange = { newFavName = it },
-                            label = { Text("Name", color = LjText) },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions =
-                                KeyboardActions(
-                                    onDone = {
-                                        if (newFavName.isNotBlank()) {
-                                            onAddFromHere(newFavName.trim())
-                                            newFavName = ""
-                                            showAddForm = false
-                                        }
-                                    },
-                                ),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.End,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            TextButton(onClick = {
-                                showAddForm = false
-                                newFavName = ""
-                            }) {
-                                Text("Cancel", color = LjText)
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Button(
-                                onClick = {
-                                    if (newFavName.isNotBlank()) {
-                                        onAddFromHere(newFavName.trim())
-                                        newFavName = ""
-                                        showAddForm = false
-                                    }
-                                },
-                            ) {
-                                Text("Save")
-                            }
-                        }
-                    } else {
-                        Button(
-                            onClick = { showAddForm = true },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Icon(LjIcons.Add, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Add from current location")
-                        }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            if (showAddForm) {
+                OutlinedTextField(
+                    value = newFavName,
+                    onValueChange = { newFavName = it },
+                    label = { Text("Name", color = LjText) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions =
+                        KeyboardActions(
+                            onDone = {
+                                if (newFavName.isNotBlank()) {
+                                    onAddFromHere(newFavName.trim())
+                                    newFavName = ""
+                                    showAddForm = false
+                                }
+                            },
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    TextButton(onClick = {
+                        showAddForm = false
+                        newFavName = ""
+                    }) {
+                        Text("Cancel", color = LjText)
                     }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (newFavName.isNotBlank()) {
+                                onAddFromHere(newFavName.trim())
+                                newFavName = ""
+                                showAddForm = false
+                            }
+                        },
+                    ) {
+                        Text("Save")
+                    }
+                }
+            } else {
+                Button(
+                    onClick = { showAddForm = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(LjIcons.Add, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add from current location")
                 }
             }
         }
@@ -408,127 +426,81 @@ internal fun RoutesFloatingView(
 ) {
     var selectedRouteId by remember { mutableStateOf<String?>(null) }
 
-    Box(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.7f))
-                .clickable { if (selectedRouteId != null) selectedRouteId = null else onDismiss() },
+    FloatingPickerShell(
+        title = if (selectedRouteId != null) routes.find { it.id == selectedRouteId }?.name ?: "Routes" else "Routes",
+        onDismiss = onDismiss,
+        hasBack = selectedRouteId != null,
+        onBack = { selectedRouteId = null },
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .background(LjBg, RoundedCornerShape(16.dp))
-                    .clickable { /* consume touches inside panel */ },
-        ) {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
+        if (selectedRouteId != null) {
+            val routeId = selectedRouteId!!
+            var loop by remember(routeId) { mutableStateOf(false) }
+            var reverse by remember(routeId) { mutableStateOf(false) }
+            var returnToLocation by remember(routeId) { mutableStateOf(false) }
+
+            LjCheckboxRow(title = "Loop", checked = loop, onCheckedChange = { loop = it }, enabled = !returnToLocation, textColor = LjText)
+            LjCheckboxRow(title = "Reverse", checked = reverse, onCheckedChange = { reverse = it }, textColor = LjText)
+            LjCheckboxRow(title = "Return to location", checked = returnToLocation, onCheckedChange = { returnToLocation = it }, enabled = !loop, textColor = LjText)
+
+            Spacer(Modifier.height(20.dp))
+
+            Button(
+                onClick = {
+                    onStartRoute(routeId, loop, reverse, returnToLocation && !loop, false)
+                    selectedRouteId = null
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (selectedRouteId != null) {
-                        IconButton(onClick = { selectedRouteId = null }) {
-                            Icon(LjIcons.ArrowBack, contentDescription = "Back", tint = LjText)
-                        }
-                    }
+                Text("Walk and start", color = LjText)
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = {
+                    onStartRoute(routeId, loop, reverse, returnToLocation && !loop, true)
+                    selectedRouteId = null
+                    onDismiss()
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Teleport and start", color = LjText)
+            }
+        } else {
+            Box(modifier = Modifier.weight(1f)) {
+                if (routes.isEmpty()) {
                     Text(
-                        text =
-                            if (selectedRouteId != null) {
-                                routes.find { it.id == selectedRouteId }?.name ?: "Routes"
-                            } else {
-                                "Routes"
-                            },
-                        style = MaterialTheme.typography.titleLarge,
-                        color = LjText,
-                        modifier = Modifier.weight(1f),
+                        text = "No routes saved",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = LjText.copy(alpha = 0.6f),
                     )
-                    if (selectedRouteId == null) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(LjIcons.Close, contentDescription = "Close", tint = LjText)
-                        }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-
-                if (selectedRouteId != null) {
-                    val routeId = selectedRouteId!!
-                    var loop by remember(routeId) { mutableStateOf(false) }
-                    var reverse by remember(routeId) { mutableStateOf(false) }
-                    var returnToLocation by remember(routeId) { mutableStateOf(false) }
-
-                    LjCheckboxRow(title = "Loop", checked = loop, onCheckedChange = { loop = it }, enabled = !returnToLocation, textColor = LjText)
-                    LjCheckboxRow(title = "Reverse", checked = reverse, onCheckedChange = { reverse = it }, textColor = LjText)
-                    LjCheckboxRow(title = "Return to location", checked = returnToLocation, onCheckedChange = { returnToLocation = it }, enabled = !loop, textColor = LjText)
-
-                    Spacer(Modifier.height(20.dp))
-
-                    Button(
-                        onClick = {
-                            onStartRoute(routeId, loop, reverse, returnToLocation && !loop, false)
-                            selectedRouteId = null
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Walk and start", color = LjText)
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = {
-                            onStartRoute(routeId, loop, reverse, returnToLocation && !loop, true)
-                            selectedRouteId = null
-                            onDismiss()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Teleport and start", color = LjText)
-                    }
                 } else {
-                    Box(modifier = Modifier.weight(1f)) {
-                        if (routes.isEmpty()) {
-                            Text(
-                                text = "No routes saved",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = LjText.copy(alpha = 0.6f),
-                            )
-                        } else {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(routes, key = { it.id }) { route ->
-                                    Row(
-                                        modifier =
-                                            Modifier
-                                                .fillMaxWidth()
-                                                .background(
-                                                    Color.White.copy(alpha = 0.12f),
-                                                    RoundedCornerShape(8.dp),
-                                                ).padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = route.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                color = LjText,
-                                            )
-                                            Text(
-                                                text = "${route.waypoints.size} waypoints",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = LjText.copy(alpha = 0.7f),
-                                            )
-                                        }
-                                        Button(onClick = { selectedRouteId = route.id }) {
-                                            Icon(LjIcons.PlayArrow, contentDescription = null)
-                                        }
-                                    }
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(routes, key = { it.id }) { route ->
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            Color.White.copy(alpha = 0.12f),
+                                            RoundedCornerShape(8.dp),
+                                        ).padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = route.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = LjText,
+                                    )
+                                    Text(
+                                        text = "${route.waypoints.size} waypoints",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = LjText.copy(alpha = 0.7f),
+                                    )
+                                }
+                                Button(onClick = { selectedRouteId = route.id }) {
+                                    Icon(LjIcons.PlayArrow, contentDescription = null)
                                 }
                             }
                         }
