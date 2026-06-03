@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.data.DeepLinkRepository
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
@@ -34,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -86,6 +88,7 @@ class MapViewModel
         private val startRouteReplayUseCase: StartRouteReplayUseCase,
         private val ephemeralReplayController: EphemeralReplayController,
         private val osrmClient: com.locationjoystick.core.routing.OsrmClient,
+        private val deepLinkRepository: DeepLinkRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
@@ -112,6 +115,7 @@ class MapViewModel
             observeCooldownForPendingTap()
             observeFavoriteCooldowns()
             restoreLastLocationIfNeeded()
+            observeDeepLinkCoords()
         }
 
         private fun observeLocationState() {
@@ -613,6 +617,17 @@ class MapViewModel
                         }
                     }
                 }
+            }
+        }
+
+        private fun observeDeepLinkCoords() {
+            viewModelScope.launch {
+                deepLinkRepository.pendingCoords
+                    .filterNotNull()
+                    .collect { coords ->
+                        _uiState.update { it.copy(pendingTapPosition = coords) }
+                        deepLinkRepository.consume()
+                    }
             }
         }
 

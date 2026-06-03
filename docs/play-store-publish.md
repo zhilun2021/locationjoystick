@@ -128,6 +128,19 @@ Play Console → App content:
 
 ---
 
+## 12. App Links Setup (`locationjoystick.shrtcts.fr`)
+
+Enables `https://locationjoystick.shrtcts.fr/?coords=LAT,LON` URLs to open the app directly from Discord, Telegram, etc. Requires Play App Signing to be enrolled first (step 4).
+
+- [ ] Get SHA-256 signing cert fingerprint: Play Console → Setup → App signing → "App signing key certificate" → copy the SHA-256 fingerprint
+- [ ] Replace `REPLACE_WITH_YOUR_SHA256_SIGNING_CERT_FINGERPRINT` in `docs/wiki/.well-known/assetlinks.json` with the fingerprint (colon-separated uppercase hex, e.g. `AB:CD:EF:…`)
+- [ ] Add DNS record: CNAME `locationjoystick.shrtcts.fr` → `shortcuts.github.io` (or wherever GitHub Pages is served from)
+- [ ] Enable GitHub Pages to serve `docs/wiki/` so `https://locationjoystick.shrtcts.fr/.well-known/assetlinks.json` resolves with `Content-Type: application/json`
+- [ ] Verify: `https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=https://locationjoystick.shrtcts.fr&relation=delegate_permission/common.handle_all_urls`
+- [ ] Test on device: tap `https://locationjoystick.shrtcts.fr/?coords=35.62460,139.77627` in Chrome → app opens directly (no chooser dialog)
+
+---
+
 ## Blockers (must resolve before submission)
 
 1. **App icon** — resize `docs/wiki/icon.png` from 192×192 to 512×512
@@ -136,3 +149,4 @@ Play Console → App content:
 4. **GitHub Pages** — enable in repo settings so the privacy URL resolves
 5. **Signed AAB** — run `make bundle` with signing env vars configured
 6. **Play Console account** — $25 registration if not done yet
+7. **App Links** — fill SHA-256 fingerprint in `docs/wiki/.well-known/assetlinks.json` and configure DNS (step 12)
