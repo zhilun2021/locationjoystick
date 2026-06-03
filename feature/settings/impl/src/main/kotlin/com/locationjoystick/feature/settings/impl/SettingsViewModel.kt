@@ -102,7 +102,7 @@ class SettingsViewModel
 
         private val mutableDraft = MutableStateFlow(DraftState())
 
-        private val repoStateFlow = settingsRepository.getSettingsSnapshot()
+        private val snapshotFlow = settingsRepository.getSettingsSnapshot()
 
         private val draftStateFlow = mutableDraft.asStateFlow()
 
@@ -119,33 +119,33 @@ class SettingsViewModel
 
         val uiState: StateFlow<SettingsUiState> =
             combine(
-                repoStateFlow,
+                snapshotFlow,
                 draftStateFlow,
-            ) { repoState, draftState ->
+            ) { snapshot, draftState ->
                 val isDirty = draftState != DraftState()
                 SettingsUiState(
                     isLoading = false,
-                    walkSpeed = draftState.walkSpeed ?: repoState.walkSpeedMs,
-                    runSpeed = draftState.runSpeed ?: repoState.runSpeedMs,
-                    bikeSpeed = draftState.bikeSpeed ?: repoState.bikeSpeedMs,
-                    speedUnit = draftState.speedUnit ?: repoState.speedUnit,
-                    enabledWidgetFeatures = draftState.widgetFeatures ?: repoState.widgetFeatures,
-                    rememberLastLocation = draftState.rememberLastLocation ?: repoState.rememberLastLocation,
-                    mapFollowsLocation = draftState.mapFollowsLocation ?: repoState.mapFollowsLocation,
-                    jitterIdleRadiusMeters = draftState.jitterIdleRadius ?: repoState.jitterIdleRadius,
-                    jitterMovingRadiusMeters = draftState.jitterMovingRadius ?: repoState.jitterMovingRadius,
-                    jitterIntervalSeconds = draftState.jitterIntervalSeconds ?: repoState.jitterIntervalSeconds,
-                    jitterIdleIntervalSeconds = draftState.jitterIdleIntervalSeconds ?: repoState.jitterIdleIntervalSeconds,
-                    realismBearingHoldIdle = draftState.realismBearingHoldIdle ?: repoState.realismBearingHoldIdle,
-                    realismAltitudeEnabled = draftState.realismAltitudeEnabled ?: repoState.realismAltitudeEnabled,
-                    realismWarmupEnabled = draftState.realismWarmupEnabled ?: repoState.realismWarmupEnabled,
-                    realismSatelliteExtrasEnabled = draftState.realismSatelliteExtrasEnabled ?: repoState.realismSatelliteExtrasEnabled,
-                    realismSuspendedMockingEnabled = draftState.realismSuspendedMockingEnabled ?: repoState.realismSuspendedMockingEnabled,
-                    jitterSpeedIdleVariationPct = draftState.jitterSpeedIdleVariationPct ?: repoState.jitterSpeedIdleVariationPct,
-                    jitterSpeedMovingVariationPct = draftState.jitterSpeedMovingVariationPct ?: repoState.jitterSpeedMovingVariationPct,
-                    elevationTiltJitterDegrees = draftState.elevationTiltJitterDegrees ?: repoState.elevationTiltJitterDegrees,
-                    elevationNoiseAmplitudeMs2 = draftState.elevationNoiseAmplitudeMs2 ?: repoState.elevationNoiseAmplitudeMs2,
-                    hotLocationsEnabled = draftState.hotLocationsEnabled ?: repoState.hotLocationsEnabled,
+                    walkSpeed = draftState.walkSpeed ?: snapshot.walkSpeedMs,
+                    runSpeed = draftState.runSpeed ?: snapshot.runSpeedMs,
+                    bikeSpeed = draftState.bikeSpeed ?: snapshot.bikeSpeedMs,
+                    speedUnit = draftState.speedUnit ?: snapshot.speedUnit,
+                    enabledWidgetFeatures = draftState.widgetFeatures ?: snapshot.widgetFeatures,
+                    rememberLastLocation = draftState.rememberLastLocation ?: snapshot.rememberLastLocation,
+                    mapFollowsLocation = draftState.mapFollowsLocation ?: snapshot.mapFollowsLocation,
+                    jitterIdleRadiusMeters = draftState.jitterIdleRadius ?: snapshot.jitterIdleRadius,
+                    jitterMovingRadiusMeters = draftState.jitterMovingRadius ?: snapshot.jitterMovingRadius,
+                    jitterIntervalSeconds = draftState.jitterIntervalSeconds ?: snapshot.jitterIntervalSeconds,
+                    jitterIdleIntervalSeconds = draftState.jitterIdleIntervalSeconds ?: snapshot.jitterIdleIntervalSeconds,
+                    realismBearingHoldIdle = draftState.realismBearingHoldIdle ?: snapshot.realismBearingHoldIdle,
+                    realismAltitudeEnabled = draftState.realismAltitudeEnabled ?: snapshot.realismAltitudeEnabled,
+                    realismWarmupEnabled = draftState.realismWarmupEnabled ?: snapshot.realismWarmupEnabled,
+                    realismSatelliteExtrasEnabled = draftState.realismSatelliteExtrasEnabled ?: snapshot.realismSatelliteExtrasEnabled,
+                    realismSuspendedMockingEnabled = draftState.realismSuspendedMockingEnabled ?: snapshot.realismSuspendedMockingEnabled,
+                    jitterSpeedIdleVariationPct = draftState.jitterSpeedIdleVariationPct ?: snapshot.jitterSpeedIdleVariationPct,
+                    jitterSpeedMovingVariationPct = draftState.jitterSpeedMovingVariationPct ?: snapshot.jitterSpeedMovingVariationPct,
+                    elevationTiltJitterDegrees = draftState.elevationTiltJitterDegrees ?: snapshot.elevationTiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2 = draftState.elevationNoiseAmplitudeMs2 ?: snapshot.elevationNoiseAmplitudeMs2,
+                    hotLocationsEnabled = draftState.hotLocationsEnabled ?: snapshot.hotLocationsEnabled,
                     isDirty = isDirty,
                 )
             }.stateIn(
