@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -75,29 +76,6 @@ class SettingsViewModel
         internal val qrChunksReady = MutableSharedFlow<QrChunker.ChunkResult>(extraBufferCapacity = 1)
 
         internal val userFeedback = MutableSharedFlow<UserFeedback>(extraBufferCapacity = 1)
-
-        private data class JitterChunk(
-            val idleRadius: Double,
-            val movingRadius: Double,
-            val intervalSeconds: Int,
-            val idleIntervalSeconds: Int,
-            val speedIdleVariationPct: Int,
-            val speedMovingVariationPct: Int,
-        )
-
-        private data class RepoRealismChunk(
-            val mapFollowsLocation: Boolean,
-            val bearingHoldIdle: Boolean,
-            val altitudeEnabled: Boolean,
-            val warmupEnabled: Boolean,
-            val satelliteExtrasEnabled: Boolean,
-            val suspendedMockingEnabled: Boolean,
-        )
-
-        private data class ElevationJitterChunk(
-            val tiltJitterDegrees: Float,
-            val noiseAmplitudeMs2: Float,
-        )
 
         private data class RepoState(
             val walkSpeed: Double,
@@ -149,96 +127,28 @@ class SettingsViewModel
         private val mutableDraft = MutableStateFlow(DraftState())
 
         private val repoStateFlow =
-            combine(
-                combine(
-                    combine(
-                        settingsRepository.getWalkSpeed(),
-                        settingsRepository.getRunSpeed(),
-                        settingsRepository.getBikeSpeed(),
-                    ) { walkSpeed, runSpeed, bikeSpeed ->
-                        Triple(walkSpeed, runSpeed, bikeSpeed)
-                    },
-                    combine(
-                        settingsRepository.getSpeedUnit(),
-                        settingsRepository.getWidgetFeatures(),
-                        settingsRepository.getRememberLastLocation(),
-                    ) { speedUnit, features, rememberLastLocation ->
-                        Triple(speedUnit, features, rememberLastLocation)
-                    },
-                    combine(
-                        combine(
-                            settingsRepository.getJitterIdleRadius(),
-                            settingsRepository.getJitterMovingRadius(),
-                            settingsRepository.getJitterIntervalSeconds(),
-                        ) { idle, moving, interval -> Triple(idle, moving, interval) },
-                        settingsRepository.getJitterIdleIntervalSeconds(),
-                        settingsRepository.getJitterSpeedIdleVariationPct(),
-                        settingsRepository.getJitterSpeedMovingVariationPct(),
-                    ) { triple, idleInterval, idleVarPct, movingVarPct ->
-                        JitterChunk(
-                            idleRadius = triple.first,
-                            movingRadius = triple.second,
-                            intervalSeconds = triple.third,
-                            idleIntervalSeconds = idleInterval,
-                            speedIdleVariationPct = idleVarPct,
-                            speedMovingVariationPct = movingVarPct,
-                        )
-                    },
-                    combine(
-                        settingsRepository.getMapFollowsLocation(),
-                        combine(
-                            settingsRepository.getRealismBearingHoldIdle(),
-                            settingsRepository.getRealismAltitudeEnabled(),
-                            settingsRepository.getRealismWarmupEnabled(),
-                        ) { bearing, altitude, warmup -> Triple(bearing, altitude, warmup) },
-                        combine(
-                            settingsRepository.getRealismSatelliteExtrasEnabled(),
-                            settingsRepository.getRealismSuspendedMockingEnabled(),
-                        ) { satellites, suspended -> Pair(satellites, suspended) },
-                    ) { mapFollows, realism1, realism2 ->
-                        RepoRealismChunk(
-                            mapFollowsLocation = mapFollows,
-                            bearingHoldIdle = realism1.first,
-                            altitudeEnabled = realism1.second,
-                            warmupEnabled = realism1.third,
-                            satelliteExtrasEnabled = realism2.first,
-                            suspendedMockingEnabled = realism2.second,
-                        )
-                    },
-                ) { speeds, settings, jitter, chunk ->
-                    Pair(Pair(speeds, settings), Pair(jitter, chunk))
-                },
-                combine(
-                    settingsRepository.getElevationTiltJitterDegrees(),
-                    settingsRepository.getElevationNoiseAmplitudeMs2(),
-                ) { tiltJitter, noiseAmp ->
-                    ElevationJitterChunk(tiltJitterDegrees = tiltJitter, noiseAmplitudeMs2 = noiseAmp)
-                },
-            ) { inner, elevChunk ->
-                val (speedsSettings, jitterChunk) = inner
-                val (speeds, settings) = speedsSettings
-                val (jitter, chunk) = jitterChunk
+            settingsRepository.getSettingsSnapshot().map { s ->
                 RepoState(
-                    walkSpeed = speeds.first,
-                    runSpeed = speeds.second,
-                    bikeSpeed = speeds.third,
-                    speedUnit = settings.first,
-                    widgetFeatures = settings.second.toSet(),
-                    rememberLastLocation = settings.third,
-                    mapFollowsLocation = chunk.mapFollowsLocation,
-                    jitterIdleRadius = jitter.idleRadius,
-                    jitterMovingRadius = jitter.movingRadius,
-                    jitterIntervalSeconds = jitter.intervalSeconds,
-                    jitterIdleIntervalSeconds = jitter.idleIntervalSeconds,
-                    realismBearingHoldIdle = chunk.bearingHoldIdle,
-                    realismAltitudeEnabled = chunk.altitudeEnabled,
-                    realismWarmupEnabled = chunk.warmupEnabled,
-                    realismSatelliteExtrasEnabled = chunk.satelliteExtrasEnabled,
-                    realismSuspendedMockingEnabled = chunk.suspendedMockingEnabled,
-                    jitterSpeedIdleVariationPct = jitter.speedIdleVariationPct,
-                    jitterSpeedMovingVariationPct = jitter.speedMovingVariationPct,
-                    elevationTiltJitterDegrees = elevChunk.tiltJitterDegrees,
-                    elevationNoiseAmplitudeMs2 = elevChunk.noiseAmplitudeMs2,
+                    walkSpeed = s.walkSpeedMs,
+                    runSpeed = s.runSpeedMs,
+                    bikeSpeed = s.bikeSpeedMs,
+                    speedUnit = s.speedUnit,
+                    widgetFeatures = s.widgetFeatures,
+                    rememberLastLocation = s.rememberLastLocation,
+                    mapFollowsLocation = s.mapFollowsLocation,
+                    jitterIdleRadius = s.jitterIdleRadius,
+                    jitterMovingRadius = s.jitterMovingRadius,
+                    jitterIntervalSeconds = s.jitterIntervalSeconds,
+                    jitterIdleIntervalSeconds = s.jitterIdleIntervalSeconds,
+                    realismBearingHoldIdle = s.realismBearingHoldIdle,
+                    realismAltitudeEnabled = s.realismAltitudeEnabled,
+                    realismWarmupEnabled = s.realismWarmupEnabled,
+                    realismSatelliteExtrasEnabled = s.realismSatelliteExtrasEnabled,
+                    realismSuspendedMockingEnabled = s.realismSuspendedMockingEnabled,
+                    jitterSpeedIdleVariationPct = s.jitterSpeedIdleVariationPct,
+                    jitterSpeedMovingVariationPct = s.jitterSpeedMovingVariationPct,
+                    elevationTiltJitterDegrees = s.elevationTiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2 = s.elevationNoiseAmplitudeMs2,
                 )
             }
 

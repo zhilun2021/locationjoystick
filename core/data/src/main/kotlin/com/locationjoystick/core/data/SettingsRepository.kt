@@ -1,6 +1,7 @@
 package com.locationjoystick.core.data
 
 import com.locationjoystick.core.datastore.PreferencesDataSource
+import com.locationjoystick.core.datastore.SettingsSnapshot
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.datastore.toActiveSpeedProfile
 import com.locationjoystick.core.datastore.toKey
@@ -195,4 +196,6 @@ class SettingsRepository
         fun getElevationNoiseAmplitudeMs2(): Flow<Float> = dataSource.getElevationNoiseAmplitudeMs2()
 
         suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float) = dataSource.setElevationNoiseAmplitudeMs2(amplitude)
+
+        fun getSettingsSnapshot(): Flow<SettingsSnapshot> = dataSource.getSettingsSnapshot()
     }

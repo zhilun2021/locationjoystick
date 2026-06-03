@@ -17,6 +17,7 @@ import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
+import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -184,7 +185,33 @@ interface PreferencesDataSource {
 
     /** Sets the elevation accelerometer noise amplitude in m/s². */
     suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float)
+
+    /** Returns all settings needed by the settings UI in a single DataStore scan. */
+    fun getSettingsSnapshot(): Flow<SettingsSnapshot>
 }
+
+data class SettingsSnapshot(
+    val walkSpeedMs: Double,
+    val runSpeedMs: Double,
+    val bikeSpeedMs: Double,
+    val speedUnit: SpeedUnit,
+    val widgetFeatures: Set<WidgetFeature>,
+    val rememberLastLocation: Boolean,
+    val mapFollowsLocation: Boolean,
+    val jitterIdleRadius: Double,
+    val jitterMovingRadius: Double,
+    val jitterIntervalSeconds: Int,
+    val jitterIdleIntervalSeconds: Int,
+    val realismBearingHoldIdle: Boolean,
+    val realismAltitudeEnabled: Boolean,
+    val realismWarmupEnabled: Boolean,
+    val realismSatelliteExtrasEnabled: Boolean,
+    val realismSuspendedMockingEnabled: Boolean,
+    val jitterSpeedIdleVariationPct: Int,
+    val jitterSpeedMovingVariationPct: Int,
+    val elevationTiltJitterDegrees: Float,
+    val elevationNoiseAmplitudeMs2: Float,
+)
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
     val speedMs =
@@ -549,6 +576,53 @@ class AppPreferencesDataSource
                     )
             }
         }
+
+        override fun getSettingsSnapshot(): Flow<SettingsSnapshot> =
+            dataStore.data
+                .catch { e ->
+                    if (e is IOException) {
+                        Log.e(TAG, "Error reading settings snapshot", e)
+                        emit(emptyPreferences())
+                    } else {
+                        throw e
+                    }
+                }.map { prefs ->
+                    val speedUnitStr = prefs[Keys.SPEED_UNIT] ?: AppConstants.ProfileConstants.DEFAULT_SPEED_UNIT
+                    val speedUnit =
+                        try {
+                            SpeedUnit.valueOf(speedUnitStr)
+                        } catch (_: IllegalArgumentException) {
+                            SpeedUnit.KMH
+                        }
+                    val widgetItems = prefs[Keys.WIDGET_ITEMS] ?: DEFAULT_WIDGET_ITEMS
+                    SettingsSnapshot(
+                        walkSpeedMs = prefs[Keys.WALK_SPEED_MS] ?: DEFAULT_WALK_SPEED_MS,
+                        runSpeedMs = prefs[Keys.RUN_SPEED_MS] ?: DEFAULT_RUN_SPEED_MS,
+                        bikeSpeedMs = prefs[Keys.BIKE_SPEED_MS] ?: DEFAULT_BIKE_SPEED_MS,
+                        speedUnit = speedUnit,
+                        widgetFeatures = widgetItems.mapNotNull { it.toWidgetFeature() }.toSet(),
+                        rememberLastLocation = prefs[Keys.REMEMBER_LAST_LOCATION]
+                            ?: AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION,
+                        mapFollowsLocation = prefs[Keys.MAP_FOLLOWS_LOCATION] ?: true,
+                        jitterIdleRadius = prefs[Keys.JITTER_IDLE_RADIUS_METERS] ?: DEFAULT_JITTER_IDLE_RADIUS_METERS,
+                        jitterMovingRadius = prefs[Keys.JITTER_MOVING_RADIUS_METERS] ?: DEFAULT_JITTER_MOVING_RADIUS_METERS,
+                        jitterIntervalSeconds = prefs[Keys.JITTER_INTERVAL_SECONDS] ?: DEFAULT_JITTER_INTERVAL_SECONDS,
+                        jitterIdleIntervalSeconds = prefs[Keys.JITTER_IDLE_INTERVAL_SECONDS] ?: DEFAULT_JITTER_IDLE_INTERVAL_SECONDS,
+                        realismBearingHoldIdle = prefs[Keys.REALISM_BEARING_HOLD_IDLE] ?: true,
+                        realismAltitudeEnabled = prefs[Keys.REALISM_ALTITUDE_ENABLED] ?: true,
+                        realismWarmupEnabled = prefs[Keys.REALISM_WARMUP_ENABLED] ?: false,
+                        realismSatelliteExtrasEnabled = prefs[Keys.REALISM_SATELLITE_EXTRAS_ENABLED] ?: true,
+                        realismSuspendedMockingEnabled = prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] ?: false,
+                        jitterSpeedIdleVariationPct = prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT]
+                            ?: DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT,
+                        jitterSpeedMovingVariationPct = prefs[Keys.JITTER_SPEED_MOVING_VARIATION_PCT]
+                            ?: DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT,
+                        elevationTiltJitterDegrees = prefs[Keys.ELEVATION_TILT_JITTER_DEGREES]
+                            ?: DEFAULT_ELEVATION_TILT_JITTER_DEGREES,
+                        elevationNoiseAmplitudeMs2 = prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2]
+                            ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
+                    )
+                }
 
         companion object {
             const val DATASTORE_FILE_NAME = AppConstants.DataStoreConstants.FILE_NAME
