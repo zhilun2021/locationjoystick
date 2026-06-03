@@ -469,30 +469,35 @@ class SettingsViewModel
                 }
                 data.routes.forEach { routeRepository.insertRoute(it).getOrNull() }
             }
-            data.speedProfiles.forEach { profile ->
-                when (profile.id) {
-                    "walk" -> settingsRepository.setWalkSpeed(profile.speedMetersPerSecond)
-                    "run" -> settingsRepository.setRunSpeed(profile.speedMetersPerSecond)
-                    "bike" -> settingsRepository.setBikeSpeed(profile.speedMetersPerSecond)
-                }
-            }
-            settingsRepository.setSpeedUnit(data.settings.speedUnit)
-            settingsRepository.setWidgetFeatures(data.settings.enabledWidgetFeatures)
-            settingsRepository.updateRoamingDefaults(data.settings.roamingDefaults)
-            settingsRepository.setRealismBearingHoldIdle(data.settings.bearingHoldOnIdle)
-            settingsRepository.setRealismAltitudeEnabled(data.settings.altitudeEnabled)
-            settingsRepository.setRealismWarmupEnabled(data.settings.warmupEnabled)
-            settingsRepository.setRealismSatelliteExtrasEnabled(data.settings.satelliteExtrasEnabled)
-            settingsRepository.setRealismSuspendedMockingEnabled(data.settings.suspendedMockingEnabled)
-            settingsRepository.setJitterIdleRadius(data.jitterIdleRadius)
-            settingsRepository.setJitterMovingRadius(data.jitterMovingRadius)
-            settingsRepository.setJitterIntervalSeconds(data.jitterIntervalSeconds)
-            settingsRepository.setJitterIdleIntervalSeconds(data.jitterIdleIntervalSeconds)
-            settingsRepository.setJitterSpeedIdleVariationPct(data.jitterSpeedIdleVariationPct)
-            settingsRepository.setJitterSpeedMovingVariationPct(data.jitterSpeedMovingVariationPct)
-            settingsRepository.setElevationTiltJitterDegrees(data.elevationTiltJitterDegrees)
-            settingsRepository.setElevationNoiseAmplitudeMs2(data.elevationNoiseAmplitudeMs2)
-            settingsRepository.setHotLocationsEnabled(data.hotLocationsEnabled)
+            // Preserve fields not present in ExportData by reading current persisted values.
+            val currentSnapshot = settingsRepository.getSettingsSnapshot().first()
+            val profileById = data.speedProfiles.associateBy { it.id }
+            settingsRepository.applySnapshot(
+                SettingsSnapshot(
+                    walkSpeedMs = profileById["walk"]?.speedMetersPerSecond ?: currentSnapshot.walkSpeedMs,
+                    runSpeedMs = profileById["run"]?.speedMetersPerSecond ?: currentSnapshot.runSpeedMs,
+                    bikeSpeedMs = profileById["bike"]?.speedMetersPerSecond ?: currentSnapshot.bikeSpeedMs,
+                    speedUnit = data.settings.speedUnit,
+                    widgetFeatures = data.settings.enabledWidgetFeatures.toSet(),
+                    rememberLastLocation = currentSnapshot.rememberLastLocation,
+                    mapFollowsLocation = currentSnapshot.mapFollowsLocation,
+                    jitterIdleRadius = data.jitterIdleRadius,
+                    jitterMovingRadius = data.jitterMovingRadius,
+                    jitterIntervalSeconds = data.jitterIntervalSeconds,
+                    jitterIdleIntervalSeconds = data.jitterIdleIntervalSeconds,
+                    realismBearingHoldIdle = data.settings.bearingHoldOnIdle,
+                    realismAltitudeEnabled = data.settings.altitudeEnabled,
+                    realismWarmupEnabled = data.settings.warmupEnabled,
+                    realismSatelliteExtrasEnabled = data.settings.satelliteExtrasEnabled,
+                    realismSuspendedMockingEnabled = data.settings.suspendedMockingEnabled,
+                    jitterSpeedIdleVariationPct = data.jitterSpeedIdleVariationPct,
+                    jitterSpeedMovingVariationPct = data.jitterSpeedMovingVariationPct,
+                    elevationTiltJitterDegrees = data.elevationTiltJitterDegrees,
+                    elevationNoiseAmplitudeMs2 = data.elevationNoiseAmplitudeMs2,
+                    hotLocationsEnabled = data.hotLocationsEnabled,
+                    roamingDefaults = data.settings.roamingDefaults,
+                ),
+            )
             if (data.hotLocationsEnabled) {
                 favoriteRepository.upsertHotLocations()
             } else {
