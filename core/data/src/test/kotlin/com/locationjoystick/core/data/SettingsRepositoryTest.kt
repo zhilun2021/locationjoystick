@@ -6,6 +6,7 @@ import com.locationjoystick.core.datastore.AppPreferencesDataSource
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SettingsSnapshot
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
+import com.locationjoystick.core.datastore.toKey
 import com.locationjoystick.core.datastore.toWidgetFeature
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
@@ -875,4 +876,13 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
                 hotLocationsEnabled = false,
             ),
         )
+
+    override suspend fun applySnapshot(snapshot: SettingsSnapshot) {
+        speedProfilesFlow.value = speedProfilesFlow.value.copy(
+            walkSpeedMs = snapshot.walkSpeedMs,
+            runSpeedMs = snapshot.runSpeedMs,
+            bikeSpeedMs = snapshot.bikeSpeedMs,
+        )
+        widgetItemsFlow.value = snapshot.widgetFeatures.map { it.toKey() }.toSet()
+    }
 }

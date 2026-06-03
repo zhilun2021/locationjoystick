@@ -5,6 +5,7 @@ import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.DeepLinkRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.data.WalkCoordinator
@@ -52,6 +53,7 @@ class MapViewModelTest {
     private lateinit var teleportUseCase: TeleportUseCase
     private lateinit var ephemeralReplayController: EphemeralReplayController
     private lateinit var osrmClient: OsrmClient
+    private lateinit var deepLinkRepository: DeepLinkRepository
     private lateinit var viewModel: MapViewModel
 
     private val walkTargetFlow = MutableStateFlow<LatLng?>(null)
@@ -72,6 +74,7 @@ class MapViewModelTest {
         teleportUseCase = mockk(relaxed = true)
         ephemeralReplayController = mockk(relaxed = true)
         osrmClient = mockk(relaxed = true)
+        deepLinkRepository = mockk(relaxed = true)
 
         every { locationRepository.currentPosition } returns MutableStateFlow(null)
         every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.IDLE)
@@ -101,6 +104,7 @@ class MapViewModelTest {
                 startRouteReplayUseCase,
                 ephemeralReplayController,
                 osrmClient,
+                deepLinkRepository,
             )
     }
 
@@ -139,6 +143,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -167,6 +172,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -198,6 +204,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -250,6 +257,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -279,6 +287,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -309,6 +318,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -338,6 +348,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -373,6 +384,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -473,6 +485,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -514,6 +527,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -553,6 +567,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -580,6 +595,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -606,6 +622,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -635,6 +652,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
@@ -699,6 +717,7 @@ class MapViewModelTest {
                     startRouteReplayUseCase,
                     ephemeralReplayController,
                     osrmClient,
+                    deepLinkRepository,
                 )
             testDispatcher.scheduler.advanceUntilIdle()
 
