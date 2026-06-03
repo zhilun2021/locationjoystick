@@ -8,10 +8,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjAccent
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjMapColors
 import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
@@ -81,7 +81,7 @@ internal fun MapFabColumn(
         LjMapIconButton(
             icon = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
             contentDescription = if (isSpoofing) "Stop location simulation" else "Start location simulation",
-            containerColor = if (isSpoofing) MaterialTheme.colorScheme.error else Color(AppConstants.MapColorConstants.ACTIVE_BUTTON_COLOR),
+            containerColor = if (isSpoofing) MaterialTheme.colorScheme.error else LjMapColors.ActiveButton,
             contentColor = if (isSpoofing) MaterialTheme.colorScheme.onError else LjBg,
             onClick = { if (isSpoofing) onAction(MapAction.StopSpoofing) else onAction(MapAction.StartSpoofing) },
         )

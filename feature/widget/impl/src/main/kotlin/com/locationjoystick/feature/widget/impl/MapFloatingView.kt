@@ -51,6 +51,7 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjMapColors
 import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
@@ -404,9 +405,7 @@ internal fun MapFloatingView(
                     if (isSpoofing) {
                         MaterialTheme.colorScheme.error
                     } else {
-                        Color(
-                            AppConstants.MapColorConstants.ACTIVE_BUTTON_COLOR,
-                        )
+                        LjMapColors.ActiveButton
                     },
                 contentColor = if (isSpoofing) MaterialTheme.colorScheme.onError else LjBg,
                 onClick = { if (isSpoofing) onStopSpoofing() else onStartSpoofing() },

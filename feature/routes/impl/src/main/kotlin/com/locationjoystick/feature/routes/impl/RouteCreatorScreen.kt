@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -38,6 +37,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjMapColors
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.FavoritesList
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
@@ -296,10 +296,10 @@ internal fun RouteCreatorScreen(
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
                                                 PropertyFactory.circleColor(
-                                                    Color(AppConstants.MapColorConstants.WAYPOINT_CIRCLE_COLOR).toArgb(),
+                                                    LjMapColors.WaypointCircle.toArgb(),
                                                 ),
                                                 PropertyFactory.circleStrokeColor(
-                                                    Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                    LjMapColors.EndpointStroke.toArgb(),
                                                 ),
                                                 PropertyFactory.circleStrokeWidth(2f),
                                             ),
@@ -312,7 +312,7 @@ internal fun RouteCreatorScreen(
                                     LineLayer(MapLibreLayerIds.ROUTE_SEGMENTS, MapLibreSourceIds.ROUTE_SEGMENTS)
                                         .withProperties(
                                             PropertyFactory.lineColor(
-                                                Color(AppConstants.MapColorConstants.ROUTE_CREATOR_LINE_COLOR).toArgb(),
+                                                LjMapColors.RouteCreatorLine.toArgb(),
                                             ),
                                             PropertyFactory.lineWidth(3f),
                                         ),
@@ -326,10 +326,10 @@ internal fun RouteCreatorScreen(
                                         .withProperties(
                                             PropertyFactory.circleRadius(8f),
                                             PropertyFactory.circleColor(
-                                                Color(AppConstants.MapColorConstants.START_POINT_COLOR).toArgb(),
+                                                LjMapColors.StartPoint.toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeColor(
-                                                Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                LjMapColors.EndpointStroke.toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),

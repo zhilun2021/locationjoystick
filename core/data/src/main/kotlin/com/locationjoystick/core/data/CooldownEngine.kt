@@ -14,20 +14,19 @@ import kotlin.math.sqrt
  * Uses the cooldown table from [AppConstants.CooldownConstants].
  */
 object CooldownEngine {
-    private val thresholds = AppConstants.CooldownConstants.DISTANCE_THRESHOLDS_METERS
-    private val cooldowns = AppConstants.CooldownConstants.COOLDOWN_SECONDS
+    private val tiers = AppConstants.CooldownConstants.TIERS
 
     /**
      * Returns the advised cooldown in seconds for a given straight-line distance (Haversine).
      *
-     * Lookup is a simple descending scan of [thresholds]: the last threshold whose value is ≤
+     * Lookup is a simple descending scan of [tiers]: the last tier whose distanceMeters is ≤
      * [distanceMeters] wins.
      */
     fun cooldownSecondsForDistance(distanceMeters: Double): Long {
-        var result = cooldowns[0]
-        for (i in thresholds.indices) {
-            if (distanceMeters >= thresholds[i]) {
-                result = cooldowns[i]
+        var result = tiers[0].cooldownSeconds
+        for (tier in tiers) {
+            if (distanceMeters >= tier.distanceMeters) {
+                result = tier.cooldownSeconds
             } else {
                 break
             }

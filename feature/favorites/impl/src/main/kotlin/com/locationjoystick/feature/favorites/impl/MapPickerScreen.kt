@@ -23,7 +23,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +33,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.LjMapColors
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
 import com.locationjoystick.core.designsystem.component.LjScaffold
@@ -226,10 +226,10 @@ internal fun MapPickerScreen(
                                             .withProperties(
                                                 PropertyFactory.circleRadius(9f),
                                                 PropertyFactory.circleColor(
-                                                    Color(AppConstants.MapColorConstants.WAYPOINT_CIRCLE_COLOR).toArgb(),
+                                                    LjMapColors.WaypointCircle.toArgb(),
                                                 ),
                                                 PropertyFactory.circleStrokeColor(
-                                                    Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                    LjMapColors.EndpointStroke.toArgb(),
                                                 ),
                                                 PropertyFactory.circleStrokeWidth(2f),
                                             ),
@@ -243,10 +243,10 @@ internal fun MapPickerScreen(
                                         .withProperties(
                                             PropertyFactory.circleRadius(10f),
                                             PropertyFactory.circleColor(
-                                                Color(AppConstants.MapColorConstants.SELECTED_POINT_COLOR).toArgb(),
+                                                LjMapColors.SelectedPoint.toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeColor(
-                                                Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
+                                                LjMapColors.EndpointStroke.toArgb(),
                                             ),
                                             PropertyFactory.circleStrokeWidth(2f),
                                         ),

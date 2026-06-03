@@ -192,46 +192,29 @@ object AppConstants {
     }
 
     object CooldownConstants {
-        /** Lower-bound distance in meters for each cooldown tier (16 tiers, index-matched with [COOLDOWN_SECONDS]). */
-        val DISTANCE_THRESHOLDS_METERS: List<Double> =
-            listOf(
-                0.0,
-                10.0,
-                100.0,
-                500.0,
-                1_000.0,
-                5_000.0,
-                10_000.0,
-                25_000.0,
-                30_000.0,
-                65_000.0,
-                81_000.0,
-                100_000.0,
-                250_000.0,
-                500_000.0,
-                750_000.0,
-                1_000_000.0,
-            )
+        data class CooldownTier(
+            val distanceMeters: Double,
+            val cooldownSeconds: Long,
+        )
 
-        /** Cooldown in seconds matching each distance tier in [DISTANCE_THRESHOLDS_METERS]. */
-        val COOLDOWN_SECONDS: List<Long> =
+        val TIERS: List<CooldownTier> =
             listOf(
-                0L,
-                3L,
-                15L,
-                30L,
-                120L,
-                360L,
-                660L,
-                840L,
-                1320L,
-                1500L,
-                2100L,
-                2700L,
-                3600L,
-                4500L,
-                5400L,
-                7200L,
+                CooldownTier(0.0, 0L),
+                CooldownTier(10.0, 3L),
+                CooldownTier(100.0, 15L),
+                CooldownTier(500.0, 30L),
+                CooldownTier(1_000.0, 120L),
+                CooldownTier(5_000.0, 360L),
+                CooldownTier(10_000.0, 660L),
+                CooldownTier(25_000.0, 840L),
+                CooldownTier(30_000.0, 1320L),
+                CooldownTier(65_000.0, 1500L),
+                CooldownTier(81_000.0, 2100L),
+                CooldownTier(100_000.0, 2700L),
+                CooldownTier(250_000.0, 3600L),
+                CooldownTier(500_000.0, 4500L),
+                CooldownTier(750_000.0, 5400L),
+                CooldownTier(1_000_000.0, 7200L),
             )
     }
 
@@ -268,17 +251,6 @@ object AppConstants {
     object UnitConversionConstants {
         const val METERS_PER_MILE = 1609.344
         const val FEET_PER_METER = 3.28084
-    }
-
-    object MapColorConstants {
-        const val ENDPOINT_CIRCLE_COLOR = 0xFF1E88E5L
-        const val ENDPOINT_STROKE_COLOR = 0xFFFFFFFFL
-        const val ROUTE_LINE_COLOR = 0xFFFF9800L
-        const val ACTIVE_BUTTON_COLOR = 0xFF43A047L
-        const val WAYPOINT_CIRCLE_COLOR = 0xFF1976D2L
-        const val ROUTE_CREATOR_LINE_COLOR = 0xFF2196F3L
-        const val START_POINT_COLOR = 0xFF4CAF50L
-        const val SELECTED_POINT_COLOR = 0xFFFF5722L
     }
 
     object AnimationConstants {
