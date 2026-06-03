@@ -547,15 +547,7 @@ class AppPreferencesDataSource
         }
 
         override fun getElevationTiltJitterDegrees(): Flow<Float> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading elevation tilt jitter preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.ELEVATION_TILT_JITTER_DEGREES] ?: DEFAULT_ELEVATION_TILT_JITTER_DEGREES }
+            pref(Keys.ELEVATION_TILT_JITTER_DEGREES, DEFAULT_ELEVATION_TILT_JITTER_DEGREES)
 
         override suspend fun setElevationTiltJitterDegrees(degrees: Float) {
             dataStore.edit { prefs ->
@@ -568,15 +560,7 @@ class AppPreferencesDataSource
         }
 
         override fun getElevationNoiseAmplitudeMs2(): Flow<Float> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading elevation noise amplitude preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2] ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2 }
+            pref(Keys.ELEVATION_NOISE_AMPLITUDE_MS2, DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2)
 
         override suspend fun setElevationNoiseAmplitudeMs2(amplitude: Float) {
             dataStore.edit { prefs ->

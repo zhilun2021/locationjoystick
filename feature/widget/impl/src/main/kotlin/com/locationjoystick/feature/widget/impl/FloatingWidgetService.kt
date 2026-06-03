@@ -32,7 +32,7 @@ import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.location.StartRouteReplayUseCase
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
-import com.locationjoystick.core.model.RoamingConfig
+import com.locationjoystick.core.model.toConfig
 import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.overlay.OverlayServiceHelper
@@ -249,16 +249,10 @@ class FloatingWidgetService :
             val isActivityActive by locationRepository.isActivityActive.collectAsStateWithLifecycle(initialValue = false)
             val isActivityPausable by locationRepository.isActivityPausable.collectAsStateWithLifecycle(initialValue = false)
             val mockMode by locationRepository.currentMode.collectAsStateWithLifecycle()
-            val mockLocationState by locationRepository.mockLocationState.collectAsStateWithLifecycle()
-            val isWalkPaused by locationRepository.isWalkPaused.collectAsStateWithLifecycle()
-            val isRoamingPausedWidget by roamingRepository.isRoamingPaused.collectAsStateWithLifecycle(initialValue = false)
+            val isLocActivityPaused by locationRepository.isCurrentActivityPaused.collectAsStateWithLifecycle(initialValue = false)
+            val isRoamingPaused by roamingRepository.isRoamingPaused.collectAsStateWithLifecycle(initialValue = false)
             val isActivityPaused =
-                isWalkPaused ||
-                    (
-                        mockMode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY &&
-                            mockLocationState == com.locationjoystick.core.model.MockLocationState.PAUSED
-                    ) ||
-                    (mockMode == com.locationjoystick.core.model.MockMode.ROAMING && isRoamingPausedWidget)
+                isLocActivityPaused || (mockMode == com.locationjoystick.core.model.MockMode.ROAMING && isRoamingPaused)
             val routeExpanded by routeExpandedFlow.collectAsStateWithLifecycle()
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
             val elevationOverlayVisible by elevationOverlayVisibleFlow.collectAsStateWithLifecycle()
@@ -587,16 +581,7 @@ class FloatingWidgetService :
                     return@launch
                 }
                 val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                val config =
-                    RoamingConfig(
-                        centerPosition = pos,
-                        radiusMeters = defaults.radiusMeters,
-                        distanceMeters = defaults.distanceMeters,
-                        speedProfileId = defaults.speedProfileId,
-                        useRoadSnapping = defaults.followRoads,
-                        returnToInitialLocation = defaults.returnToInitialLocation,
-                    )
-                roamingRepository.startRoaming(config, speedMs)
+                roamingRepository.startRoaming(defaults.toConfig(pos), speedMs)
                 Log.d(TAG, "Started roaming with custom defaults")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start roaming", e)

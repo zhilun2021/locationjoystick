@@ -1,22 +1,18 @@
 package com.locationjoystick.core.data
 
 import com.locationjoystick.core.model.LatLng
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class DeepLinkRepository @Inject constructor() {
-    private val _pendingCoords = MutableStateFlow<LatLng?>(null)
-    val pendingCoords: StateFlow<LatLng?> = _pendingCoords.asStateFlow()
+    private val _pendingCoords = Channel<LatLng>(Channel.CONFLATED)
+    val pendingCoords: Flow<LatLng> = _pendingCoords.receiveAsFlow()
 
     fun setPendingCoords(lat: Double, lon: Double) {
-        _pendingCoords.value = LatLng(lat, lon)
-    }
-
-    fun consume() {
-        _pendingCoords.value = null
+        _pendingCoords.trySend(LatLng(lat, lon))
     }
 }

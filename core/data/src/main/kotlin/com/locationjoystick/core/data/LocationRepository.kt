@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -85,6 +86,20 @@ class LocationRepository
          * so this is always equivalent to [isActivityActive].
          */
         val isActivityPausable: Flow<Boolean> = isActivityActive
+
+        /**
+         * True when the current movement mode is paused.
+         * Handles walk-to and route-replay. Roaming pause lives in RoamingRepository —
+         * callers that need the full picture must OR this with [RoamingRepository.isRoamingPaused].
+         */
+        val isCurrentActivityPaused: Flow<Boolean> =
+            combine(_currentMode, _mockLocationState, _isWalkPaused) { mode, state, walkPaused ->
+                when (mode) {
+                    MockMode.WALK_TO -> walkPaused
+                    MockMode.ROUTE_REPLAY -> state == MockLocationState.PAUSED
+                    else -> false
+                }
+            }
 
         fun updatePosition(
             lat: Double,
