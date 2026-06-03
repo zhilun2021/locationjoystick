@@ -19,7 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.component.CooldownAdvisoryBadge
 import com.locationjoystick.core.designsystem.component.FavoritesList
 import com.locationjoystick.core.model.FavoriteLocation
@@ -366,10 +366,10 @@ private fun StartRouteDialog(
                 Text("Start route", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))
 
-                CheckboxRow(label = "Loop", checked = loop, enabled = !returnToLocation, onCheckedChange = { loop = it })
-                CheckboxRow(label = "Reverse", checked = reverse, onCheckedChange = { reverse = it })
-                CheckboxRow(
-                    label = "Return to location",
+                LjCheckboxRow(title = "Loop", checked = loop, enabled = !returnToLocation, onCheckedChange = { loop = it })
+                LjCheckboxRow(title = "Reverse", checked = reverse, onCheckedChange = { reverse = it })
+                LjCheckboxRow(
+                    title = "Return to location",
                     checked = returnToLocation,
                     enabled = !loop,
                     onCheckedChange = { returnToLocation = it },
@@ -402,25 +402,3 @@ private fun StartRouteDialog(
     }
 }
 
-@Composable
-private fun CheckboxRow(
-    label: String,
-    checked: Boolean,
-    enabled: Boolean = true,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(enabled = enabled) { onCheckedChange(!checked) }
-                .padding(vertical = 4.dp),
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
-        Text(
-            text = label,
-            color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-        )
-    }
-}

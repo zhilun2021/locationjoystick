@@ -6,12 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -21,11 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import kotlin.math.roundToInt
 
 private fun formatJitterDouble(d: Double): String {
@@ -210,7 +204,7 @@ internal fun GpsRealismSection(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(8.dp))
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.realismBearingHoldIdle,
         onCheckedChange = { onAction(SettingsAction.SetRealismBearingHoldIdle(it)) },
         title = "Hold bearing when stationary",
@@ -218,7 +212,7 @@ internal fun GpsRealismSection(
             "Keeps the last known direction when you stop moving instead of snapping to 0° (north). " +
                 "Real GPS chips do the same — a sudden reset to north is a common mock-location tell.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.realismAltitudeEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismAltitudeEnabled(it)) },
         title = "Vary altitude",
@@ -226,7 +220,7 @@ internal fun GpsRealismSection(
             "Simulates a plausible altitude with small random drift instead of always reporting 0 m. " +
                 "A flat zero altitude is an obvious signal that the location is synthetic.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.realismWarmupEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismWarmupEnabled(it)) },
         title = "GPS warm-up simulation",
@@ -234,7 +228,7 @@ internal fun GpsRealismSection(
             "Starts each session with degraded accuracy (like a cold GPS fix) that converges to normal over ~30 s. " +
                 "Off by default because it temporarily reduces location precision at session start.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.realismSatelliteExtrasEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismSatelliteExtrasEnabled(it)) },
         title = "Realistic satellite count",
@@ -242,7 +236,7 @@ internal fun GpsRealismSection(
             "Attaches satellite metadata to each update (7–14 satellites visible, 6–12 in fix) instead of zero. " +
                 "Some apps check for zero satellites as a spoofing signal.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.realismSuspendedMockingEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismSuspendedMockingEnabled(it)) },
         title = "Suspended mocking",
@@ -253,57 +247,3 @@ internal fun GpsRealismSection(
     )
 }
 
-@Composable
-internal fun SettingsCheckboxRow(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    title: String,
-    description: String? = null,
-    enabled: Boolean = true,
-    descriptionColor: androidx.compose.ui.graphics.Color? = null,
-    icon: ImageVector? = null,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
-        if (icon != null) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint =
-                    if (enabled) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    },
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-        Column(modifier = Modifier.padding(start = 8.dp)) {
-            Text(
-                title,
-                color =
-                    if (enabled) {
-                        androidx.compose.ui.graphics.Color.Unspecified
-                    } else {
-                        MaterialTheme.colorScheme.onSurface.copy(
-                            alpha = 0.38f,
-                        )
-                    },
-            )
-            if (description != null) {
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = descriptionColor ?: MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-}

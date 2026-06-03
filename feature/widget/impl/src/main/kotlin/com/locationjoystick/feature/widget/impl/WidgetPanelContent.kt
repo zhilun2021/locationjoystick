@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjBg
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjInactive
 import com.locationjoystick.core.designsystem.LjSuccess
@@ -464,9 +464,9 @@ internal fun RoutesFloatingView(
                     var reverse by remember(routeId) { mutableStateOf(false) }
                     var returnToLocation by remember(routeId) { mutableStateOf(false) }
 
-                    WidgetCheckboxRow("Loop", loop, enabled = !returnToLocation) { loop = it }
-                    WidgetCheckboxRow("Reverse", reverse) { reverse = it }
-                    WidgetCheckboxRow("Return to location", returnToLocation, enabled = !loop) { returnToLocation = it }
+                    LjCheckboxRow(title = "Loop", checked = loop, onCheckedChange = { loop = it }, enabled = !returnToLocation, textColor = LjText)
+                    LjCheckboxRow(title = "Reverse", checked = reverse, onCheckedChange = { reverse = it }, textColor = LjText)
+                    LjCheckboxRow(title = "Return to location", checked = returnToLocation, onCheckedChange = { returnToLocation = it }, enabled = !loop, textColor = LjText)
 
                     Spacer(Modifier.height(20.dp))
 
@@ -539,28 +539,6 @@ internal fun RoutesFloatingView(
     }
 }
 
-@Composable
-private fun WidgetCheckboxRow(
-    label: String,
-    checked: Boolean,
-    enabled: Boolean = true,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(enabled = enabled) { onCheckedChange(!checked) }
-                .padding(vertical = 4.dp),
-    ) {
-        Checkbox(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
-        Text(
-            text = label,
-            color = if (enabled) LjText else LjText.copy(alpha = 0.38f),
-        )
-    }
-}
 
 private fun featureIconAndState(
     feature: WidgetFeature,

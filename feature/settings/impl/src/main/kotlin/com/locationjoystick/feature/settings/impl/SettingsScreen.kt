@@ -17,7 +17,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.LjSegmentedControl
 import com.locationjoystick.core.model.RoamingDefaults
@@ -532,13 +532,13 @@ private fun MapSection(
     )
     Spacer(modifier = Modifier.height(8.dp))
 
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.rememberLastLocation,
         onCheckedChange = { onAction(SettingsAction.SetRememberLastLocation(it)) },
         title = "Remember last location",
         description = "Restores the last spoofed position when the app restarts, so you don't have to re-enter it.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = uiState.mapFollowsLocation,
         onCheckedChange = { onAction(SettingsAction.SetMapFollowsLocation(it)) },
         title = "Follow location on map",
@@ -558,7 +558,7 @@ private fun WidgetFeatureRow(
     icon: ImageVector? = null,
     onEnabled: (() -> Unit)? = null,
 ) {
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = feature in enabledFeatures,
         onCheckedChange = { isChecked ->
             if (enabled) {
@@ -731,13 +731,13 @@ private fun RoamingSection(
         modifier = Modifier.fillMaxWidth(),
     )
 
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = roamingDefaults.followRoads,
         onCheckedChange = { onAction(SettingsAction.UpdateRoamingDefaults(roamingDefaults.copy(followRoads = it))) },
         title = "Follow roads",
         description = "Uses OSRM road routing to stay on walkable paths. Falls back to straight-line if unavailable.",
     )
-    SettingsCheckboxRow(
+    LjCheckboxRow(
         checked = roamingDefaults.returnToInitialLocation,
         onCheckedChange = { onAction(SettingsAction.UpdateRoamingDefaults(roamingDefaults.copy(returnToInitialLocation = it))) },
         title = "Return to start",
