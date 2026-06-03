@@ -29,6 +29,7 @@ import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
+import com.locationjoystick.core.location.StartRouteReplayUseCase
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RoamingConfig
@@ -108,6 +109,8 @@ class FloatingWidgetService :
     @Inject lateinit var osrmClient: com.locationjoystick.core.routing.OsrmClient
 
     @Inject lateinit var teleportUseCase: TeleportUseCase
+
+    @Inject lateinit var startRouteReplayUseCase: StartRouteReplayUseCase
 
     private var composeView: ComposeView? = null
 
@@ -455,33 +458,13 @@ class FloatingWidgetService :
         teleportToStart: Boolean = false,
     ) {
         serviceScope.launch {
-            val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-            val returnPosition = if (isReturnToLocation) locationRepository.currentPosition.value else null
-            if (teleportToStart) {
-                val route = routeRepository.getRoutes().first().find { it.id == routeId }
-                val waypoints = route?.waypoints
-                if (!waypoints.isNullOrEmpty()) {
-                    val startWaypoint = if (isReverse) waypoints.last() else waypoints.first()
-                    startService(
-                        Intent(this@FloatingWidgetService, MockLocationService::class.java).apply {
-                            action = MockLocationService.ACTION_UPDATE_POSITION
-                            putExtra(AppConstants.ServiceConstants.EXTRA_LAT, startWaypoint.position.latitude)
-                            putExtra(AppConstants.ServiceConstants.EXTRA_LON, startWaypoint.position.longitude)
-                        },
-                    )
-                }
-            }
-            val intent =
-                MockLocationIntentBuilder
-                    .startRouteReplay(this@FloatingWidgetService, routeId, speedMs, isReverse)
-                    .apply {
-                        putExtra(MockLocationService.EXTRA_IS_LOOPING, isLooping)
-                        if (returnPosition != null) {
-                            putExtra(MockLocationService.EXTRA_RETURN_LAT, returnPosition.latitude)
-                            putExtra(MockLocationService.EXTRA_RETURN_LON, returnPosition.longitude)
-                        }
-                    }
-            startService(intent)
+            startRouteReplayUseCase.execute(
+                routeId = routeId,
+                isLooping = isLooping,
+                isReverse = isReverse,
+                isReturnToLocation = isReturnToLocation,
+                teleportToStart = teleportToStart,
+            )
         }
     }
 

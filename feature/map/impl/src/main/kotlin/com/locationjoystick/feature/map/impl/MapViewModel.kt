@@ -16,6 +16,7 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
+import com.locationjoystick.core.location.StartRouteReplayUseCase
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
@@ -82,6 +83,7 @@ class MapViewModel
         private val roamingRepository: RoamingRepository,
         private val walkCoordinator: WalkCoordinator,
         private val teleportUseCase: TeleportUseCase,
+        private val startRouteReplayUseCase: StartRouteReplayUseCase,
         private val ephemeralReplayController: EphemeralReplayController,
         private val osrmClient: com.locationjoystick.core.routing.OsrmClient,
     ) : ViewModel() {
@@ -650,27 +652,13 @@ class MapViewModel
             teleportToStart: Boolean = false,
         ) {
             viewModelScope.launch {
-                val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                val returnPosition = if (isReturnToLocation) locationRepository.currentPosition.value else null
-                if (teleportToStart) {
-                    val route = _uiState.value.routes.find { it.id == routeId }
-                    val waypoints = route?.waypoints
-                    if (!waypoints.isNullOrEmpty()) {
-                        val startWaypoint = if (isReverse) waypoints.last() else waypoints.first()
-                        teleportUseCase.execute(startWaypoint.position)
-                    }
-                }
-                val intent =
-                    MockLocationIntentBuilder
-                        .startRouteReplay(context, routeId, speedMs, isReverse)
-                        .apply {
-                            putExtra(MockLocationService.EXTRA_IS_LOOPING, isLooping)
-                            if (returnPosition != null) {
-                                putExtra(MockLocationService.EXTRA_RETURN_LAT, returnPosition.latitude)
-                                putExtra(MockLocationService.EXTRA_RETURN_LON, returnPosition.longitude)
-                            }
-                        }
-                context.startService(intent)
+                startRouteReplayUseCase.execute(
+                    routeId = routeId,
+                    isLooping = isLooping,
+                    isReverse = isReverse,
+                    isReturnToLocation = isReturnToLocation,
+                    teleportToStart = teleportToStart,
+                )
             }
         }
 
