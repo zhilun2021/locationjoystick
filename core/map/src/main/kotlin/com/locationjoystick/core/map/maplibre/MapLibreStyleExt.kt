@@ -50,20 +50,43 @@ data class LocationLayerSources(
     val tracedSource: GeoJsonSource,
     val remainingSource: GeoJsonSource,
     val endpointsSource: GeoJsonSource,
+    val searchMarkerSource: GeoJsonSource? = null,
 )
 
 /**
- * Adds position dot, walk-trace, walk-remaining, and walk-endpoints layers.
- * Position dot is added last so it renders on top of all other layers.
+ * Adds OSM raster tile layer, position dot, walk-trace, walk-remaining, walk-endpoints,
+ * and optionally a search-marker circle layer.
+ *
+ * @param osmSourceId Raster source ID — use [MapLibreSourceIds.PANEL_OSM] for the widget overlay
+ *                    to avoid colliding with the main map.
+ * @param osmLayerId  Raster layer ID — use [MapLibreLayerIds.PANEL_OSM] for the widget overlay.
+ * @param lineWidth   Line width for trace layers. Main map uses 4f; widget overlay uses 3f.
+ * @param includeSearchMarker When true, adds a search-result marker layer and returns its source.
  */
-fun Style.addLocationLayers(): LocationLayerSources {
+fun Style.addLocationLayers(
+    osmSourceId: String = MapLibreSourceIds.OSM,
+    osmLayerId: String = MapLibreLayerIds.OSM,
+    lineWidth: Float = 4f,
+    includeSearchMarker: Boolean = false,
+): LocationLayerSources {
+    addSource(
+        RasterSource(
+            osmSourceId,
+            TileSet(AppConstants.MapConstants.TILESET_VERSION, AppConstants.MapConstants.OSM_TILE_URL).apply {
+                maxZoom = AppConstants.MapConstants.OSM_MAX_ZOOM
+            },
+            256,
+        ),
+    )
+    addLayer(RasterLayer(osmLayerId, osmSourceId))
+
     val tracedSrc = GeoJsonSource(MapLibreSourceIds.TRACE_TRACED, emptyGeoJson())
     addSource(tracedSrc)
     addLayer(
         LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
             .withProperties(
                 PropertyFactory.lineColor(COLOR_ROUTE_LINE),
-                PropertyFactory.lineWidth(4f),
+                PropertyFactory.lineWidth(lineWidth),
                 PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
             ),
     )
@@ -74,7 +97,7 @@ fun Style.addLocationLayers(): LocationLayerSources {
         LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
             .withProperties(
                 PropertyFactory.lineColor(COLOR_ROUTE_LINE),
-                PropertyFactory.lineWidth(4f),
+                PropertyFactory.lineWidth(lineWidth),
             ),
     )
 
@@ -90,7 +113,7 @@ fun Style.addLocationLayers(): LocationLayerSources {
             ),
     )
 
-    // Position dot on top — added last
+    // Position dot on top — added last so it renders above trace and endpoint layers
     val positionSrc = GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
     addSource(positionSrc)
     addLayer(
@@ -103,11 +126,27 @@ fun Style.addLocationLayers(): LocationLayerSources {
             ),
     )
 
+    var searchMarkerSrc: GeoJsonSource? = null
+    if (includeSearchMarker) {
+        searchMarkerSrc = GeoJsonSource(MapLibreSourceIds.SEARCH_MARKER, emptyGeoJson())
+        addSource(searchMarkerSrc)
+        addLayer(
+            CircleLayer(MapLibreLayerIds.SEARCH_MARKER, MapLibreSourceIds.SEARCH_MARKER)
+                .withProperties(
+                    PropertyFactory.circleRadius(10f),
+                    PropertyFactory.circleColor(COLOR_ROUTE_LINE),
+                    PropertyFactory.circleStrokeColor(COLOR_POSITION_STROKE),
+                    PropertyFactory.circleStrokeWidth(2f),
+                ),
+        )
+    }
+
     return LocationLayerSources(
         positionSource = positionSrc,
         tracedSource = tracedSrc,
         remainingSource = remainingSrc,
         endpointsSource = endpointsSrc,
+        searchMarkerSource = searchMarkerSrc,
     )
 }
 

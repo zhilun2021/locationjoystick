@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -64,6 +63,7 @@ import com.locationjoystick.core.map.geojson.emptyGeoJson
 import com.locationjoystick.core.map.maplibre.MapLibreLayerIds
 import com.locationjoystick.core.map.maplibre.MapLibreSourceIds
 import com.locationjoystick.core.map.maplibre.addEphemeralRouteLayers
+import com.locationjoystick.core.map.maplibre.addLocationLayers
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
@@ -80,17 +80,8 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
-import org.maplibre.android.style.layers.CircleLayer
-import org.maplibre.android.style.layers.LineLayer
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.layers.RasterLayer
 import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.android.style.sources.RasterSource
-import org.maplibre.android.style.sources.TileSet
 import org.maplibre.android.geometry.LatLng as MapLatLng
-
-private val MAP_FLOATING_VIEW_OSM_SOURCE = AppConstants.MapConstants.PANEL_OSM_SOURCE_ID
-private val MAP_FLOATING_VIEW_OSM_LAYER = AppConstants.MapConstants.PANEL_OSM_LAYER_ID
 
 @Composable
 internal fun MapFloatingView(
@@ -226,78 +217,18 @@ internal fun MapFloatingView(
                                 .build()
 
                         map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
-                            style.addSource(
-                                RasterSource(
-                                    MAP_FLOATING_VIEW_OSM_SOURCE,
-                                    TileSet(AppConstants.MapConstants.TILESET_VERSION, AppConstants.MapConstants.OSM_TILE_URL).apply {
-                                        maxZoom =
-                                            AppConstants.MapConstants.OSM_MAX_ZOOM
-                                    },
-                                    256,
-                                ),
+                            val layers = style.addLocationLayers(
+                                osmSourceId = MapLibreSourceIds.PANEL_OSM,
+                                osmLayerId = MapLibreLayerIds.PANEL_OSM,
+                                lineWidth = 3f,
                             )
-                            style.addLayer(RasterLayer(MAP_FLOATING_VIEW_OSM_LAYER, MAP_FLOATING_VIEW_OSM_SOURCE))
-
-                            val tracedSrc =
-                                GeoJsonSource(MapLibreSourceIds.TRACE_TRACED, emptyGeoJson())
-                            style.addSource(tracedSrc)
-                            style.addLayer(
-                                LineLayer(MapLibreLayerIds.TRACE_TRACED, MapLibreSourceIds.TRACE_TRACED)
-                                    .withProperties(
-                                        PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
-                                        PropertyFactory.lineWidth(3f),
-                                        PropertyFactory.lineDasharray(arrayOf(2f, 2f)),
-                                    ),
-                            )
-                            tracedSource.value = tracedSrc
-
-                            val remainingSrc =
-                                GeoJsonSource(MapLibreSourceIds.TRACE_REMAINING, emptyGeoJson())
-                            style.addSource(remainingSrc)
-                            style.addLayer(
-                                LineLayer(MapLibreLayerIds.TRACE_REMAINING, MapLibreSourceIds.TRACE_REMAINING)
-                                    .withProperties(
-                                        PropertyFactory.lineColor(Color(AppConstants.MapColorConstants.ROUTE_LINE_COLOR).toArgb()),
-                                        PropertyFactory.lineWidth(3f),
-                                    ),
-                            )
-                            remainingSource.value = remainingSrc
-
-                            val endpointsSrc =
-                                GeoJsonSource(MapLibreSourceIds.ENDPOINTS, emptyGeoJson())
-                            style.addSource(endpointsSrc)
-                            style.addLayer(
-                                CircleLayer(MapLibreLayerIds.ENDPOINTS, MapLibreSourceIds.ENDPOINTS)
-                                    .withProperties(
-                                        PropertyFactory.circleRadius(8f),
-                                        PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
-                                        PropertyFactory.circleStrokeColor(
-                                            Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
-                                        ),
-                                        PropertyFactory.circleStrokeWidth(2f),
-                                    ),
-                            )
-                            endpointsSource.value = endpointsSrc
-
+                            positionSource.value = layers.positionSource
+                            tracedSource.value = layers.tracedSource
+                            remainingSource.value = layers.remainingSource
+                            endpointsSource.value = layers.endpointsSource
                             val ephemeralSrcs = style.addEphemeralRouteLayers()
                             ephemeralRouteSource.value = ephemeralSrcs.routeSource
                             ephemeralEndpointsSource.value = ephemeralSrcs.endpointsSource
-
-                            val src =
-                                GeoJsonSource(MapLibreSourceIds.POSITION, emptyGeoJson())
-                            style.addSource(src)
-                            style.addLayer(
-                                CircleLayer(MapLibreLayerIds.POSITION, MapLibreSourceIds.POSITION)
-                                    .withProperties(
-                                        PropertyFactory.circleRadius(10f),
-                                        PropertyFactory.circleColor(Color(AppConstants.MapColorConstants.ENDPOINT_CIRCLE_COLOR).toArgb()),
-                                        PropertyFactory.circleStrokeColor(
-                                            Color(AppConstants.MapColorConstants.ENDPOINT_STROKE_COLOR).toArgb(),
-                                        ),
-                                        PropertyFactory.circleStrokeWidth(2f),
-                                    ),
-                            )
-                            positionSource.value = src
                         }
 
                         map.addOnMapClickListener { latLng ->
