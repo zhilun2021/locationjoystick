@@ -246,4 +246,3 @@ internal fun GpsRealismSection(
                 "Automatically skipped during route replay.",
     )
 }
-

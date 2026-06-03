@@ -419,7 +419,8 @@ class AppPreferencesDataSource
             }
         }
 
-        override fun getJitterIdleIntervalSeconds(): Flow<Int> = pref(Keys.JITTER_IDLE_INTERVAL_SECONDS, DEFAULT_JITTER_IDLE_INTERVAL_SECONDS)
+        override fun getJitterIdleIntervalSeconds(): Flow<Int> =
+            pref(Keys.JITTER_IDLE_INTERVAL_SECONDS, DEFAULT_JITTER_IDLE_INTERVAL_SECONDS)
 
         override suspend fun setJitterIdleIntervalSeconds(seconds: Int) {
             dataStore.edit { prefs ->
@@ -511,9 +512,11 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.FAVORITES_SORT_NEWEST_FIRST] = newestFirst }
         }
 
-        override fun getJitterSpeedIdleVariationPct(): Flow<Int> = pref(Keys.JITTER_SPEED_IDLE_VARIATION_PCT, DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT)
+        override fun getJitterSpeedIdleVariationPct(): Flow<Int> =
+            pref(Keys.JITTER_SPEED_IDLE_VARIATION_PCT, DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT)
 
-        override fun getJitterSpeedMovingVariationPct(): Flow<Int> = pref(Keys.JITTER_SPEED_MOVING_VARIATION_PCT, DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT)
+        override fun getJitterSpeedMovingVariationPct(): Flow<Int> =
+            pref(Keys.JITTER_SPEED_MOVING_VARIATION_PCT, DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT)
 
         override suspend fun setJitterSpeedIdleVariationPct(pct: Int) {
             dataStore.edit { prefs ->
@@ -601,8 +604,9 @@ class AppPreferencesDataSource
                         bikeSpeedMs = prefs[Keys.BIKE_SPEED_MS] ?: DEFAULT_BIKE_SPEED_MS,
                         speedUnit = speedUnit,
                         widgetFeatures = widgetItems.mapNotNull { it.toWidgetFeature() }.toSet(),
-                        rememberLastLocation = prefs[Keys.REMEMBER_LAST_LOCATION]
-                            ?: AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION,
+                        rememberLastLocation =
+                            prefs[Keys.REMEMBER_LAST_LOCATION]
+                                ?: AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION,
                         mapFollowsLocation = prefs[Keys.MAP_FOLLOWS_LOCATION] ?: true,
                         jitterIdleRadius = prefs[Keys.JITTER_IDLE_RADIUS_METERS] ?: DEFAULT_JITTER_IDLE_RADIUS_METERS,
                         jitterMovingRadius = prefs[Keys.JITTER_MOVING_RADIUS_METERS] ?: DEFAULT_JITTER_MOVING_RADIUS_METERS,
@@ -613,14 +617,18 @@ class AppPreferencesDataSource
                         realismWarmupEnabled = prefs[Keys.REALISM_WARMUP_ENABLED] ?: false,
                         realismSatelliteExtrasEnabled = prefs[Keys.REALISM_SATELLITE_EXTRAS_ENABLED] ?: true,
                         realismSuspendedMockingEnabled = prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] ?: false,
-                        jitterSpeedIdleVariationPct = prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT]
-                            ?: DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT,
-                        jitterSpeedMovingVariationPct = prefs[Keys.JITTER_SPEED_MOVING_VARIATION_PCT]
-                            ?: DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT,
-                        elevationTiltJitterDegrees = prefs[Keys.ELEVATION_TILT_JITTER_DEGREES]
-                            ?: DEFAULT_ELEVATION_TILT_JITTER_DEGREES,
-                        elevationNoiseAmplitudeMs2 = prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2]
-                            ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
+                        jitterSpeedIdleVariationPct =
+                            prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT]
+                                ?: DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT,
+                        jitterSpeedMovingVariationPct =
+                            prefs[Keys.JITTER_SPEED_MOVING_VARIATION_PCT]
+                                ?: DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT,
+                        elevationTiltJitterDegrees =
+                            prefs[Keys.ELEVATION_TILT_JITTER_DEGREES]
+                                ?: DEFAULT_ELEVATION_TILT_JITTER_DEGREES,
+                        elevationNoiseAmplitudeMs2 =
+                            prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2]
+                                ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
                     )
                 }
 

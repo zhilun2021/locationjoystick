@@ -38,9 +38,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjIcons
-import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.component.CooldownAdvisoryBadge
 import com.locationjoystick.core.designsystem.component.FavoritesList
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.model.FavoriteLocation
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -401,4 +401,3 @@ private fun StartRouteDialog(
         }
     }
 }
-

@@ -52,10 +52,21 @@ import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 
 private sealed class PendingImport {
-    data class File(val uri: android.net.Uri) : PendingImport()
-    data class QrData(val data: com.locationjoystick.core.model.ExportData) : PendingImport()
-    data class GpsJoystick(val uri: android.net.Uri) : PendingImport()
-    data class Yamla(val uri: android.net.Uri) : PendingImport()
+    data class File(
+        val uri: android.net.Uri,
+    ) : PendingImport()
+
+    data class QrData(
+        val data: com.locationjoystick.core.model.ExportData,
+    ) : PendingImport()
+
+    data class GpsJoystick(
+        val uri: android.net.Uri,
+    ) : PendingImport()
+
+    data class Yamla(
+        val uri: android.net.Uri,
+    ) : PendingImport()
 }
 
 @Composable
@@ -198,36 +209,127 @@ fun SettingsRoute(
         onOpenDrawer = onOpenDrawer,
         onAction = { action ->
             when (action) {
-                is SettingsAction.SetWalkSpeed -> viewModel.setWalkSpeed(action.displaySpeed)
-                is SettingsAction.SetRunSpeed -> viewModel.setRunSpeed(action.displaySpeed)
-                is SettingsAction.SetBikeSpeed -> viewModel.setBikeSpeed(action.displaySpeed)
-                is SettingsAction.SetSpeedUnit -> viewModel.setSpeedUnit(action.unit)
-                is SettingsAction.SetWidgetFeatures -> viewModel.setWidgetFeatures(action.features)
-                is SettingsAction.SetRememberLastLocation -> viewModel.setRememberLastLocation(action.enabled)
-                is SettingsAction.SetMapFollowsLocation -> viewModel.setMapFollowsLocation(action.enabled)
-                is SettingsAction.SetJitterIdleRadius -> viewModel.setJitterIdleRadius(action.meters)
-                is SettingsAction.SetJitterMovingRadius -> viewModel.setJitterMovingRadius(action.meters)
-                is SettingsAction.SetJitterIntervalSeconds -> viewModel.setJitterIntervalSeconds(action.seconds)
-                is SettingsAction.SetJitterIdleIntervalSeconds -> viewModel.setJitterIdleIntervalSeconds(action.seconds)
-                is SettingsAction.SetRealismBearingHoldIdle -> viewModel.setRealismBearingHoldIdle(action.enabled)
-                is SettingsAction.SetRealismAltitudeEnabled -> viewModel.setRealismAltitudeEnabled(action.enabled)
-                is SettingsAction.SetRealismWarmupEnabled -> viewModel.setRealismWarmupEnabled(action.enabled)
-                is SettingsAction.SetRealismSatelliteExtrasEnabled -> viewModel.setRealismSatelliteExtrasEnabled(action.enabled)
-                is SettingsAction.SetRealismSuspendedMockingEnabled -> viewModel.setRealismSuspendedMockingEnabled(action.enabled)
-                is SettingsAction.SetJitterSpeedIdleVariationPct -> viewModel.setJitterSpeedIdleVariationPct(action.pct)
-                is SettingsAction.SetJitterSpeedMovingVariationPct -> viewModel.setJitterSpeedMovingVariationPct(action.pct)
-                is SettingsAction.SetElevationTiltJitterDegrees -> viewModel.setElevationTiltJitterDegrees(action.degrees)
-                is SettingsAction.SetElevationNoiseAmplitudeMs2 -> viewModel.setElevationNoiseAmplitudeMs2(action.amplitude)
-                is SettingsAction.RequestElevationAccess -> viewModel.requestElevationAccess()
-                is SettingsAction.UpdateRoamingDefaults -> viewModel.updateRoamingDefaults(action.defaults)
-                SettingsAction.Export -> exportLauncher.launch("${AppConstants.ExportConstants.FILENAME_PREFIX}-${System.currentTimeMillis()}.json")
-                SettingsAction.Import -> importLauncher.launch(arrayOf(AppConstants.ExportConstants.MIME_TYPE))
-                SettingsAction.ImportGpsJoystick -> importGpsJoystickLauncher.launch(arrayOf("*/*"))
-                SettingsAction.ImportYamla -> importYamlaLauncher.launch(arrayOf("application/json"))
-                SettingsAction.QrShare -> viewModel.prepareQrChunks()
-                SettingsAction.QrScan -> showQrScanner = true
-                SettingsAction.SaveChanges -> viewModel.saveChanges()
-                SettingsAction.DiscardChanges -> viewModel.discardChanges()
+                is SettingsAction.SetWalkSpeed -> {
+                    viewModel.setWalkSpeed(action.displaySpeed)
+                }
+
+                is SettingsAction.SetRunSpeed -> {
+                    viewModel.setRunSpeed(action.displaySpeed)
+                }
+
+                is SettingsAction.SetBikeSpeed -> {
+                    viewModel.setBikeSpeed(action.displaySpeed)
+                }
+
+                is SettingsAction.SetSpeedUnit -> {
+                    viewModel.setSpeedUnit(action.unit)
+                }
+
+                is SettingsAction.SetWidgetFeatures -> {
+                    viewModel.setWidgetFeatures(action.features)
+                }
+
+                is SettingsAction.SetRememberLastLocation -> {
+                    viewModel.setRememberLastLocation(action.enabled)
+                }
+
+                is SettingsAction.SetMapFollowsLocation -> {
+                    viewModel.setMapFollowsLocation(action.enabled)
+                }
+
+                is SettingsAction.SetJitterIdleRadius -> {
+                    viewModel.setJitterIdleRadius(action.meters)
+                }
+
+                is SettingsAction.SetJitterMovingRadius -> {
+                    viewModel.setJitterMovingRadius(action.meters)
+                }
+
+                is SettingsAction.SetJitterIntervalSeconds -> {
+                    viewModel.setJitterIntervalSeconds(action.seconds)
+                }
+
+                is SettingsAction.SetJitterIdleIntervalSeconds -> {
+                    viewModel.setJitterIdleIntervalSeconds(action.seconds)
+                }
+
+                is SettingsAction.SetRealismBearingHoldIdle -> {
+                    viewModel.setRealismBearingHoldIdle(action.enabled)
+                }
+
+                is SettingsAction.SetRealismAltitudeEnabled -> {
+                    viewModel.setRealismAltitudeEnabled(action.enabled)
+                }
+
+                is SettingsAction.SetRealismWarmupEnabled -> {
+                    viewModel.setRealismWarmupEnabled(action.enabled)
+                }
+
+                is SettingsAction.SetRealismSatelliteExtrasEnabled -> {
+                    viewModel.setRealismSatelliteExtrasEnabled(action.enabled)
+                }
+
+                is SettingsAction.SetRealismSuspendedMockingEnabled -> {
+                    viewModel.setRealismSuspendedMockingEnabled(action.enabled)
+                }
+
+                is SettingsAction.SetJitterSpeedIdleVariationPct -> {
+                    viewModel.setJitterSpeedIdleVariationPct(action.pct)
+                }
+
+                is SettingsAction.SetJitterSpeedMovingVariationPct -> {
+                    viewModel.setJitterSpeedMovingVariationPct(action.pct)
+                }
+
+                is SettingsAction.SetElevationTiltJitterDegrees -> {
+                    viewModel.setElevationTiltJitterDegrees(action.degrees)
+                }
+
+                is SettingsAction.SetElevationNoiseAmplitudeMs2 -> {
+                    viewModel.setElevationNoiseAmplitudeMs2(action.amplitude)
+                }
+
+                is SettingsAction.RequestElevationAccess -> {
+                    viewModel.requestElevationAccess()
+                }
+
+                is SettingsAction.UpdateRoamingDefaults -> {
+                    viewModel.updateRoamingDefaults(action.defaults)
+                }
+
+                SettingsAction.Export -> {
+                    exportLauncher.launch(
+                        "${AppConstants.ExportConstants.FILENAME_PREFIX}-${System.currentTimeMillis()}.json",
+                    )
+                }
+
+                SettingsAction.Import -> {
+                    importLauncher.launch(arrayOf(AppConstants.ExportConstants.MIME_TYPE))
+                }
+
+                SettingsAction.ImportGpsJoystick -> {
+                    importGpsJoystickLauncher.launch(arrayOf("*/*"))
+                }
+
+                SettingsAction.ImportYamla -> {
+                    importYamlaLauncher.launch(arrayOf("application/json"))
+                }
+
+                SettingsAction.QrShare -> {
+                    viewModel.prepareQrChunks()
+                }
+
+                SettingsAction.QrScan -> {
+                    showQrScanner = true
+                }
+
+                SettingsAction.SaveChanges -> {
+                    viewModel.saveChanges()
+                }
+
+                SettingsAction.DiscardChanges -> {
+                    viewModel.discardChanges()
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },

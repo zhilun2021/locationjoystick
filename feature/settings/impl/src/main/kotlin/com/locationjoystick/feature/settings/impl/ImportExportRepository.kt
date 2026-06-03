@@ -13,10 +13,12 @@ class ImportExportRepository
         @ApplicationContext private val context: Context,
     ) {
         fun readTextFromUri(uri: Uri): String =
-            context.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
+            context.contentResolver
+                .openInputStream(uri)
+                ?.bufferedReader()
+                ?.readText() ?: ""
 
-        fun readBytesFromUri(uri: Uri): ByteArray =
-            context.contentResolver.openInputStream(uri)?.readBytes() ?: ByteArray(0)
+        fun readBytesFromUri(uri: Uri): ByteArray = context.contentResolver.openInputStream(uri)?.readBytes() ?: ByteArray(0)
 
         fun writeToUri(
             uri: Uri,

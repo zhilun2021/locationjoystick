@@ -49,12 +49,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjBg
-import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjInactive
 import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
+import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.WidgetFeature
 
@@ -445,7 +445,9 @@ internal fun RoutesFloatingView(
 
             LjCheckboxRow(title = "Loop", checked = loop, onCheckedChange = { loop = it }, enabled = !returnToLocation, textColor = LjText)
             LjCheckboxRow(title = "Reverse", checked = reverse, onCheckedChange = { reverse = it }, textColor = LjText)
-            LjCheckboxRow(title = "Return to location", checked = returnToLocation, onCheckedChange = { returnToLocation = it }, enabled = !loop, textColor = LjText)
+            LjCheckboxRow(title = "Return to location", checked = returnToLocation, onCheckedChange = {
+                returnToLocation = it
+            }, enabled = !loop, textColor = LjText)
 
             Spacer(Modifier.height(20.dp))
 
@@ -515,7 +517,6 @@ internal fun RoutesFloatingView(
         }
     }
 }
-
 
 private fun featureIconAndState(
     feature: WidgetFeature,

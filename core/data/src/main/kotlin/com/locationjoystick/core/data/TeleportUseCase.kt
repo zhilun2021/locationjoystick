@@ -64,12 +64,13 @@ class TeleportUseCase
          * (the ticker fires immediately), even before any DataStore write occurs.
          */
         fun cooldownFor(target: LatLng): Flow<CooldownState> {
-            val ticker = flow {
-                while (true) {
-                    emit(Unit)
-                    delay(1_000L)
+            val ticker =
+                flow {
+                    while (true) {
+                        emit(Unit)
+                        delay(1_000L)
+                    }
                 }
-            }
             return combine(
                 settingsRepository.getLastTeleportTime(),
                 settingsRepository.getLastLocation(),

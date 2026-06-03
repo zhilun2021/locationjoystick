@@ -217,11 +217,12 @@ internal fun MapFloatingView(
                                 .build()
 
                         map.setStyle(Style.Builder().fromUri("asset://empty.json")) { style ->
-                            val layers = style.addLocationLayers(
-                                osmSourceId = MapLibreSourceIds.PANEL_OSM,
-                                osmLayerId = MapLibreLayerIds.PANEL_OSM,
-                                lineWidth = 3f,
-                            )
+                            val layers =
+                                style.addLocationLayers(
+                                    osmSourceId = MapLibreSourceIds.PANEL_OSM,
+                                    osmLayerId = MapLibreLayerIds.PANEL_OSM,
+                                    lineWidth = 3f,
+                                )
                             positionSource.value = layers.positionSource
                             tracedSource.value = layers.tracedSource
                             remainingSource.value = layers.remainingSource
@@ -419,8 +420,15 @@ internal fun MapFloatingView(
                 hasPreview = roamingPreviewWaypoints != null,
                 onGeneratePreviewRoute = onGeneratePreviewRoute,
                 onPreviewGenerated = { roamingPreviewWaypoints = it },
-                onStart = { draft -> onStartRoaming(draft); showRoamingSheet = false; roamingPreviewWaypoints = null },
-                onDismiss = { showRoamingSheet = false; roamingPreviewWaypoints = null },
+                onStart = { draft ->
+                    onStartRoaming(draft)
+                    showRoamingSheet = false
+                    roamingPreviewWaypoints = null
+                },
+                onDismiss = {
+                    showRoamingSheet = false
+                    roamingPreviewWaypoints = null
+                },
             )
         }
 
@@ -448,8 +456,16 @@ internal fun MapFloatingView(
         if (showFavoritesPicker) {
             FavoritesOverlayPicker(
                 favorites = favorites,
-                onTeleport = { pos -> onTeleport(pos); showFavoritesPicker = false; onDismiss() },
-                onWalkTo = { pos -> onWalkTo(pos); showFavoritesPicker = false; onDismiss() },
+                onTeleport = { pos ->
+                    onTeleport(pos)
+                    showFavoritesPicker = false
+                    onDismiss()
+                },
+                onWalkTo = { pos ->
+                    onWalkTo(pos)
+                    showFavoritesPicker = false
+                    onDismiss()
+                },
                 onDismiss = { showFavoritesPicker = false },
             )
         }
@@ -551,17 +567,26 @@ private fun BoxScope.TapActionPanel(
             Text("Route in progress", style = MaterialTheme.typography.titleMedium, color = LjText)
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = { onStopRouteAndTeleport(tap); onDismiss() },
+                onClick = {
+                    onStopRouteAndTeleport(tap)
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Stop route and teleport") }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { onStopRouteAndWalkTo(tap); onDismiss() },
+                onClick = {
+                    onStopRouteAndWalkTo(tap)
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Stop route and walk here") }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { onFinishRouteAndWalkTo(tap); onDismiss() },
+                onClick = {
+                    onFinishRouteAndWalkTo(tap)
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Finish route and walk here") }
         } else {
@@ -576,12 +601,18 @@ private fun BoxScope.TapActionPanel(
             }
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = { onTeleport(tap); onDismiss() },
+                onClick = {
+                    onTeleport(tap)
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Teleport here") }
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { onWalkTo(tap); onDismiss() },
+                onClick = {
+                    onWalkTo(tap)
+                    onDismiss()
+                },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Walk here") }
             if (isWalkActive) {
