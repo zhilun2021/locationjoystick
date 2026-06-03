@@ -55,6 +55,7 @@ import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.LjCheckboxRow
+import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.WidgetFeature
 
@@ -69,9 +70,10 @@ internal fun WidgetPanel(
     isActivityPausable: Boolean,
     routeExpanded: Boolean,
     isPanelExpanded: Boolean,
-    elevationOverlayVisible: Boolean,
+    elevationMode: ElevationMode?,
     onToggleMaster: () -> Unit,
     onFeatureClicked: (WidgetFeature) -> Unit,
+    onElevationModeSelected: (ElevationMode?) -> Unit,
     onRouteClicked: () -> Unit,
     onRoutePauseResume: () -> Unit,
     onRouteStop: () -> Unit,
@@ -179,6 +181,30 @@ internal fun WidgetPanel(
                             }
                         }
                     }
+                } else if (feature == WidgetFeature.ELEVATION_CONTROLS) {
+                    listOf(
+                        Triple(ElevationMode.TiltUp, LjIcons.ElevationUp, "Tilt up"),
+                        Triple(ElevationMode.Neutral, LjIcons.ElevationNeutral, "Neutral"),
+                        Triple(ElevationMode.TiltDown, LjIcons.ElevationDown, "Tilt down"),
+                    ).forEach { (mode, icon, desc) ->
+                        val tint = if (elevationMode == mode) MaterialTheme.colorScheme.primary else LjInactive
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier =
+                                Modifier
+                                    .padding(4.dp)
+                                    .size(UiConstants.FAB_CONTAINER_SIZE)
+                                    .background(Color.Black, CircleShape)
+                                    .clickable { onElevationModeSelected(if (elevationMode == mode) null else mode) },
+                        ) {
+                            Icon(
+                                imageVector = icon,
+                                contentDescription = desc,
+                                tint = tint,
+                                modifier = Modifier.size(UiConstants.FAB_ICON_SIZE),
+                            )
+                        }
+                    }
                 } else {
                     val (icon, active) =
                         featureIconAndState(
@@ -186,7 +212,6 @@ internal fun WidgetPanel(
                             joystickVisible,
                             joystickLocked,
                             activeProfileId,
-                            elevationOverlayVisible,
                         )
                     val iconTint = if (active) MaterialTheme.colorScheme.primary else LjInactive
                     Box(
@@ -523,7 +548,6 @@ private fun featureIconAndState(
     joystickVisible: Boolean,
     joystickLocked: Boolean,
     activeProfileId: String,
-    elevationOverlayVisible: Boolean,
 ): Pair<ImageVector, Boolean> =
     when (feature) {
         WidgetFeature.JOYSTICK_TOGGLE -> {
@@ -561,7 +585,7 @@ private fun featureIconAndState(
         }
 
         WidgetFeature.ELEVATION_CONTROLS -> {
-            Pair(LjIcons.Layers, elevationOverlayVisible)
+            Pair(LjIcons.Layers, false)
         }
     }
 

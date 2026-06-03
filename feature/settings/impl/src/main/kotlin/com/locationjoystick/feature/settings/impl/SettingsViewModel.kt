@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.common.root.RootCapabilityChecker
 import com.locationjoystick.core.common.root.SensorPermissionBootstrap
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.RouteRepository
@@ -40,7 +39,6 @@ class SettingsViewModel
         private val settingsRepository: SettingsRepository,
         private val favoriteRepository: FavoriteRepository,
         private val routeRepository: RouteRepository,
-        private val rootCapabilityChecker: RootCapabilityChecker,
         private val sensorPermissionBootstrap: SensorPermissionBootstrap,
         private val importExportRepository: ImportExportRepository,
     ) : ViewModel() {
@@ -52,7 +50,7 @@ class SettingsViewModel
         val isRooted: StateFlow<Boolean> = _isRooted.asStateFlow()
 
         init {
-            _isRooted.value = rootCapabilityChecker.isRooted()
+            _isRooted.value = sensorPermissionBootstrap.isGranted()
         }
 
         internal data class UserFeedback(
@@ -297,7 +295,13 @@ class SettingsViewModel
 
         fun requestElevationAccess() {
             viewModelScope.launch {
-                sensorPermissionBootstrap.grantIfNeeded()
+                val granted = sensorPermissionBootstrap.grantIfNeeded()
+                _isRooted.value = granted
+                if (granted) {
+                    userFeedback.emit(UserFeedback("Root access granted"))
+                } else {
+                    userFeedback.emit(UserFeedback("Root access unavailable", isError = true))
+                }
             }
         }
 

@@ -30,6 +30,7 @@ import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.location.StartRouteReplayUseCase
+import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.WidgetFeature
@@ -125,7 +126,7 @@ class FloatingWidgetService :
     // Master panel expand/collapse
     private val isPanelExpandedFlow = MutableStateFlow(false)
 
-    private val elevationOverlayVisibleFlow = MutableStateFlow(false)
+    private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
 
     // Drag position — class-level so onConfigurationChanged can read them after rotation.
     private var dragOffsetX = 0f
@@ -140,9 +141,6 @@ class FloatingWidgetService :
     private val joystickService: JoystickOverlayService?
         get() = serviceBinder.joystickService
 
-    private val elevationOverlayService: ElevationOverlayService?
-        get() = serviceBinder.elevationOverlayService
-
     override fun onCreate() {
         savedStateRegistryController.performAttach()
         savedStateRegistryController.performRestore(null)
@@ -156,7 +154,6 @@ class FloatingWidgetService :
                 overlayHelper = overlayHelper,
                 joystickVisibleFlow = joystickVisibleFlow,
                 joystickLockedFlow = joystickLockedFlow,
-                elevationOverlayVisibleFlow = elevationOverlayVisibleFlow,
             )
         panelPresenter =
             WidgetPanelPresenter(
@@ -182,6 +179,11 @@ class FloatingWidgetService :
         lifecycleScope.launch {
             locationRepository.isActivityActive.collect { active ->
                 if (!active) routeExpandedFlow.value = false
+            }
+        }
+        lifecycleScope.launch {
+            settingsRepository.getWidgetFeatures().collect { features ->
+                if (WidgetFeature.ELEVATION_CONTROLS !in features) setElevationMode(null)
             }
         }
     }
@@ -255,7 +257,7 @@ class FloatingWidgetService :
                 isLocActivityPaused || (mockMode == com.locationjoystick.core.model.MockMode.ROAMING && isRoamingPaused)
             val routeExpanded by routeExpandedFlow.collectAsStateWithLifecycle()
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
-            val elevationOverlayVisible by elevationOverlayVisibleFlow.collectAsStateWithLifecycle()
+            val elevationMode by elevationModeFlow.collectAsStateWithLifecycle()
 
             LjTheme {
                 WidgetPanel(
@@ -268,9 +270,10 @@ class FloatingWidgetService :
                     isActivityPausable = isActivityPausable,
                     routeExpanded = routeExpanded,
                     isPanelExpanded = isPanelExpanded,
-                    elevationOverlayVisible = elevationOverlayVisible,
+                    elevationMode = elevationMode,
                     onToggleMaster = { isPanelExpandedFlow.value = !isPanelExpandedFlow.value },
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature) },
+                    onElevationModeSelected = { mode -> setElevationMode(mode) },
                     onRouteClicked = { onRouteIconClicked() },
                     onRoutePauseResume = { onRoutePauseResumeClicked() },
                     onRouteStop = { onRouteStopClicked() },
@@ -312,25 +315,13 @@ class FloatingWidgetService :
                 panelPresenter.showMapFloatingView()
             }
 
-            WidgetFeature.ELEVATION_CONTROLS -> {
-                toggleElevationOverlay()
-            }
+            WidgetFeature.ELEVATION_CONTROLS -> Unit
         }
     }
 
-    private fun toggleElevationOverlay() {
-        val svc =
-            elevationOverlayService ?: run {
-                Log.w(TAG, "Cannot toggle elevation overlay: service not bound")
-                return
-            }
-        try {
-            svc.toggleOverlay()
-            elevationOverlayVisibleFlow.value = svc.isOverlayVisible
-            Log.d(TAG, "Toggled elevation overlay visibility")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to toggle elevation overlay", e)
-        }
+    private fun setElevationMode(mode: ElevationMode?) {
+        elevationModeFlow.value = mode
+        mockLocationService?.setElevationMode(mode)
     }
 
     private fun onRouteIconClicked() {

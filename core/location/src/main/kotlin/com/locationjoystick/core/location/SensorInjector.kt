@@ -48,25 +48,10 @@ class SensorInjector
         ) {
             val method = injectMethod ?: return
             val noisyTilt = tiltDegrees + (random.nextFloat() * 2f - 1f) * tiltJitterDegrees
-            val accelValues = computeGravityVector(mode, noisyTilt, noiseAmplitudeMs2, random)
-            val rotValues = computeRotationVector(mode, noisyTilt)
             val timestamp = System.nanoTime()
-
-            injectSensor(method, Sensor.TYPE_ACCELEROMETER, accelValues, timestamp)
-            injectSensor(method, Sensor.TYPE_ROTATION_VECTOR, rotValues, timestamp)
+            injectSensor(method, Sensor.TYPE_ACCELEROMETER, elevationGravityVector(mode, noisyTilt, noiseAmplitudeMs2, random), timestamp)
+            injectSensor(method, Sensor.TYPE_ROTATION_VECTOR, elevationRotationVector(mode, noisyTilt), timestamp)
         }
-
-        private fun computeGravityVector(
-            mode: ElevationMode,
-            tiltDeg: Float,
-            noiseAmplitude: Float,
-            random: Random,
-        ): FloatArray = elevationGravityVector(mode, tiltDeg, noiseAmplitude, random)
-
-        private fun computeRotationVector(
-            mode: ElevationMode,
-            tiltDeg: Float,
-        ): FloatArray = elevationRotationVector(mode, tiltDeg)
 
         private fun injectSensor(
             method: Method,

@@ -16,11 +16,10 @@ import kotlinx.coroutines.launch
 /**
  * Owns the [ServiceConnection]s and bound-service references used by [FloatingWidgetService].
  *
- * Binds to three services:
+ * Binds to two services:
  * - [MockLocationService] (via [OverlayServiceHelper.bindTrackedService] — torn down by
  *   [OverlayServiceHelper.cleanupOverlayBindings])
  * - [JoystickOverlayService] (direct bind/unbind)
- * - [ElevationOverlayService] (direct bind/unbind)
  *
  * The bound services are exposed as nullable properties. The host service calls [bind] from
  * `onCreate` and [unbind] from `onDestroy`.
@@ -31,7 +30,6 @@ internal class WidgetServiceBinder(
     private val overlayHelper: OverlayServiceHelper,
     private val joystickVisibleFlow: MutableStateFlow<Boolean>,
     private val joystickLockedFlow: MutableStateFlow<Boolean>,
-    private val elevationOverlayVisibleFlow: MutableStateFlow<Boolean>,
 ) {
     companion object {
         private const val TAG = "FloatingWidgetService"
@@ -43,11 +41,7 @@ internal class WidgetServiceBinder(
     var joystickService: JoystickOverlayService? = null
         private set
 
-    var elevationOverlayService: ElevationOverlayService? = null
-        private set
-
     private var joystickBound = false
-    private var elevationOverlayBound = false
 
     private val mockLocationServiceConnection =
         object : ServiceConnection {
@@ -87,24 +81,6 @@ internal class WidgetServiceBinder(
             }
         }
 
-    private val elevationOverlayConnection =
-        object : ServiceConnection {
-            override fun onServiceConnected(
-                name: ComponentName,
-                binder: IBinder,
-            ) {
-                elevationOverlayService = (binder as ElevationOverlayService.LocalBinder).getService()
-                Log.d(TAG, "Bound to ElevationOverlayService")
-            }
-
-            override fun onServiceDisconnected(name: ComponentName) {
-                elevationOverlayService = null
-                elevationOverlayBound = false
-                elevationOverlayVisibleFlow.value = false
-                Log.d(TAG, "Unbound from ElevationOverlayService")
-            }
-        }
-
     fun bind() {
         overlayHelper.bindTrackedService(context, Intent(context, MockLocationService::class.java), mockLocationServiceConnection)
         val joystickIntent =
@@ -112,12 +88,6 @@ internal class WidgetServiceBinder(
                 setClassName(context.packageName, "com.locationjoystick.feature.joystick.impl.JoystickOverlayService")
             }
         joystickBound = context.bindService(joystickIntent, joystickConnection, Context.BIND_AUTO_CREATE)
-        elevationOverlayBound =
-            context.bindService(
-                Intent(context, ElevationOverlayService::class.java),
-                elevationOverlayConnection,
-                Context.BIND_AUTO_CREATE,
-            )
     }
 
     fun unbind() {
@@ -126,13 +96,6 @@ internal class WidgetServiceBinder(
                 context.unbindService(joystickConnection)
             } catch (e: IllegalArgumentException) {
                 Log.e(TAG, "Joystick service was not bound when attempting to unbind", e)
-            }
-        }
-        if (elevationOverlayBound) {
-            try {
-                context.unbindService(elevationOverlayConnection)
-            } catch (e: IllegalArgumentException) {
-                Log.e(TAG, "Elevation overlay service was not bound when attempting to unbind", e)
             }
         }
     }

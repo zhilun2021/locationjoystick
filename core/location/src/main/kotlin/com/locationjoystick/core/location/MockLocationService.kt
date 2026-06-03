@@ -29,7 +29,6 @@ import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
-import com.locationjoystick.core.model.WidgetFeature
 import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -140,8 +139,6 @@ class MockLocationService : Service() {
     private val realism = RealismSettingsState()
 
     @Volatile private var humanAltitudeOffsetMeters: Double = AppConstants.RealismConstants.ALTITUDE_HUMAN_OFFSET_METERS
-
-    @Volatile private var elevationControlsEnabled = false
 
     @Volatile private var currentElevationMode: ElevationMode? = null
 
@@ -256,12 +253,6 @@ class MockLocationService : Service() {
         }
         // Jitter and realism settings — each updates a @Volatile field consumed by captureSnapshot().
         realism.observe(serviceScope, settingsRepository)
-        serviceScope.launch {
-            settingsRepository.getWidgetFeatures().collect { features ->
-                elevationControlsEnabled = WidgetFeature.ELEVATION_CONTROLS in features
-                if (!elevationControlsEnabled) currentElevationMode = null
-            }
-        }
     }
 
     /**
@@ -740,7 +731,7 @@ class MockLocationService : Service() {
             }
             applyToProvider(fix, nowNanos)
             val elevMode = currentElevationMode
-            if (elevationControlsEnabled && elevMode != null) {
+            if (elevMode != null) {
                 sensorInjector.inject(
                     elevMode,
                     AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES,

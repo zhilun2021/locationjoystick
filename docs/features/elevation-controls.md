@@ -2,7 +2,7 @@
 
 Injects synthetic accelerometer and rotation-vector sensor events to make apps see the phone as tilted. Useful for apps that behave differently based on device orientation.
 
-Key files: `core/location/src/main/kotlin/com/locationjoystick/core/location/SensorInjector.kt`, `core/common/src/main/kotlin/com/locationjoystick/core/common/root/RootCapabilityChecker.kt`
+Key files: `core/location/src/main/kotlin/com/locationjoystick/core/location/SensorInjector.kt`, `core/common/src/main/kotlin/com/locationjoystick/core/common/root/SensorPermissionBootstrap.kt`
 
 ## Settings
 
@@ -24,9 +24,7 @@ The tilt angle is fixed at `AppConstants.ElevationConstants.DEFAULT_TILT_DEGREES
 su -c pm grant <packageName> android.permission.INJECT_EVENTS
 ```
 
-Root detection (`RootCapabilityChecker`) runs `su -c id` and checks for exit code 0. Both checks run on `Dispatchers.IO`. The Settings UI disables the Elevation Controls toggle when root is not detected.
-
-The permission grant is triggered inside `SettingsViewModel.saveChanges()` when `ELEVATION_CONTROLS` is being added to the widget features set.
+Root detection uses `SensorPermissionBootstrap.isGranted()` — the Settings UI checks whether `INJECT_EVENTS` is already granted and disables the Elevation Controls toggle if not. The user triggers the grant via the "Request root access" button in Settings, which calls `SettingsViewModel.requestElevationAccess()`. On success or failure, a feedback snackbar is shown and `_isRooted` is updated.
 
 ## ElevationMode States
 
@@ -36,11 +34,11 @@ The permission grant is triggered inside `SettingsViewModel.saveChanges()` when 
 | `TiltUp` | Phone pitched forward — negative Y component added to gravity |
 | `TiltDown` | Phone pitched backward — positive Y component added to gravity |
 
-Controlled from the floating widget via a 3-button column (↑ / ○ / ↓). State is held in `_elevationMode: MutableStateFlow<ElevationMode?>` in `FloatingWidgetService` and relayed to `MockLocationService.setElevationMode()` via the bound service reference.
+Controlled from the floating widget via a 3-button column (↑ / ○ / ↓) rendered inline in the widget panel when `ELEVATION_CONTROLS` is in the active feature set. State is held in `elevationModeFlow: MutableStateFlow<ElevationMode?>` in `FloatingWidgetService` and relayed to `MockLocationService.setElevationMode()` via the bound service reference. Tapping the active button deselects it (sets `null` = injection off). `FloatingWidgetService` observes widget features and calls `setElevationMode(null)` when `ELEVATION_CONTROLS` is removed.
 
 ## Integration Point
 
-`MockLocationService.pushLocationUpdate()` calls `SensorInjector.inject()` after `applyToProvider()` on every tick (1 Hz) when `elevationControlsEnabled == true` and `currentElevationMode != null`. `elevationControlsEnabled` is derived by observing `settingsRepository.getWidgetFeatures()` and checking whether `ELEVATION_CONTROLS` is present.
+`MockLocationService.pushLocationUpdate()` calls `SensorInjector.inject()` after `applyToProvider()` on every tick (1 Hz) when `currentElevationMode != null`.
 
 ## SensorInjector
 
@@ -73,6 +71,7 @@ Each injected value adds per-axis noise sampled from `Uniform(-DEFAULT_NOISE_AMP
 
 - Do not call `SensorManager.registerListener()` — injection bypasses the listener pipeline entirely.
 - Do not hold a wakelock for injection — the 1 Hz tick from `MockLocationService` is sufficient.
-- Do not inject sensors when `elevationControlsEnabled == false` or `currentElevationMode == null` — both guards are checked before calling `SensorInjector.inject()`.
+- Do not inject sensors when `currentElevationMode == null` — this is the single guard checked before calling `SensorInjector.inject()`.
 - Do not cache the `Method` reference across process restarts — the lazy property handles this correctly.
 - Do not add a separate DataStore key for elevation enabled state — use `WidgetFeature.ELEVATION_CONTROLS` presence in widget features as the source of truth.
+- Do not add a separate service for the elevation 3-button UI — it renders inline in `FloatingWidgetService`'s widget panel.
