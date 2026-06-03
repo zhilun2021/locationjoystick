@@ -26,7 +26,7 @@ Here's everything included:
 | **Speed Profiles** | Walk / Run / Bike presets, all user-editable. Anti-cheat warning when speed exceeds threshold. Accessible from floating widget. |
 | **Routes** | Create waypoints on map → polyline. Two types: **straight** (direct segments) and **guided** (OSRM road-following). Save, edit, replay, loop, or record in real time. Import from GPX files. |
 | **Roaming** | Set center, radius, duration. Auto-walks randomly within radius. Optional road-following via OSRM. Optional return-to-start after loop completes. Configured via bottom sheet on Map screen. |
-| **Favorites** | Save named map positions. Instantly teleport or walk to any. Add via inline dialog or MapPicker with Nominatim search. |
+| **Favorites** | Save named map positions. Instantly teleport or walk to any. Add via inline dialog or MapPicker with Nominatim search. Optional curated list of 26 popular locations (Settings → Favorites → Show hot locations). |
 | **Floating Widget** | Configurable quick-access panel floats over other apps. Collapsible FAB → expanded panel with user-selected controls. |
 | **Click-to-Move** | Long-press map → "Walk here" or "Teleport here". Walk advances at current speed; teleport jumps instantly. |
 | **QR Transfer** | Share or import config between devices via QR codes. Export splits into scannable chunks; import scans and reassembles. |
