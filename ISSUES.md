@@ -1,5 +1,7 @@
 # Known Issues & Backlog
 
+> Tasks are being processed. See .shortcuts/ISSUES_STEPS.json for execution order.
+
 ## Documentation Outdated Items
 
 No outstanding documentation issues.

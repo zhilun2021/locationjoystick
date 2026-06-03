@@ -475,7 +475,7 @@ class MapViewModel
             if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
                 context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
             }
-            _uiState.update { it.copy(walkMode = WalkMode.Idle, isWalkPaused = false, isWalkControlsExpanded = false) }
+            _uiState.update { it.copy(walkMode = WalkMode.Idle, isWalkPaused = false, isWalkControlsExpanded = false, routeTrace = null) }
         }
 
         private fun saveCurrentLocation(name: String) {
