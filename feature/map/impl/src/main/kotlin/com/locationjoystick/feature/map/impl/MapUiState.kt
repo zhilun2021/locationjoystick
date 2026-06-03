@@ -16,6 +16,7 @@ sealed interface WalkMode {
     data class Walking(
         val target: LatLng,
         val start: LatLng?,
+        val isViaRoads: Boolean = false,
     ) : WalkMode
 
     /** Replaying a chain of taps (ephemeral route) via [RouteReplayEngine]. */

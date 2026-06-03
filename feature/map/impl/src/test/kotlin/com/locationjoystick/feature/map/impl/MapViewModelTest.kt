@@ -470,7 +470,7 @@ class MapViewModelTest {
             val newPoint = LatLng(49.0, 2.5)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns
                 listOf(currentPos, walkTarget, newPoint)
             viewModel =
                 MapViewModel(
@@ -512,7 +512,7 @@ class MapViewModelTest {
             val list4 = listOf(currentPos, walkTarget, firstExtra, secondExtra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returnsMany
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returnsMany
                 listOf(list3, list4)
             viewModel =
                 MapViewModel(
@@ -637,7 +637,7 @@ class MapViewModelTest {
             val extra = LatLng(49.0, 2.5)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns
                 listOf(currentPos, walkTarget, extra)
             viewModel =
                 MapViewModel(
@@ -703,7 +703,7 @@ class MapViewModelTest {
             val waypoints = listOf(currentPos, walkTarget, extra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any()) } returns waypoints
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns waypoints
             viewModel =
                 MapViewModel(
                     context,

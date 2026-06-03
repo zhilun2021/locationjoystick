@@ -606,6 +606,7 @@ class FloatingWidgetService :
                     currentWaypoints = emptyList(), // widget doesn't track local ephemeral list
                     walkStart = locationRepository.currentPosition.value,
                     walkTarget = locationRepository.walkTarget.value,
+                    followRoads = false, // widget has no walk-mode state; always straight-line
                     context = this@FloatingWidgetService,
                     launchIntent = { startService(it) },
                 )

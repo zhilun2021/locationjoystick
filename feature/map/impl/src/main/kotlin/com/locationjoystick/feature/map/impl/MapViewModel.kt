@@ -585,6 +585,7 @@ class MapViewModel
                         currentWaypoints = state.ephemeralWaypoints,
                         walkStart = state.walkStart,
                         walkTarget = state.walkTarget,
+                        followRoads = (state.walkMode as? WalkMode.Walking)?.isViaRoads ?: false,
                         context = context,
                         launchIntent = { context.startService(it) },
                     ) ?: return@launch
@@ -665,7 +666,7 @@ class MapViewModel
                 }
                 _uiState.update {
                     it.copy(
-                        walkMode = WalkMode.Walking(target = position, start = it.currentPosition),
+                        walkMode = WalkMode.Walking(target = position, start = it.currentPosition, isViaRoads = true),
                         routeTrace = null,
                     )
                 }
