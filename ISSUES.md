@@ -21,7 +21,6 @@ No outstanding technical debt items.
 
 ## Frontend UI/UX
 
-- FloatingWidgetService -> Map -> Roaming -> Text is black, should be white
 
 ---
 

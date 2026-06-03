@@ -22,11 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -513,25 +515,27 @@ private fun BoxScope.OverlayRoamingSheet(
                         RoundedCornerShape(2.dp),
                     ),
         )
-        Column(modifier = Modifier.fillMaxSize().padding(top = 28.dp)) {
-            RoamingSheetContent(
-                draft = draft,
-                speedUnit = speedUnit,
-                hasCurrentPosition = currentPosition != null,
-                isSpoofingActive = isSpoofing,
-                hasPreview = hasPreview,
-                onDraftChange = { draft = it },
-                onGenerate = {
-                    scope.launch {
-                        val pos = currentPosition ?: return@launch
-                        onPreviewGenerated(
-                            onGeneratePreviewRoute(pos, draft.radiusMeters, draft.followRoads, draft.speedProfileId),
-                        )
-                    }
-                },
-                onStart = { onStart(draft) },
-                onViewOnMap = { onDismiss() },
-            )
+        CompositionLocalProvider(LocalContentColor provides LjText) {
+            Column(modifier = Modifier.fillMaxSize().padding(top = 28.dp)) {
+                RoamingSheetContent(
+                    draft = draft,
+                    speedUnit = speedUnit,
+                    hasCurrentPosition = currentPosition != null,
+                    isSpoofingActive = isSpoofing,
+                    hasPreview = hasPreview,
+                    onDraftChange = { draft = it },
+                    onGenerate = {
+                        scope.launch {
+                            val pos = currentPosition ?: return@launch
+                            onPreviewGenerated(
+                                onGeneratePreviewRoute(pos, draft.radiusMeters, draft.followRoads, draft.speedProfileId),
+                            )
+                        }
+                    },
+                    onStart = { onStart(draft) },
+                    onViewOnMap = { onDismiss() },
+                )
+            }
         }
     }
 }
