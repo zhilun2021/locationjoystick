@@ -9,7 +9,6 @@ No outstanding documentation issues.
 ## Bugs
 
 - FloatingWidgetService -> Map -> Search -> Select result -> Doesn't show the anti-cheat cooldown timeout
-- "Walk here via roads" doesn't work, it just creates a straight line
 - "Add next point" should be "straight" line if the user only clicked "walk here", if he clicked "walk here via roads" it should be adding a point following roads
 - Stopping a "walk here" road from the map screen doesn't clear the traced points
 - When we generate a "roaming" road with "return to start", we walk to the given "distance", we should create a loop of that distance in the given radius, the idea is to walk to half that distance, then come back
@@ -17,38 +16,6 @@ No outstanding documentation issues.
 ---
 
 ## Technical Debt (pre-1.1)
-
-### [CRITICAL] saveChanges() fires 20+ non-atomic sequential DataStore writes
-
-**File:** `SettingsViewModel.kt:296–356`
-
-`saveChanges()` calls `settingsRepository.set*()` for each dirty field sequentially. Every call is its own `dataStore.edit {}` transaction. If any call throws mid-way, `mutableDraft.value = DraftState()` at line 349 still runs — the draft is cleared, but only a partial set of settings was persisted. The user gets "Settings saved" but some fields are reverted to their previous values with no indication.
-
-Secondary cost: 20+ sequential DataStore writes fan out to all collectors 20+ times instead of once.
-
-**Fix:** Add a `setSettingsSnapshot(draft: DraftState)` method to `PreferencesDataSource` that writes all dirty fields in a single `dataStore.edit {}` block. Only clear the draft after that single atomic write succeeds.
-
----
-
-### [HIGH] Two `importSettings()` overloads apply different field subsets and will drift
-
-**File:** `SettingsViewModel.kt:436–578`
-
-`importSettings(Uri)` routes through the draft setters (`setWidgetFeatures()`, `setJitterIdleRadius()`, etc.) and does not apply `roamingDefaults`, `bearingHoldOnIdle`, `warmupEnabled`, `satelliteExtrasEnabled`, or `suspendedMockingEnabled`. `importSettings(ExportData)` writes directly to the repository and skips the draft entirely, applying a different subset. The two paths will continue to drift as new settings are added.
-
-**Fix:** Extract a single private `applyExportData(data: ExportData, replace: Boolean)` that writes atomically to the repository. Both overloads call it. Remove the draft-setter variant of import entirely.
-
----
-
-### [HIGH] `RepoState` is a redundant mirror of `SettingsSnapshot`
-
-**File:** `SettingsViewModel.kt:80–156`
-
-`RepoState` is a private data class with 21 fields that are copied one-for-one from `SettingsSnapshot` with no transformation at lines 131–156. It exists only to feed the `combine(repoStateFlow, draftStateFlow)` merge. `SettingsSnapshot` itself is the canonical type and already contains the same fields with the same types. The mapping is pure boilerplate that must be kept in sync with `SettingsSnapshot` by hand.
-
-**Fix:** Use `SettingsSnapshot` directly in the `combine`. Drop `RepoState`. The `uiState` combine lambda reads `s.walkSpeedMs` instead of `repoState.walkSpeed`, etc.
-
----
 
 ### [MEDIUM] `FloatingWidgetService.startRoamingWith()` bypasses `RoamingDefaults.toConfig()`
 
