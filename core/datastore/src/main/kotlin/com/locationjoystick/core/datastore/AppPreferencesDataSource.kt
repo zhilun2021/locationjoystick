@@ -221,6 +221,7 @@ data class SettingsSnapshot(
     val elevationTiltJitterDegrees: Float,
     val elevationNoiseAmplitudeMs2: Float,
     val hotLocationsEnabled: Boolean,
+    val roamingDefaults: RoamingDefaults,
 )
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -622,6 +623,11 @@ class AppPreferencesDataSource
                         AppConstants.ElevationConstants.MAX_NOISE_AMPLITUDE_MS2,
                     )
                 prefs[Keys.HOT_LOCATIONS_ENABLED] = snapshot.hotLocationsEnabled
+                prefs[Keys.ROAMING_RADIUS_METERS] = snapshot.roamingDefaults.radiusMeters
+                prefs[Keys.ROAMING_DISTANCE_METERS] = snapshot.roamingDefaults.distanceMeters
+                prefs[Keys.ROAMING_SPEED_PROFILE_ID] = snapshot.roamingDefaults.speedProfileId
+                prefs[Keys.ROAMING_ROAD_FOLLOWING] = snapshot.roamingDefaults.followRoads
+                prefs[Keys.ROAMING_RETURN_TO_START] = snapshot.roamingDefaults.returnToInitialLocation
             }
         }
 
@@ -675,6 +681,14 @@ class AppPreferencesDataSource
                             prefs[Keys.ELEVATION_NOISE_AMPLITUDE_MS2]
                                 ?: DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
                         hotLocationsEnabled = prefs[Keys.HOT_LOCATIONS_ENABLED] ?: false,
+                        roamingDefaults =
+                            RoamingDefaults(
+                                radiusMeters = prefs[Keys.ROAMING_RADIUS_METERS] ?: DEFAULT_ROAMING_RADIUS_METERS,
+                                distanceMeters = prefs[Keys.ROAMING_DISTANCE_METERS] ?: DEFAULT_ROAMING_DISTANCE_METERS,
+                                speedProfileId = prefs[Keys.ROAMING_SPEED_PROFILE_ID] ?: DEFAULT_ROAMING_SPEED_PROFILE_ID,
+                                followRoads = prefs[Keys.ROAMING_ROAD_FOLLOWING] ?: DEFAULT_ROAMING_FOLLOW_ROADS,
+                                returnToInitialLocation = prefs[Keys.ROAMING_RETURN_TO_START] ?: DEFAULT_ROAMING_RETURN_TO_START,
+                            ),
                     )
                 }
 

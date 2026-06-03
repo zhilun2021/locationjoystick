@@ -874,6 +874,7 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
                 elevationTiltJitterDegrees = AppPreferencesDataSource.DEFAULT_ELEVATION_TILT_JITTER_DEGREES,
                 elevationNoiseAmplitudeMs2 = AppPreferencesDataSource.DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
                 hotLocationsEnabled = false,
+                roamingDefaults = roamingDefaultsFlow.value,
             ),
         )
 

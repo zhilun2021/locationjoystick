@@ -270,9 +270,11 @@ class SettingsViewModel
                             elevationTiltJitterDegrees = state.elevationTiltJitterDegrees,
                             elevationNoiseAmplitudeMs2 = state.elevationNoiseAmplitudeMs2,
                             hotLocationsEnabled = state.hotLocationsEnabled,
+                            roamingDefaults =
+                                d.roamingDefaults
+                                    ?: settingsRepository.getRoamingDefaults().first(),
                         ),
                     )
-                    if (d.roamingDefaults != null) settingsRepository.updateRoamingDefaults(d.roamingDefaults)
                     if (d.hotLocationsEnabled != null) {
                         if (d.hotLocationsEnabled) {
                             favoriteRepository.upsertHotLocations()
