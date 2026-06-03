@@ -21,6 +21,7 @@ import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjText
@@ -106,6 +107,8 @@ class FloatingWidgetService :
 
     @Inject lateinit var osrmClient: com.locationjoystick.core.routing.OsrmClient
 
+    @Inject lateinit var teleportUseCase: TeleportUseCase
+
     private var composeView: ComposeView? = null
 
     // Joystick state
@@ -164,6 +167,7 @@ class FloatingWidgetService :
                 routeRepository = routeRepository,
                 locationRepository = locationRepository,
                 roamingRepository = roamingRepository,
+                teleportUseCase = teleportUseCase,
                 callbacks = panelCallbacks,
             )
         serviceBinder.bind()
@@ -553,12 +557,8 @@ class FloatingWidgetService :
             )
 
             override fun teleport(pos: LatLng) {
-                val svc = mockLocationService
-                if (svc != null) {
-                    svc.updatePosition(pos.latitude, pos.longitude)
-                } else {
-                    locationRepository.updatePosition(pos)
-                }
+                // Use TeleportUseCase so lastTeleportTime is recorded for anti-cheat cooldown.
+                serviceScope.launch { teleportUseCase.execute(pos) }
             }
 
             override fun walkTo(pos: LatLng) {
@@ -655,6 +655,12 @@ class FloatingWidgetService :
     }
 
     private fun moveAppToBack() {
+        // Only send the move-to-back intent if the app is currently in the foreground.
+        // When the user opened the widget from a different app, our process is not in the
+        // foreground and startActivity would briefly launch MainActivity before it calls
+        // moveTaskToBack(true), causing a visible flicker and leaving the user on the home
+        // screen instead of returning to the app they came from.
+        if (!isAppInForeground()) return
         try {
             val intent =
                 Intent(this, Class.forName("com.locationjoystick.app.MainActivity")).apply {
@@ -666,5 +672,13 @@ class FloatingWidgetService :
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send move-to-back", e)
         }
+    }
+
+    private fun isAppInForeground(): Boolean {
+        val am = getSystemService(android.app.ActivityManager::class.java) ?: return false
+        return am.runningAppProcesses?.any { proc ->
+            proc.importance == android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
+                proc.pkgList.contains(packageName)
+        } == true
     }
 }
