@@ -282,16 +282,21 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.ACTIVE_PROFILE_ID] = profileId }
         }
 
-        override fun getWidgetItems(): Flow<Set<String>> =
+        private fun <T> pref(
+            key: Preferences.Key<T>,
+            default: T,
+        ): Flow<T> =
             dataStore.data
                 .catch { e ->
                     if (e is IOException) {
-                        Log.e(TAG, "Error reading widget preferences", e)
+                        Log.e(TAG, "Error reading preference '${key.name}'", e)
                         emit(emptyPreferences())
                     } else {
                         throw e
                     }
-                }.map { prefs -> prefs[Keys.WIDGET_ITEMS] ?: DEFAULT_WIDGET_ITEMS }
+                }.map { prefs -> prefs[key] ?: default }
+
+        override fun getWidgetItems(): Flow<Set<String>> = pref(Keys.WIDGET_ITEMS, DEFAULT_WIDGET_ITEMS)
 
         override suspend fun setWidgetItems(items: Set<String>) {
             dataStore.edit { prefs -> prefs[Keys.WIDGET_ITEMS] = items }
@@ -326,46 +331,20 @@ class AppPreferencesDataSource
             }
         }
 
-        override fun getOnboardingComplete(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading onboarding preferences", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.ONBOARDING_COMPLETE] ?: false }
+        override fun getOnboardingComplete(): Flow<Boolean> = pref(Keys.ONBOARDING_COMPLETE, false)
 
         override suspend fun setOnboardingComplete(complete: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.ONBOARDING_COMPLETE] = complete }
         }
 
-        override fun getSpeedUnit(): Flow<String> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading speed unit preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.SPEED_UNIT] ?: AppConstants.ProfileConstants.DEFAULT_SPEED_UNIT }
+        override fun getSpeedUnit(): Flow<String> = pref(Keys.SPEED_UNIT, AppConstants.ProfileConstants.DEFAULT_SPEED_UNIT)
 
         override suspend fun setSpeedUnit(unit: String) {
             dataStore.edit { prefs -> prefs[Keys.SPEED_UNIT] = unit }
         }
 
         override fun getRememberLastLocation(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading remember last location preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REMEMBER_LAST_LOCATION] ?: AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION }
+            pref(Keys.REMEMBER_LAST_LOCATION, AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION)
 
         override suspend fun setRememberLastLocation(enabled: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.REMEMBER_LAST_LOCATION] = enabled }
@@ -393,27 +372,9 @@ class AppPreferencesDataSource
             }
         }
 
-        override fun getJitterIdleRadius(): Flow<Double> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter idle radius preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_IDLE_RADIUS_METERS] ?: DEFAULT_JITTER_IDLE_RADIUS_METERS }
+        override fun getJitterIdleRadius(): Flow<Double> = pref(Keys.JITTER_IDLE_RADIUS_METERS, DEFAULT_JITTER_IDLE_RADIUS_METERS)
 
-        override fun getJitterMovingRadius(): Flow<Double> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter moving radius preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_MOVING_RADIUS_METERS] ?: DEFAULT_JITTER_MOVING_RADIUS_METERS }
+        override fun getJitterMovingRadius(): Flow<Double> = pref(Keys.JITTER_MOVING_RADIUS_METERS, DEFAULT_JITTER_MOVING_RADIUS_METERS)
 
         override suspend fun setJitterIdleRadius(meters: Double) {
             dataStore.edit { prefs -> prefs[Keys.JITTER_IDLE_RADIUS_METERS] = meters.coerceIn(0.0, MAX_JITTER_RADIUS_METERS) }
@@ -423,16 +384,7 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.JITTER_MOVING_RADIUS_METERS] = meters.coerceIn(0.0, MAX_JITTER_RADIUS_METERS) }
         }
 
-        override fun getJitterIntervalSeconds(): Flow<Int> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter interval preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_INTERVAL_SECONDS] ?: DEFAULT_JITTER_INTERVAL_SECONDS }
+        override fun getJitterIntervalSeconds(): Flow<Int> = pref(Keys.JITTER_INTERVAL_SECONDS, DEFAULT_JITTER_INTERVAL_SECONDS)
 
         override suspend fun setJitterIntervalSeconds(seconds: Int) {
             dataStore.edit { prefs ->
@@ -440,16 +392,7 @@ class AppPreferencesDataSource
             }
         }
 
-        override fun getJitterIdleIntervalSeconds(): Flow<Int> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter idle interval preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_IDLE_INTERVAL_SECONDS] ?: DEFAULT_JITTER_IDLE_INTERVAL_SECONDS }
+        override fun getJitterIdleIntervalSeconds(): Flow<Int> = pref(Keys.JITTER_IDLE_INTERVAL_SECONDS, DEFAULT_JITTER_IDLE_INTERVAL_SECONDS)
 
         override suspend fun setJitterIdleIntervalSeconds(seconds: Int) {
             dataStore.edit { prefs ->
@@ -458,89 +401,27 @@ class AppPreferencesDataSource
         }
 
         override fun getLastTeleportTime(): Flow<Long> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading last teleport time preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.LAST_TELEPORT_TIME_MS] ?: AppConstants.DataStoreConstants.DEFAULT_LAST_TELEPORT_TIME_MS }
+            pref(Keys.LAST_TELEPORT_TIME_MS, AppConstants.DataStoreConstants.DEFAULT_LAST_TELEPORT_TIME_MS)
 
         override suspend fun setLastTeleportTime(ms: Long) {
             dataStore.edit { prefs -> prefs[Keys.LAST_TELEPORT_TIME_MS] = ms }
         }
 
-        override fun getMapFollowsLocation(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading map follows location preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.MAP_FOLLOWS_LOCATION] ?: true }
+        override fun getMapFollowsLocation(): Flow<Boolean> = pref(Keys.MAP_FOLLOWS_LOCATION, true)
 
         override suspend fun setMapFollowsLocation(enabled: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.MAP_FOLLOWS_LOCATION] = enabled }
         }
 
-        override fun getRealismBearingHoldIdle(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading realism bearing hold preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REALISM_BEARING_HOLD_IDLE] ?: true }
+        override fun getRealismBearingHoldIdle(): Flow<Boolean> = pref(Keys.REALISM_BEARING_HOLD_IDLE, true)
 
-        override fun getRealismAltitudeEnabled(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading realism altitude preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REALISM_ALTITUDE_ENABLED] ?: true }
+        override fun getRealismAltitudeEnabled(): Flow<Boolean> = pref(Keys.REALISM_ALTITUDE_ENABLED, true)
 
-        override fun getRealismWarmupEnabled(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading realism warmup preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REALISM_WARMUP_ENABLED] ?: false }
+        override fun getRealismWarmupEnabled(): Flow<Boolean> = pref(Keys.REALISM_WARMUP_ENABLED, false)
 
-        override fun getRealismSatelliteExtrasEnabled(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading realism satellite preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REALISM_SATELLITE_EXTRAS_ENABLED] ?: true }
+        override fun getRealismSatelliteExtrasEnabled(): Flow<Boolean> = pref(Keys.REALISM_SATELLITE_EXTRAS_ENABLED, true)
 
-        override fun getRealismSuspendedMockingEnabled(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading realism suspended mocking preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] ?: false }
+        override fun getRealismSuspendedMockingEnabled(): Flow<Boolean> = pref(Keys.REALISM_SUSPENDED_MOCKING_ENABLED, false)
 
         override suspend fun setRealismBearingHoldIdle(enabled: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.REALISM_BEARING_HOLD_IDLE] = enabled }
@@ -591,57 +472,21 @@ class AppPreferencesDataSource
             }
         }
 
-        override fun getRoutesSortNewestFirst(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading routes sort preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.ROUTES_SORT_NEWEST_FIRST] ?: true }
+        override fun getRoutesSortNewestFirst(): Flow<Boolean> = pref(Keys.ROUTES_SORT_NEWEST_FIRST, true)
 
         override suspend fun setRoutesSortNewestFirst(newestFirst: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.ROUTES_SORT_NEWEST_FIRST] = newestFirst }
         }
 
-        override fun getFavoritesSortNewestFirst(): Flow<Boolean> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading favorites sort preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.FAVORITES_SORT_NEWEST_FIRST] ?: true }
+        override fun getFavoritesSortNewestFirst(): Flow<Boolean> = pref(Keys.FAVORITES_SORT_NEWEST_FIRST, true)
 
         override suspend fun setFavoritesSortNewestFirst(newestFirst: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.FAVORITES_SORT_NEWEST_FIRST] = newestFirst }
         }
 
-        override fun getJitterSpeedIdleVariationPct(): Flow<Int> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter idle speed variation preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT] ?: DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT }
+        override fun getJitterSpeedIdleVariationPct(): Flow<Int> = pref(Keys.JITTER_SPEED_IDLE_VARIATION_PCT, DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT)
 
-        override fun getJitterSpeedMovingVariationPct(): Flow<Int> =
-            dataStore.data
-                .catch { e ->
-                    if (e is IOException) {
-                        Log.e(TAG, "Error reading jitter moving speed variation preference", e)
-                        emit(emptyPreferences())
-                    } else {
-                        throw e
-                    }
-                }.map { prefs -> prefs[Keys.JITTER_SPEED_MOVING_VARIATION_PCT] ?: DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT }
+        override fun getJitterSpeedMovingVariationPct(): Flow<Int> = pref(Keys.JITTER_SPEED_MOVING_VARIATION_PCT, DEFAULT_JITTER_SPEED_MOVING_VARIATION_PCT)
 
         override suspend fun setJitterSpeedIdleVariationPct(pct: Int) {
             dataStore.edit { prefs ->
