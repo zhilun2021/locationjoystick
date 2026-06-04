@@ -10,6 +10,7 @@ import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.data.TeleportUseCase
 import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.location.EphemeralReplayController
+import com.locationjoystick.core.location.MapController
 import com.locationjoystick.core.location.StartRouteReplayUseCase
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
@@ -22,6 +23,7 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,10 +56,12 @@ class MapViewModelTest {
     private lateinit var ephemeralReplayController: EphemeralReplayController
     private lateinit var osrmClient: OsrmClient
     private lateinit var deepLinkRepository: DeepLinkRepository
+    private lateinit var mapController: MapController
     private lateinit var viewModel: MapViewModel
 
     private val walkTargetFlow = MutableStateFlow<LatLng?>(null)
     private val isWalkPausedFlow = MutableStateFlow(false)
+    private val pendingWaypointsFlow = MutableStateFlow<List<LatLng>>(emptyList())
 
     @Before
     fun setUp() {
@@ -82,36 +86,49 @@ class MapViewModelTest {
         every { locationRepository.walkTarget } returns walkTargetFlow
         every { locationRepository.currentMode } returns MutableStateFlow(MockMode.JOYSTICK)
         every { locationRepository.routeWaypoints } returns MutableStateFlow(null)
-        every { ephemeralReplayController.pendingWaypoints } returns MutableStateFlow(emptyList())
+        every { ephemeralReplayController.pendingWaypoints } returns pendingWaypointsFlow
         every { routeRepository.getRoutes() } returns flowOf(emptyList<Route>())
         every { favoriteRepository.getFavorites() } returns flowOf(emptyList<FavoriteLocation>())
         every { roamingRepository.isRoaming } returns MutableStateFlow(false)
+        every { roamingRepository.isRoamingPaused } returns MutableStateFlow(false)
         every { settingsRepository.getActiveSpeedProfile() } returns
             flowOf(SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = 1.39))
         every { settingsRepository.getRememberLastLocation() } returns flowOf(false)
         every { settingsRepository.getLastLocation() } returns flowOf(null)
         every { settingsRepository.getLastTeleportTime() } returns flowOf(0L)
 
-        viewModel =
-            MapViewModel(
-                context,
-                locationRepository,
-                routeRepository,
-                favoriteRepository,
-                settingsRepository,
-                roamingRepository,
-                walkCoordinator,
-                teleportUseCase,
-                startRouteReplayUseCase,
-                ephemeralReplayController,
-                osrmClient,
-                deepLinkRepository,
-            )
+        viewModel = createViewModel()
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    private fun createMapController(): MapController =
+        MapController(
+            context = context,
+            locationRepository = locationRepository,
+            routeRepository = routeRepository,
+            favoriteRepository = favoriteRepository,
+            settingsRepository = settingsRepository,
+            roamingRepository = roamingRepository,
+            walkCoordinator = walkCoordinator,
+            teleportUseCase = teleportUseCase,
+            startRouteReplayUseCase = startRouteReplayUseCase,
+            ephemeralReplayController = ephemeralReplayController,
+            osrmClient = osrmClient,
+            appScope = CoroutineScope(testDispatcher),
+        )
+
+    private fun createViewModel(): MapViewModel {
+        mapController = createMapController()
+        return MapViewModel(
+            mapController = mapController,
+            roamingRepository = roamingRepository,
+            deepLinkRepository = deepLinkRepository,
+            teleportUseCase = teleportUseCase,
+        )
     }
 
     @Test
@@ -128,24 +145,9 @@ class MapViewModelTest {
     @Test
     fun `tapToTeleport_whenSpoofing_setsPendingPosition`() =
         runTest {
-            // Set state to RUNNING so isSpoofing == true
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
@@ -157,24 +159,9 @@ class MapViewModelTest {
     @Test
     fun `confirmTeleport_teleportsAndClearsPending`() =
         runTest {
-            // Start spoofing so TapToTeleport sets pending
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
@@ -189,24 +176,9 @@ class MapViewModelTest {
     @Test
     fun `clearPendingTap_setsPendingToNull`() =
         runTest {
-            // Set pending position directly via spoofing tap
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(1.0, 2.0)))
@@ -242,24 +214,9 @@ class MapViewModelTest {
     @Test
     fun `stopSpoofing_clearsPendingTapPosition`() =
         runTest {
-            // Start spoofing and set a pending tap
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(3.0, 4.0)))
@@ -275,21 +232,7 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(51.5074, -0.1278)
@@ -306,21 +249,7 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(48.8566, 2.3522)
@@ -336,21 +265,7 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val pos1 = LatLng(0.0, 0.0)
@@ -372,21 +287,7 @@ class MapViewModelTest {
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             val position = LatLng(10.5, 20.5)
@@ -418,8 +319,10 @@ class MapViewModelTest {
         runTest {
             val target = LatLng(1.0, 2.0)
             viewModel.onAction(MapAction.LongPressTapToWalk(target))
+            testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.StopWalk)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             verify { walkCoordinator.cancel() }
             assertNull(viewModel.uiState.value.walkTarget)
@@ -432,10 +335,12 @@ class MapViewModelTest {
             val target = LatLng(48.0, 2.0)
 
             viewModel.onAction(MapAction.LongPressTapToWalk(target))
+            testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(target, viewModel.uiState.value.walkTarget)
 
             // StopWalk (e.g. triggered by widget) cancels coordinator and clears UI state
             viewModel.onAction(MapAction.StopWalk)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             verify { walkCoordinator.cancel() }
             assertNull(viewModel.uiState.value.walkTarget)
@@ -448,6 +353,7 @@ class MapViewModelTest {
             val target = LatLng(48.0, 2.0)
 
             viewModel.onAction(MapAction.LongPressTapToWalk(target))
+            testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(target, viewModel.uiState.value.walkTarget)
 
             // Pause externally (widget)
@@ -469,25 +375,14 @@ class MapViewModelTest {
             val currentPos = LatLng(48.8, 2.3)
             val walkTarget = LatLng(48.9, 2.4)
             val newPoint = LatLng(49.0, 2.5)
+            val resultWaypoints = listOf(currentPos, walkTarget, newPoint)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns
-                listOf(currentPos, walkTarget, newPoint)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } answers {
+                pendingWaypointsFlow.value = resultWaypoints
+                resultWaypoints
+            }
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
@@ -513,23 +408,14 @@ class MapViewModelTest {
             val list4 = listOf(currentPos, walkTarget, firstExtra, secondExtra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returnsMany
-                listOf(list3, list4)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            var callCount = 0
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } answers {
+                callCount++
+                val result = if (callCount == 1) list3 else list4
+                pendingWaypointsFlow.value = result
+                result
+            }
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
@@ -555,21 +441,7 @@ class MapViewModelTest {
             every { settingsRepository.getRememberLastLocation() } returns flowOf(true)
             every { settingsRepository.getLastLocation() } returns flowOf(lastPos)
 
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify { locationRepository.setPositionInternal(lastPos) }
@@ -583,21 +455,7 @@ class MapViewModelTest {
             every { settingsRepository.getRememberLastLocation() } returns flowOf(true)
             every { settingsRepository.getLastLocation() } returns flowOf(LatLng(0.0, 0.0))
 
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify(exactly = 0) { locationRepository.setPositionInternal(any()) }
@@ -610,21 +468,7 @@ class MapViewModelTest {
             every { settingsRepository.getRememberLastLocation() } returns flowOf(false)
             every { settingsRepository.getLastLocation() } returns flowOf(LatLng(48.8566, 2.3522))
 
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify(exactly = 0) { locationRepository.setPositionInternal(any()) }
@@ -636,25 +480,14 @@ class MapViewModelTest {
             val currentPos = LatLng(48.8, 2.3)
             val walkTarget = LatLng(48.9, 2.4)
             val extra = LatLng(49.0, 2.5)
+            val resultWaypoints = listOf(currentPos, walkTarget, extra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns
-                listOf(currentPos, walkTarget, extra)
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } answers {
+                pendingWaypointsFlow.value = resultWaypoints
+                resultWaypoints
+            }
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
@@ -663,6 +496,7 @@ class MapViewModelTest {
             assertEquals(3, viewModel.uiState.value.ephemeralWaypoints.size)
 
             viewModel.onAction(MapAction.StopWalk)
+            testDispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
             assertEquals(emptyList<LatLng>(), state.ephemeralWaypoints)
@@ -704,22 +538,11 @@ class MapViewModelTest {
             val waypoints = listOf(currentPos, walkTarget, extra)
 
             every { locationRepository.currentPosition } returns MutableStateFlow(currentPos)
-            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } returns waypoints
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            coEvery { ephemeralReplayController.addWaypoint(any(), any(), any(), any(), any(), any(), any()) } answers {
+                pendingWaypointsFlow.value = waypoints
+                waypoints
+            }
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.LongPressTapToWalk(walkTarget))
@@ -746,21 +569,7 @@ class MapViewModelTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             coEvery { osrmClient.getRoute(any(), any()) } returns Result.success(osrmWaypoints)
 
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.WalkViaRoadsTo(target))
@@ -780,21 +589,7 @@ class MapViewModelTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             coEvery { osrmClient.getRoute(any(), any()) } returns Result.failure(RuntimeException("network error"))
 
-            viewModel =
-                MapViewModel(
-                    context,
-                    locationRepository,
-                    routeRepository,
-                    favoriteRepository,
-                    settingsRepository,
-                    roamingRepository,
-                    walkCoordinator,
-                    teleportUseCase,
-                    startRouteReplayUseCase,
-                    ephemeralReplayController,
-                    osrmClient,
-                    deepLinkRepository,
-                )
+            viewModel = createViewModel()
             testDispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onAction(MapAction.WalkViaRoadsTo(target))

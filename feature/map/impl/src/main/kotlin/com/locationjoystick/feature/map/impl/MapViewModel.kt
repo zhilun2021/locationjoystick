@@ -1,42 +1,28 @@
 package com.locationjoystick.feature.map.impl
 
-import android.content.Context
-import android.util.Log
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.data.DeepLinkRepository
-import com.locationjoystick.core.data.FavoriteRepository
-import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
-import com.locationjoystick.core.data.RouteRepository
-import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.data.TeleportUseCase
-import com.locationjoystick.core.data.WalkCoordinator
-import com.locationjoystick.core.location.EphemeralReplayController
-import com.locationjoystick.core.location.MockLocationIntentBuilder
-import com.locationjoystick.core.location.MockLocationService
-import com.locationjoystick.core.location.StartRouteReplayUseCase
+import com.locationjoystick.core.location.MapController
+import com.locationjoystick.core.location.isRouteReplay
+import com.locationjoystick.core.location.isSpoofing
+import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
-import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
-import com.locationjoystick.core.model.SpeedUnit
-import com.locationjoystick.core.model.sortedByAge
-import com.locationjoystick.core.model.toConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -44,605 +30,68 @@ import javax.inject.Inject
 
 private const val TAG = "MapViewModel"
 
-/** Holder for the four location-state flows combined in [MapViewModel.observeLocationState]. */
-private data class LocationStateSnapshot(
-    val position: LatLng?,
-    val state: com.locationjoystick.core.model.MockLocationState,
-    val walkPaused: Boolean,
-    val mode: MockMode,
-)
-
-/**
- * ViewModel for the Map screen.
- *
- * Manages:
- * - Spoofed position display and updates
- * - Route replay controls (start/pause/resume/stop)
- * - Walk-to-target movement
- * - Roaming mode controls
- * - Favorite location teleportation
- *
- * All state is exposed via [uiState] as [MapUiState].
- * UI actions trigger service commands via intents to [MockLocationService].
- *
- * Key flows:
- * - Location state observed from [LocationRepository]
- * - Routes observed from [RouteRepository]
- * - Favorites observed from [FavoriteRepository]
- * - Service commands sent via Intent actions (see [MockLocationService.ACTION_*])
- */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MapViewModel
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
-        private val locationRepository: LocationRepository,
-        private val routeRepository: RouteRepository,
-        private val favoriteRepository: FavoriteRepository,
-        private val settingsRepository: SettingsRepository,
+        private val mapController: MapController,
         private val roamingRepository: RoamingRepository,
-        private val walkCoordinator: WalkCoordinator,
-        private val teleportUseCase: TeleportUseCase,
-        private val startRouteReplayUseCase: StartRouteReplayUseCase,
-        private val ephemeralReplayController: EphemeralReplayController,
-        private val osrmClient: com.locationjoystick.core.routing.OsrmClient,
         private val deepLinkRepository: DeepLinkRepository,
+        private val teleportUseCase: TeleportUseCase,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(MapUiState())
         val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
+        // Shared state flows through as separate StateFlows to preserve MapScreen API surface
         val recentSearches: StateFlow<List<RecentSearch>> =
-            settingsRepository
-                .getRecentSearches()
+            mapController.sharedState
+                .map { it.recentSearches }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-        val completionMessages: SharedFlow<String> = locationRepository.completionEvents
-
         val roamingDefaults: StateFlow<RoamingDefaults> =
-            settingsRepository
-                .getRoamingDefaults()
+            mapController.sharedState
+                .map { it.roamingDefaults }
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RoamingDefaults())
 
+        val completionMessages: SharedFlow<String> = mapController.completionMessages
+
         init {
-            observeLocationState()
-            observeRoutes()
-            observeFavorites()
-            observeRouteWaypoints()
-            observeEphemeralWaypoints()
-            observeRoaming()
-            observeSpeedUnit()
+            observeSharedState()
             observeCooldownForPendingTap()
-            observeFavoriteCooldowns()
-            restoreLastLocationIfNeeded()
             observeDeepLinkCoords()
         }
 
-        private fun observeLocationState() {
+        private fun observeSharedState() {
             viewModelScope.launch {
-                combine(
-                    locationRepository.currentPosition,
-                    locationRepository.mockLocationState,
-                    locationRepository.isWalkPaused,
-                    locationRepository.currentMode,
-                ) { position, state, walkPaused, mode ->
-                    LocationStateSnapshot(position, state, walkPaused, mode)
-                }.collect { snapshot ->
+                mapController.sharedState.collect { shared ->
                     _uiState.update { current ->
                         current.copy(
-                            currentPosition = snapshot.position,
-                            mockLocationState = snapshot.state,
-                            isWalkPaused = snapshot.walkPaused,
-                            isRouteReplay = snapshot.mode == MockMode.ROUTE_REPLAY,
+                            currentPosition = shared.currentPosition,
+                            mockLocationState = shared.mockLocationState,
+                            isWalkPaused = shared.isWalkPaused,
+                            isRouteReplay = shared.isRouteReplay,
+                            routes = shared.routes,
+                            favorites = shared.favorites,
+                            favoriteCooldownStates = shared.favoriteCooldownStates,
+                            routeTrace = shared.routeTrace,
+                            walkMode = shared.walkMode,
+                            isRoaming = shared.isRoaming,
+                            isRoamingPaused = shared.isRoamingPaused,
+                            speedUnit = shared.speedUnit,
                         )
                     }
                 }
             }
         }
 
-        private fun observeRoutes() {
-            viewModelScope.launch {
-                combine(
-                    routeRepository.getRoutes(),
-                    settingsRepository.getRoutesSortNewestFirst(),
-                ) { routes, newestFirst ->
-                    routes.sortedByAge(newestFirst)
-                }.collect { sorted ->
-                    _uiState.update { current -> current.copy(routes = sorted) }
-                }
-            }
-        }
-
-        private fun observeFavorites() {
-            viewModelScope.launch {
-                combine(
-                    favoriteRepository.getFavorites(),
-                    settingsRepository.getFavoritesSortNewestFirst(),
-                ) { favorites, newestFirst ->
-                    favorites.sortedByAge(newestFirst)
-                }.collect { sorted ->
-                    _uiState.update { current -> current.copy(favorites = sorted) }
-                }
-            }
-        }
-
-        private fun observeRouteWaypoints() {
-            viewModelScope.launch {
-                locationRepository.routeWaypoints.collect { waypoints ->
-                    if (waypoints != null) ephemeralReplayController.clearPendingWaypoints()
-                    _uiState.update { current -> current.copy(routeTrace = waypoints) }
-                }
-            }
-        }
-
-        private fun observeEphemeralWaypoints() {
-            viewModelScope.launch {
-                ephemeralReplayController.pendingWaypoints.collect { waypoints ->
-                    _uiState.update { current ->
-                        when {
-                            waypoints.isNotEmpty() && current.ephemeralWaypoints != waypoints -> {
-                                val followRoads = (current.walkMode as? WalkMode.EphemeralReplay)?.followRoads ?: false
-                                current.copy(walkMode = WalkMode.EphemeralReplay(waypoints, followRoads))
-                            }
-                            waypoints.isEmpty() && current.walkMode is WalkMode.EphemeralReplay ->
-                                current.copy(walkMode = WalkMode.Idle)
-                            else -> current
-                        }
-                    }
-                }
-            }
-        }
-
-        private fun observeRoaming() {
-            viewModelScope.launch {
-                combine(
-                    roamingRepository.isRoaming,
-                    roamingRepository.isRoamingPaused,
-                ) { roaming, paused -> roaming to paused }
-                    .collect { (roaming, paused) ->
-                        _uiState.update { it.copy(isRoaming = roaming, isRoamingPaused = paused) }
-                    }
-            }
-        }
-
-        private fun observeSpeedUnit() {
-            viewModelScope.launch {
-                settingsRepository.getSpeedUnit().collect { unit ->
-                    _uiState.update { it.copy(speedUnit = unit) }
-                }
-            }
-        }
-
         private fun observeCooldownForPendingTap() {
             viewModelScope.launch {
-                _uiState
-                    .flatMapLatest { state ->
-                        val target = state.pendingTapPosition
-                        if (target !=
-                            null
-                        ) {
-                            teleportUseCase.cooldownFor(target)
-                        } else {
-                            flowOf(com.locationjoystick.core.data.CooldownState.Ready)
-                        }
-                    }.collect { cooldown ->
-                        _uiState.update { it.copy(cooldownState = cooldown) }
-                    }
-            }
-        }
-
-        private fun observeFavoriteCooldowns() {
-            viewModelScope.launch {
-                teleportUseCase
-                    .cooldownsFor(favoriteRepository.getFavorites())
-                    .collect { states ->
-                        _uiState.update { it.copy(favoriteCooldownStates = states) }
-                    }
-            }
-        }
-
-        fun onAction(action: MapAction) {
-            when (action) {
-                // --- Teleport ---
-                is MapAction.TapToTeleport -> {
-                    handleTapToTeleport(action.position)
-                }
-
-                is MapAction.ConfirmTeleport -> {
-                    teleportTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
-                }
-
-                is MapAction.ClearPendingTap -> {
-                    _uiState.update { it.copy(pendingTapPosition = null) }
-                }
-
-                is MapAction.StopRouteAndTeleport -> {
-                    stopRouteOnly()
-                    teleportTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
-                }
-
-                is MapAction.SetLocationTo -> {
-                    teleportTo(action.position)
-                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
-                }
-
-                // --- Walk ---
-                is MapAction.LongPressTapToWalk -> {
-                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
-                    walkTo(action.position)
-                }
-
-                is MapAction.WalkViaRoadsTo -> {
-                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
-                    walkViaRoads(action.position)
-                }
-
-                is MapAction.WalkStraightTo -> {
-                    walkTo(action.position)
-                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
-                }
-
-                is MapAction.StopRouteAndWalkTo -> {
-                    stopRouteOnly()
-                    walkTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
-                }
-
-                is MapAction.FinishRouteAndWalkTo -> {
-                    appendWaypointToRoute(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
-                }
-
-                is MapAction.AddEphemeralWaypoint -> {
-                    addEphemeralWaypoint(action.position)
-                }
-
-                MapAction.PauseWalk -> {
-                    locationRepository.setWalkPaused(true)
-                }
-
-                MapAction.ResumeWalk -> {
-                    locationRepository.setWalkPaused(false)
-                }
-
-                MapAction.StopWalk -> {
-                    handleStopWalk()
-                }
-
-                MapAction.ToggleWalkControls -> {
-                    _uiState.update { it.copy(isWalkControlsExpanded = !it.isWalkControlsExpanded) }
-                }
-
-                // --- Spoofing ---
-                MapAction.StartSpoofing -> {
-                    startSpoofing()
-                }
-
-                MapAction.StopSpoofing -> {
-                    handleStopSpoofing()
-                }
-
-                MapAction.ClearMap -> {
-                    clearMap()
-                }
-
-                // --- Camera ---
-                MapAction.RecenterCamera -> {
-                    _uiState.update { it.copy(isUserPanning = false) }
-                }
-
-                MapAction.UserStartedPanning -> {
-                    _uiState.update { it.copy(isUserPanning = true) }
-                }
-
-                MapAction.CameraTargetConsumed -> {
-                    _uiState.update { it.copy(pendingCameraTarget = null) }
-                }
-
-                // --- Favorites ---
-                MapAction.OpenFavoritesPicker -> {
-                    _uiState.update { it.copy(showFavoritesSheet = true) }
-                }
-
-                MapAction.CloseFavoritesPicker -> {
-                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
-                }
-
-                MapAction.DeselectFavorite -> {
-                    _uiState.update { it.copy(favoriteTarget = null) }
-                }
-
-                is MapAction.SelectFavorite -> {
-                    handleSelectFavorite(action.favorite)
-                }
-
-                is MapAction.SaveCurrentLocation -> {
-                    saveCurrentLocation(action.name)
-                }
-
-                // --- Routes ---
-                MapAction.OpenRoutesSheet -> {
-                    _uiState.update { it.copy(showRoutesSheet = true) }
-                }
-
-                MapAction.CloseRoutesSheet -> {
-                    _uiState.update { it.copy(showRoutesSheet = false) }
-                }
-
-                is MapAction.StartRouteReplay -> {
-                    startRouteReplay(action.routeId, action.isLooping, action.isReverse, action.isReturnToLocation, action.teleportToStart)
-                    _uiState.update { it.copy(showRoutesSheet = false) }
-                }
-
-                MapAction.PauseRouteReplay -> {
-                    context.startService(MockLocationIntentBuilder.pauseRouteReplay(context))
-                }
-
-                MapAction.ResumeRouteReplay -> {
-                    viewModelScope.launch {
-                        val s = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                        context.startService(MockLocationIntentBuilder.resumeRouteReplay(context, s))
-                    }
-                }
-
-                MapAction.StopRouteReplay -> {
-                    context.startService(MockLocationIntentBuilder.stopRouteReplay(context))
-                    _uiState.update { it.copy(isRouteControlsExpanded = false) }
-                }
-
-                MapAction.ToggleRouteControls -> {
-                    _uiState.update { it.copy(isRouteControlsExpanded = !it.isRouteControlsExpanded) }
-                }
-
-                // --- Roaming ---
-                MapAction.OpenRoamingSheet -> {
-                    openRoamingSheet()
-                }
-
-                MapAction.DismissRoamingSheet -> {
-                    dismissRoamingSheet()
-                }
-
-                MapAction.GenerateRoamingPreview -> {
-                    generateRoamingPreview()
-                }
-
-                MapAction.MinimizeRoamingSheet -> {
-                    _uiState.update { it.copy(isRoamingSheetMinimized = true) }
-                }
-
-                MapAction.ExpandRoamingSheet -> {
-                    _uiState.update { it.copy(isRoamingSheetMinimized = false) }
-                }
-
-                is MapAction.UpdateRoamingRadius -> {
-                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(radiusMeters = action.meters)) }
-                }
-
-                is MapAction.UpdateRoamingDistance -> {
-                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(distanceMeters = action.meters)) }
-                }
-
-                is MapAction.SelectRoamingSpeedProfile -> {
-                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(speedProfileId = action.id)) }
-                }
-
-                is MapAction.ToggleRoamingFollowRoads -> {
-                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(followRoads = action.enabled)) }
-                }
-
-                is MapAction.ToggleRoamingReturnToStart -> {
-                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(returnToInitialLocation = action.enabled)) }
-                }
-
-                MapAction.StartRoaming -> {
-                    startRoamingFromDraft()
-                }
-
-                MapAction.StopRoaming -> {
-                    viewModelScope.launch { roamingRepository.stopRoaming() }
-                    _uiState.update { it.copy(isRoamingControlsExpanded = false) }
-                }
-
-                MapAction.PauseRoaming -> {
-                    roamingRepository.pauseRoaming()
-                }
-
-                MapAction.ResumeRoaming -> {
-                    roamingRepository.resumeRoaming()
-                }
-
-                MapAction.ToggleRoamingControls -> {
-                    _uiState.update { it.copy(isRoamingControlsExpanded = !it.isRoamingControlsExpanded) }
-                }
-            }
-        }
-
-        private fun handleTapToTeleport(position: LatLng) {
-            _uiState.update { it.copy(roamingPreviewWaypoints = null) }
-            if (_uiState.value.isSpoofing) {
-                _uiState.update { it.copy(pendingTapPosition = position) }
-            } else {
-                teleportTo(position)
-            }
-        }
-
-        private fun handleStopSpoofing() {
-            stopSpoofing()
-            ephemeralReplayController.clearPendingWaypoints()
-            _uiState.update {
-                it.copy(
-                    pendingTapPosition = null,
-                    routeTrace = null,
-                    walkMode = WalkMode.Idle,
-                    isWalkControlsExpanded = false,
-                )
-            }
-        }
-
-        private fun handleSelectFavorite(favorite: com.locationjoystick.core.model.FavoriteLocation) {
-            if (_uiState.value.isSpoofing) {
-                _uiState.update { it.copy(favoriteTarget = favorite, pendingCameraTarget = favorite.position) }
-            } else {
-                teleportTo(favorite.position)
-                _uiState.update { it.copy(showFavoritesSheet = false) }
-            }
-        }
-
-        private fun handleStopWalk() {
-            walkCoordinator.cancel()
-            if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
-                context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
-            }
-            ephemeralReplayController.clearPendingWaypoints()
-            _uiState.update { it.copy(walkMode = WalkMode.Idle, isWalkPaused = false, isWalkControlsExpanded = false, routeTrace = null) }
-        }
-
-        private fun saveCurrentLocation(name: String) {
-            val position = _uiState.value.currentPosition ?: return
-            viewModelScope.launch {
-                try {
-                    favoriteRepository.addFavorite(
-                        id =
-                            java.util.UUID
-                                .randomUUID()
-                                .toString(),
-                        name = name,
-                        position = position,
-                        createdAt = System.currentTimeMillis(),
-                    )
-                    Log.d(TAG, "Saved current location as '$name'")
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to save current location", e)
-                }
-            }
-        }
-
-        private fun openRoamingSheet() {
-            _uiState.update {
-                it.copy(
-                    showRoamingSheet = true,
-                    roamingDraft = roamingDefaults.value,
-                    roamingPreviewWaypoints = null,
-                    isRoamingSheetMinimized = false,
-                )
-            }
-        }
-
-        private fun dismissRoamingSheet() {
-            _uiState.update {
-                it.copy(
-                    showRoamingSheet = false,
-                    roamingDraft = null,
-                    roamingPreviewWaypoints = null,
-                    isRoamingSheetMinimized = false,
-                )
-            }
-        }
-
-        private fun generateRoamingPreview() {
-            val draft = _uiState.value.roamingDraft ?: return
-            val center = _uiState.value.currentPosition ?: return
-            viewModelScope.launch {
-                val waypoints =
-                    roamingRepository.generatePreviewRoute(
-                        center = center,
-                        radiusMeters = draft.radiusMeters,
-                        followRoads = draft.followRoads,
-                        speedProfileId = draft.speedProfileId,
-                    )
-                _uiState.update { it.copy(roamingPreviewWaypoints = waypoints) }
-            }
-        }
-
-        private fun clearMap() {
-            walkCoordinator.cancel()
-            if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
-                context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
-            }
-            ephemeralReplayController.clearPendingWaypoints()
-            _uiState.update {
-                it.copy(
-                    pendingTapPosition = null,
-                    walkMode = WalkMode.Idle,
-                    isWalkPaused = false,
-                    isWalkControlsExpanded = false,
-                    roamingPreviewWaypoints = null,
-                    showRoamingSheet = false,
-                    roamingDraft = null,
-                    isRoamingSheetMinimized = false,
-                )
-            }
-        }
-
-        private fun startRoamingFromDraft() {
-            val draft = _uiState.value.roamingDraft ?: return
-            val position = _uiState.value.currentPosition
-            if (position == null) {
-                Log.w(TAG, "Cannot start roaming: no current position")
-                return
-            }
-            viewModelScope.launch {
-                val speedMs =
-                    settingsRepository
-                        .getSpeedProfiles()
-                        .first()
-                        .firstOrNull { it.id == draft.speedProfileId }
-                        ?.speedMetersPerSecond
-                        ?: settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                val previewWaypoints = _uiState.value.roamingPreviewWaypoints
-                val config = draft.toConfig(position).copy(previewWaypoints = previewWaypoints)
-                roamingRepository.startRoaming(config, speedMs)
-            }
-            _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, isRoamingSheetMinimized = false) }
-        }
-
-        private fun addEphemeralWaypoint(position: LatLng) {
-            val state = _uiState.value
-            val followRoads =
-                (state.walkMode as? WalkMode.Walking)?.isViaRoads
-                    ?: (state.walkMode as? WalkMode.EphemeralReplay)?.followRoads
-                    ?: false
-            viewModelScope.launch {
-                val result =
-                    ephemeralReplayController.addWaypoint(
-                        newPoint = position,
-                        currentWaypoints = ephemeralReplayController.pendingWaypoints.value,
-                        walkStart = state.walkStart,
-                        walkTarget = state.walkTarget,
-                        followRoads = followRoads,
-                        context = context,
-                        launchIntent = { context.startService(it) },
-                    ) ?: return@launch
-                _uiState.update {
-                    it.copy(
-                        walkMode = WalkMode.EphemeralReplay(result, followRoads),
-                        pendingTapPosition = null,
-                    )
-                }
-            }
-        }
-
-        fun addRecentSearch(
-            displayName: String,
-            lat: Double,
-            lon: Double,
-        ) {
-            viewModelScope.launch { settingsRepository.addRecentSearch(displayName, lat, lon) }
-        }
-
-        private fun restoreLastLocationIfNeeded() {
-            viewModelScope.launch {
-                if (locationRepository.currentPosition.value == null) {
-                    val remember = settingsRepository.getRememberLastLocation().first()
-                    if (remember) {
-                        val last = settingsRepository.getLastLocation().first()
-                        if (last != null) {
-                            locationRepository.setPositionInternal(last)
-                        }
-                    }
+                _uiState.flatMapLatest { state ->
+                    val target = state.pendingTapPosition
+                    if (target != null) teleportUseCase.cooldownFor(target) else flowOf(CooldownState.Ready)
+                }.collect { cooldown ->
+                    _uiState.update { it.copy(cooldownState = cooldown) }
                 }
             }
         }
@@ -655,96 +104,188 @@ class MapViewModel
             }
         }
 
-        private fun teleportTo(position: LatLng) {
-            viewModelScope.launch {
-                teleportUseCase.execute(position)
-            }
-        }
-
-        private fun walkTo(position: LatLng) {
-            _uiState.update {
-                it.copy(
-                    walkMode = WalkMode.Walking(target = position, start = it.currentPosition),
-                    routeTrace = null,
-                )
-            }
-            walkCoordinator.startWalk(position, viewModelScope) { newPos, speedMs, bearing ->
-                context.startService(
-                    MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
-                )
-            }
-        }
-
-        private fun walkViaRoads(position: LatLng) {
-            viewModelScope.launch {
-                val current = locationRepository.currentPosition.value
-                if (current == null) {
-                    walkTo(position)
-                    return@launch
+        fun onAction(action: MapAction) {
+            when (action) {
+                // Teleport
+                is MapAction.TapToTeleport -> handleTapToTeleport(action.position)
+                is MapAction.ConfirmTeleport -> {
+                    mapController.teleportTo(action.position)
+                    _uiState.update { it.copy(pendingTapPosition = null) }
                 }
-                val waypoints =
-                    osrmClient
-                        .getRoute(com.locationjoystick.core.routing.OsrmClient.PROFILE_FOOT, listOf(current, position))
-                        .getOrNull()
-                if (waypoints.isNullOrEmpty()) {
-                    Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
-                    walkTo(position)
-                    return@launch
+                is MapAction.ClearPendingTap -> _uiState.update { it.copy(pendingTapPosition = null) }
+                is MapAction.StopRouteAndTeleport -> {
+                    mapController.stopRouteOnly()
+                    mapController.teleportTo(action.position)
+                    _uiState.update { it.copy(pendingTapPosition = null) }
                 }
-                locationRepository.setRouteWaypoints(waypoints)
-                _uiState.update {
+                is MapAction.SetLocationTo -> {
+                    mapController.teleportTo(action.position)
+                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
+                }
+
+                // Walk
+                is MapAction.LongPressTapToWalk -> {
+                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
+                    mapController.walkTo(action.position)
+                }
+                is MapAction.WalkViaRoadsTo -> {
+                    _uiState.update { it.copy(roamingPreviewWaypoints = null) }
+                    mapController.walkViaRoads(action.position)
+                }
+                is MapAction.WalkStraightTo -> {
+                    mapController.walkTo(action.position)
+                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
+                }
+                is MapAction.StopRouteAndWalkTo -> {
+                    mapController.stopRouteOnly()
+                    mapController.walkTo(action.position)
+                    _uiState.update { it.copy(pendingTapPosition = null) }
+                }
+                is MapAction.FinishRouteAndWalkTo -> {
+                    mapController.appendWaypointToRoute(action.position)
+                    _uiState.update { it.copy(pendingTapPosition = null) }
+                }
+                is MapAction.AddEphemeralWaypoint -> mapController.addEphemeralWaypoint(action.position)
+                MapAction.PauseWalk -> mapController.pauseWalk()
+                MapAction.ResumeWalk -> mapController.resumeWalk()
+                MapAction.StopWalk -> {
+                    mapController.stopWalk()
+                    _uiState.update { it.copy(isWalkControlsExpanded = false) }
+                }
+                MapAction.ToggleWalkControls ->
+                    _uiState.update { it.copy(isWalkControlsExpanded = !it.isWalkControlsExpanded) }
+
+                // Spoofing
+                MapAction.StartSpoofing -> mapController.startSpoofing()
+                MapAction.StopSpoofing -> {
+                    mapController.stopSpoofing()
+                    _uiState.update { it.copy(pendingTapPosition = null, isWalkControlsExpanded = false) }
+                }
+                MapAction.ClearMap -> {
+                    mapController.stopWalk()
+                    _uiState.update {
+                        it.copy(
+                            pendingTapPosition = null,
+                            isWalkControlsExpanded = false,
+                            roamingPreviewWaypoints = null,
+                            showRoamingSheet = false,
+                            roamingDraft = null,
+                            isRoamingSheetMinimized = false,
+                        )
+                    }
+                }
+
+                // Camera
+                MapAction.RecenterCamera -> _uiState.update { it.copy(isUserPanning = false) }
+                MapAction.UserStartedPanning -> _uiState.update { it.copy(isUserPanning = true) }
+                MapAction.CameraTargetConsumed -> _uiState.update { it.copy(pendingCameraTarget = null) }
+
+                // Favorites
+                MapAction.OpenFavoritesPicker -> _uiState.update { it.copy(showFavoritesSheet = true) }
+                MapAction.CloseFavoritesPicker ->
+                    _uiState.update { it.copy(showFavoritesSheet = false, favoriteTarget = null) }
+                MapAction.DeselectFavorite -> _uiState.update { it.copy(favoriteTarget = null) }
+                is MapAction.SelectFavorite -> handleSelectFavorite(action.favorite)
+                is MapAction.SaveCurrentLocation -> mapController.saveCurrentLocation(action.name)
+
+                // Routes
+                MapAction.OpenRoutesSheet -> _uiState.update { it.copy(showRoutesSheet = true) }
+                MapAction.CloseRoutesSheet -> _uiState.update { it.copy(showRoutesSheet = false) }
+                is MapAction.StartRouteReplay -> {
+                    mapController.startRouteReplay(
+                        action.routeId,
+                        action.isLooping,
+                        action.isReverse,
+                        action.isReturnToLocation,
+                        action.teleportToStart,
+                    )
+                    _uiState.update { it.copy(showRoutesSheet = false) }
+                }
+                MapAction.PauseRouteReplay -> mapController.pauseRouteReplay()
+                MapAction.ResumeRouteReplay -> mapController.resumeRouteReplay()
+                MapAction.StopRouteReplay -> {
+                    mapController.stopRouteReplay()
+                    _uiState.update { it.copy(isRouteControlsExpanded = false) }
+                }
+                MapAction.ToggleRouteControls ->
+                    _uiState.update { it.copy(isRouteControlsExpanded = !it.isRouteControlsExpanded) }
+
+                // Roaming
+                MapAction.OpenRoamingSheet -> _uiState.update {
                     it.copy(
-                        walkMode = WalkMode.Walking(target = position, start = it.currentPosition, isViaRoads = true),
+                        showRoamingSheet = true,
+                        roamingDraft = mapController.sharedState.value.roamingDefaults,
+                        roamingPreviewWaypoints = null,
+                        isRoamingSheetMinimized = false,
                     )
                 }
-                walkCoordinator.startWalkAlongRoute(waypoints, viewModelScope) { newPos, speedMs, bearing ->
-                    context.startService(
-                        MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
-                    )
+                MapAction.DismissRoamingSheet -> _uiState.update {
+                    it.copy(showRoamingSheet = false, roamingDraft = null, roamingPreviewWaypoints = null, isRoamingSheetMinimized = false)
                 }
+                MapAction.GenerateRoamingPreview -> generateRoamingPreview()
+                MapAction.MinimizeRoamingSheet -> _uiState.update { it.copy(isRoamingSheetMinimized = true) }
+                MapAction.ExpandRoamingSheet -> _uiState.update { it.copy(isRoamingSheetMinimized = false) }
+                is MapAction.UpdateRoamingRadius ->
+                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(radiusMeters = action.meters)) }
+                is MapAction.UpdateRoamingDistance ->
+                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(distanceMeters = action.meters)) }
+                is MapAction.SelectRoamingSpeedProfile ->
+                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(speedProfileId = action.id)) }
+                is MapAction.ToggleRoamingFollowRoads ->
+                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(followRoads = action.enabled)) }
+                is MapAction.ToggleRoamingReturnToStart ->
+                    _uiState.update { s -> s.copy(roamingDraft = s.roamingDraft?.copy(returnToInitialLocation = action.enabled)) }
+                MapAction.StartRoaming -> {
+                    val draft = _uiState.value.roamingDraft ?: return
+                    val position = mapController.sharedState.value.currentPosition ?: return
+                    mapController.startRoaming(draft, position, _uiState.value.roamingPreviewWaypoints)
+                    _uiState.update { it.copy(showRoamingSheet = false, roamingDraft = null, isRoamingSheetMinimized = false) }
+                }
+                MapAction.StopRoaming -> {
+                    mapController.stopRoaming()
+                    _uiState.update { it.copy(isRoamingControlsExpanded = false) }
+                }
+                MapAction.PauseRoaming -> mapController.pauseRoaming()
+                MapAction.ResumeRoaming -> mapController.resumeRoaming()
+                MapAction.ToggleRoamingControls ->
+                    _uiState.update { it.copy(isRoamingControlsExpanded = !it.isRoamingControlsExpanded) }
             }
         }
 
-        private fun startRouteReplay(
-            routeId: String,
-            isLooping: Boolean = false,
-            isReverse: Boolean = false,
-            isReturnToLocation: Boolean = false,
-            teleportToStart: Boolean = false,
-        ) {
+        fun addRecentSearch(displayName: String, lat: Double, lon: Double) {
+            mapController.addRecentSearch(displayName, lat, lon)
+        }
+
+        private fun handleTapToTeleport(position: LatLng) {
+            _uiState.update { it.copy(roamingPreviewWaypoints = null) }
+            if (mapController.sharedState.value.isSpoofing) {
+                _uiState.update { it.copy(pendingTapPosition = position) }
+            } else {
+                mapController.teleportTo(position)
+            }
+        }
+
+        private fun handleSelectFavorite(favorite: FavoriteLocation) {
+            if (mapController.sharedState.value.isSpoofing) {
+                _uiState.update { it.copy(favoriteTarget = favorite, pendingCameraTarget = favorite.position) }
+            } else {
+                mapController.teleportTo(favorite.position)
+                _uiState.update { it.copy(showFavoritesSheet = false) }
+            }
+        }
+
+        private fun generateRoamingPreview() {
+            val draft = _uiState.value.roamingDraft ?: return
+            val center = mapController.sharedState.value.currentPosition ?: return
             viewModelScope.launch {
-                startRouteReplayUseCase.execute(
-                    routeId = routeId,
-                    isLooping = isLooping,
-                    isReverse = isReverse,
-                    isReturnToLocation = isReturnToLocation,
-                    teleportToStart = teleportToStart,
-                )
+                val waypoints =
+                    roamingRepository.generatePreviewRoute(
+                        center = center,
+                        radiusMeters = draft.radiusMeters,
+                        followRoads = draft.followRoads,
+                        speedProfileId = draft.speedProfileId,
+                    )
+                _uiState.update { it.copy(roamingPreviewWaypoints = waypoints) }
             }
-        }
-
-        private fun stopRouteOnly() {
-            context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
-        }
-
-        private fun appendWaypointToRoute(position: LatLng) {
-            context.startService(MockLocationIntentBuilder.appendWaypoint(context, position))
-        }
-
-        private fun startSpoofing() {
-            viewModelScope.launch {
-                val startPos =
-                    locationRepository.currentPosition.value
-                        ?: settingsRepository.getLastLocation().first()
-                        ?: LatLng(AppConstants.MapConstants.DEFAULT_LAT, AppConstants.MapConstants.DEFAULT_LON)
-                ContextCompat.startForegroundService(
-                    context,
-                    MockLocationIntentBuilder.startSpoofing(context, startPos.latitude, startPos.longitude),
-                )
-            }
-        }
-
-        private fun stopSpoofing() {
-            ContextCompat.startForegroundService(context, MockLocationIntentBuilder.stopSpoofing(context))
         }
     }

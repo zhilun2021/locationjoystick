@@ -18,24 +18,21 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.ActivityStateRepository
-import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
-import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
-import com.locationjoystick.core.data.TeleportUseCase
-import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.LjTheme
-import com.locationjoystick.core.location.EphemeralReplayController
+import com.locationjoystick.core.location.MapController
 import com.locationjoystick.core.location.MockLocationIntentBuilder
 import com.locationjoystick.core.location.MockLocationService
-import com.locationjoystick.core.location.StartRouteReplayUseCase
 import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.FavoriteLocation
 import com.locationjoystick.core.model.LatLng
+import com.locationjoystick.core.model.MockLocationState
+import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.WidgetFeature
-import com.locationjoystick.core.model.toConfig
 import com.locationjoystick.core.overlay.OverlayService
 import com.locationjoystick.core.overlay.OverlayServiceHelper
 import com.locationjoystick.feature.joystick.impl.JoystickOverlayService
@@ -96,25 +93,11 @@ class FloatingWidgetService :
 
     @Inject lateinit var activityStateRepository: ActivityStateRepository
 
-    @Inject lateinit var routeRepository: RouteRepository
-
     @Inject lateinit var locationRepository: LocationRepository
-
-    @Inject lateinit var favoriteRepository: FavoriteRepository
 
     @Inject lateinit var settingsRepository: SettingsRepository
 
-    @Inject lateinit var roamingRepository: com.locationjoystick.core.data.RoamingRepository
-
-    @Inject lateinit var walkCoordinator: WalkCoordinator
-
-    @Inject lateinit var ephemeralReplayController: EphemeralReplayController
-
-    @Inject lateinit var osrmClient: com.locationjoystick.core.routing.OsrmClient
-
-    @Inject lateinit var teleportUseCase: TeleportUseCase
-
-    @Inject lateinit var startRouteReplayUseCase: StartRouteReplayUseCase
+    @Inject lateinit var mapController: MapController
 
     private var composeView: ComposeView? = null
 
@@ -165,13 +148,7 @@ class FloatingWidgetService :
                 lifecycleOwner = this,
                 savedStateRegistryOwner = this,
                 serviceScope = serviceScope,
-                settingsRepository = settingsRepository,
-                favoriteRepository = favoriteRepository,
-                routeRepository = routeRepository,
-                locationRepository = locationRepository,
-                roamingRepository = roamingRepository,
-                teleportUseCase = teleportUseCase,
-                ephemeralReplayController = ephemeralReplayController,
+                mapController = mapController,
                 callbacks = panelCallbacks,
             )
         serviceBinder.bind()
@@ -203,7 +180,7 @@ class FloatingWidgetService :
 
     override fun onDestroy() {
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        walkCoordinator.cancel()
+        mapController.stopWalk()
         serviceScope.cancel()
         panelPresenter.hidePanelView()
         // Tear down the FAB composition so the Recomposer and any captured state holders are
@@ -327,11 +304,11 @@ class FloatingWidgetService :
     }
 
     private fun onRouteIconClicked() {
-        val mode = locationRepository.currentMode.value
+        val mode = mapController.sharedState.value.mockMode
         val isActive =
-            mode == com.locationjoystick.core.model.MockMode.ROUTE_REPLAY ||
-                mode == com.locationjoystick.core.model.MockMode.ROAMING ||
-                mode == com.locationjoystick.core.model.MockMode.WALK_TO
+            mode == MockMode.ROUTE_REPLAY ||
+                mode == MockMode.ROAMING ||
+                mode == MockMode.WALK_TO
         if (isActive) {
             routeExpandedFlow.value = !routeExpandedFlow.value
         } else {
@@ -340,118 +317,37 @@ class FloatingWidgetService :
     }
 
     private fun onRoutePauseResumeClicked() {
-        when (locationRepository.currentMode.value) {
-            com.locationjoystick.core.model.MockMode.WALK_TO -> {
-                locationRepository.setWalkPaused(!locationRepository.isWalkPaused.value)
+        when (mapController.sharedState.value.mockMode) {
+            MockMode.WALK_TO -> {
+                if (mapController.sharedState.value.isWalkPaused) mapController.resumeWalk() else mapController.pauseWalk()
             }
 
-            com.locationjoystick.core.model.MockMode.ROUTE_REPLAY -> {
-                val paused = locationRepository.mockLocationState.value == com.locationjoystick.core.model.MockLocationState.PAUSED
-                if (paused) {
-                    serviceScope.launch {
-                        val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                        startService(MockLocationIntentBuilder.resumeRouteReplay(this@FloatingWidgetService, speedMs))
-                    }
+            MockMode.ROUTE_REPLAY -> {
+                if (mapController.sharedState.value.mockLocationState == MockLocationState.PAUSED) {
+                    mapController.resumeRouteReplay()
                 } else {
-                    startService(MockLocationIntentBuilder.pauseRouteReplay(this@FloatingWidgetService))
+                    mapController.pauseRouteReplay()
                 }
             }
 
-            com.locationjoystick.core.model.MockMode.ROAMING -> {
-                if (roamingRepository.isRoamingPaused.value) {
-                    serviceScope.launch { roamingRepository.resumeRoaming() }
+            MockMode.ROAMING -> {
+                if (mapController.sharedState.value.isRoamingPaused) {
+                    mapController.resumeRoaming()
                 } else {
-                    serviceScope.launch { roamingRepository.pauseRoaming() }
+                    mapController.pauseRoaming()
                 }
             }
 
-            else -> {
-                Unit
-            }
+            else -> Unit
         }
     }
 
     private fun onRouteStopClicked() {
         routeExpandedFlow.value = false
-        when (locationRepository.currentMode.value) {
-            com.locationjoystick.core.model.MockMode.ROAMING -> {
-                serviceScope.launch { roamingRepository.stopRoaming() }
-            }
-
-            com.locationjoystick.core.model.MockMode.WALK_TO -> {
-                walkCoordinator.cancel()
-            }
-
-            else -> {
-                startService(MockLocationIntentBuilder.stopRouteReplay(this))
-            }
-        }
-    }
-
-    private fun teleportToFavorite(favorite: FavoriteLocation) {
-        val svc = mockLocationService
-        if (svc != null) {
-            svc.updatePosition(favorite.position.latitude, favorite.position.longitude)
-            Log.d(TAG, "Teleported to favorite: ${favorite.name}")
-        } else {
-            locationRepository.updatePosition(favorite.position)
-            Log.d(TAG, "Teleported to favorite via repository: ${favorite.name}")
-        }
-    }
-
-    private fun startWalkToFavorite(favorite: FavoriteLocation) {
-        walkCoordinator.startWalk(favorite.position, serviceScope) { newPos, speedMs, bearing ->
-            startService(
-                MockLocationIntentBuilder.updatePosition(this@FloatingWidgetService, newPos.latitude, newPos.longitude, speedMs, bearing),
-            )
-        }
-    }
-
-    private fun startWalkViaRoadsToFavorite(favorite: FavoriteLocation) {
-        serviceScope.launch {
-            val current = locationRepository.currentPosition.value
-            if (current == null) {
-                startWalkToFavorite(favorite)
-                return@launch
-            }
-            val waypoints =
-                osrmClient
-                    .getRoute(com.locationjoystick.core.routing.OsrmClient.PROFILE_FOOT, listOf(current, favorite.position))
-                    .getOrNull()
-            if (waypoints.isNullOrEmpty()) {
-                Log.w(TAG, "OSRM failed for favorite walk; falling back to straight line")
-                startWalkToFavorite(favorite)
-                return@launch
-            }
-            walkCoordinator.startWalkAlongRoute(waypoints, serviceScope) { newPos, speedMs, bearing ->
-                startService(
-                    MockLocationIntentBuilder.updatePosition(
-                        this@FloatingWidgetService,
-                        newPos.latitude,
-                        newPos.longitude,
-                        speedMs,
-                        bearing,
-                    ),
-                )
-            }
-        }
-    }
-
-    private fun startRouteReplayWithMode(
-        routeId: String,
-        isLooping: Boolean = false,
-        isReverse: Boolean = false,
-        isReturnToLocation: Boolean = false,
-        teleportToStart: Boolean = false,
-    ) {
-        serviceScope.launch {
-            startRouteReplayUseCase.execute(
-                routeId = routeId,
-                isLooping = isLooping,
-                isReverse = isReverse,
-                isReturnToLocation = isReturnToLocation,
-                teleportToStart = teleportToStart,
-            )
+        when (mapController.sharedState.value.mockMode) {
+            MockMode.ROAMING -> mapController.stopRoaming()
+            MockMode.WALK_TO -> mapController.stopWalk()
+            else -> mapController.stopRouteReplay()
         }
     }
 
@@ -505,12 +401,11 @@ class FloatingWidgetService :
 
     private val panelCallbacks =
         object : WidgetPanelPresenter.Callbacks {
-            override fun teleportToFavorite(favorite: FavoriteLocation) = this@FloatingWidgetService.teleportToFavorite(favorite)
+            override fun teleportToFavorite(favorite: FavoriteLocation) = mapController.teleportTo(favorite.position)
 
-            override fun startWalkToFavorite(favorite: FavoriteLocation) = this@FloatingWidgetService.startWalkToFavorite(favorite)
+            override fun startWalkToFavorite(favorite: FavoriteLocation) = mapController.walkTo(favorite.position)
 
-            override fun startWalkViaRoadsToFavorite(favorite: FavoriteLocation) =
-                this@FloatingWidgetService.startWalkViaRoadsToFavorite(favorite)
+            override fun startWalkViaRoadsToFavorite(favorite: FavoriteLocation) = mapController.walkViaRoads(favorite.position)
 
             override fun startRouteReplayWithMode(
                 routeId: String,
@@ -518,103 +413,38 @@ class FloatingWidgetService :
                 isReverse: Boolean,
                 isReturnToLocation: Boolean,
                 teleportToStart: Boolean,
-            ) = this@FloatingWidgetService.startRouteReplayWithMode(
-                routeId,
-                isLooping,
-                isReverse,
-                isReturnToLocation,
-                teleportToStart,
-            )
+            ) = mapController.startRouteReplay(routeId, isLooping, isReverse, isReturnToLocation, teleportToStart)
 
-            override fun teleport(pos: LatLng) {
-                // Use TeleportUseCase so lastTeleportTime is recorded for anti-cheat cooldown.
-                serviceScope.launch { teleportUseCase.execute(pos) }
-            }
+            override fun teleport(pos: LatLng) = mapController.teleportTo(pos)
 
-            override fun walkTo(pos: LatLng) {
-                walkCoordinator.startWalk(pos, serviceScope) { newPos, speedMs, bearing ->
-                    startService(
-                        MockLocationIntentBuilder.updatePosition(
-                            this@FloatingWidgetService,
-                            newPos.latitude,
-                            newPos.longitude,
-                            speedMs,
-                            bearing,
-                        ),
-                    )
-                }
-            }
+            override fun walkTo(pos: LatLng) = mapController.walkTo(pos)
 
             override fun stopRouteAndTeleport(pos: LatLng) {
-                sendReplayCancel()
-                teleport(pos)
+                mapController.stopRouteOnly()
+                mapController.teleportTo(pos)
             }
 
             override fun stopRouteAndWalkTo(pos: LatLng) {
-                sendReplayCancel()
-                walkTo(pos)
+                mapController.stopRouteOnly()
+                mapController.walkTo(pos)
             }
 
-            override fun finishRouteAndWalkTo(pos: LatLng) = sendAppendWaypoint(pos)
+            override fun finishRouteAndWalkTo(pos: LatLng) = mapController.appendWaypointToRoute(pos)
 
-            override fun addEphemeralWaypoint(pos: LatLng) = sendAddEphemeralWaypoint(pos)
+            override fun addEphemeralWaypoint(pos: LatLng) = mapController.addEphemeralWaypoint(pos)
 
-            override fun startRoamingWith(defaults: com.locationjoystick.core.model.RoamingDefaults) =
-                this@FloatingWidgetService.startRoamingWith(defaults)
+            override fun startRoamingWith(defaults: RoamingDefaults) {
+                val pos = mapController.sharedState.value.currentPosition ?: run {
+                    Log.w(TAG, "Cannot start roaming: no current position")
+                    return
+                }
+                mapController.startRoaming(defaults, pos)
+            }
+
+            override fun saveCurrentLocation(name: String) = mapController.saveCurrentLocation(name)
 
             override fun moveAppToBack() = this@FloatingWidgetService.moveAppToBack()
         }
-
-    private fun startRoamingWith(defaults: com.locationjoystick.core.model.RoamingDefaults) {
-        serviceScope.launch {
-            try {
-                val pos = locationRepository.currentPosition.value
-                if (pos == null) {
-                    Log.w(TAG, "Cannot start roaming: no current position")
-                    return@launch
-                }
-                val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                roamingRepository.startRoaming(defaults.toConfig(pos), speedMs)
-                Log.d(TAG, "Started roaming with custom defaults")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to start roaming", e)
-            }
-        }
-    }
-
-    private fun sendReplayCancel() {
-        try {
-            startService(MockLocationIntentBuilder.cancelRouteReplay(this))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send replay cancel", e)
-        }
-    }
-
-    private fun sendAppendWaypoint(pos: com.locationjoystick.core.model.LatLng) {
-        try {
-            startService(MockLocationIntentBuilder.appendWaypoint(this, pos))
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to send append waypoint", e)
-        }
-    }
-
-    private fun sendAddEphemeralWaypoint(pos: com.locationjoystick.core.model.LatLng) {
-        serviceScope.launch {
-            try {
-                ephemeralReplayController.addWaypoint(
-                    newPoint = pos,
-                    currentWaypoints = ephemeralReplayController.pendingWaypoints.value,
-                    walkStart = locationRepository.currentPosition.value,
-                    walkTarget = locationRepository.walkTarget.value,
-                    followRoads = false, // widget has no walk-mode state; always straight-line
-                    context = this@FloatingWidgetService,
-                    launchIntent = { startService(it) },
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to send add ephemeral waypoint", e)
-            }
-        }
-    }
 
     private fun moveAppToBack() {
         // Only send the move-to-back intent if the app is currently in the foreground.
