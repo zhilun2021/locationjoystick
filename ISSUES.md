@@ -16,16 +16,6 @@ No outstanding documentation issues.
 
 ## Technical Debt (pre-1.1)
 
-### [MEDIUM] `FloatingWidgetService.startRoamingWith()` bypasses `RoamingDefaults.toConfig()`
-
-**File:** `FloatingWidgetService.kt:581–605`
-
-Manually constructs `RoamingConfig(centerPosition, radiusMeters, distanceMeters, ...)` field-by-field. `MapViewModel.startRoamingFromDraft()` uses the canonical `draft.toConfig(position)` extension for the same operation. If `RoamingConfig` or `RoamingDefaults.toConfig()` gains a field (e.g. `previewWaypoints`), the service path silently drops it — already happened: `MapViewModel` passes `previewWaypoints` via `copy(previewWaypoints = ...)` but the service path has no equivalent.
-
-**Fix:** Replace the manual construction with `defaults.toConfig(pos)` + any overlay-specific `copy(...)` overrides.
-
----
-
 ### [MEDIUM] `getElevationTiltJitterDegrees()` / `getElevationNoiseAmplitudeMs2()` missed `pref()` cleanup
 
 **File:** `AppPreferencesDataSource.kt:549–589`
@@ -40,6 +30,14 @@ override fun getElevationTiltJitterDegrees(): Flow<Float> =
 override fun getElevationNoiseAmplitudeMs2(): Flow<Float> =
     pref(Keys.ELEVATION_NOISE_AMPLITUDE_MS2, DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2)
 ```
+
+---
+
+### [RESOLVED] `FloatingWidgetService.startRoamingWith()` now uses `RoamingDefaults.toConfig()`
+
+**Status:** Completed — implementation already correct at line 576.
+
+The method correctly constructs `RoamingConfig` via `defaults.toConfig(pos)`, matching the canonical pattern used in `MapViewModel.startRoamingFromDraft()`. This ensures any future fields added to `RoamingConfig` (e.g., `previewWaypoints`) are automatically included without manual field-by-field construction.
 
 ---
 
