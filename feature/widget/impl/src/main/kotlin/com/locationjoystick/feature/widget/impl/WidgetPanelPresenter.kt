@@ -13,6 +13,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.FavoriteRepository
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.location.EphemeralReplayController
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
@@ -51,6 +52,7 @@ internal class WidgetPanelPresenter(
     private val locationRepository: LocationRepository,
     private val roamingRepository: RoamingRepository,
     private val teleportUseCase: TeleportUseCase,
+    private val ephemeralReplayController: EphemeralReplayController,
     private val callbacks: Callbacks,
 ) {
     companion object {
@@ -260,6 +262,7 @@ internal class WidgetPanelPresenter(
             val recentSearches by remember { settingsRepository.getRecentSearches() }.collectAsStateWithLifecycle(
                 initialValue = emptyList(),
             )
+            val ephemeralWaypoints by ephemeralReplayController.pendingWaypoints.collectAsStateWithLifecycle()
             MapFloatingView(
                 currentPosition = currentPosition,
                 initialPosition = initialPosition,
@@ -316,6 +319,7 @@ internal class WidgetPanelPresenter(
                     }
                 },
                 onDismiss = { hidePanelView() },
+                ephemeralWaypoints = ephemeralWaypoints.ifEmpty { null },
                 recentSearches = recentSearches,
                 onSearchCommitted = { name, lat, lon ->
                     serviceScope.launch { settingsRepository.addRecentSearch(name, lat, lon) }

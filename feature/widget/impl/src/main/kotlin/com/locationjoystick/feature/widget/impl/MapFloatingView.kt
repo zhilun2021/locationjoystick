@@ -113,6 +113,7 @@ internal fun MapFloatingView(
     onStartRoaming: (RoamingDefaults) -> Unit,
     onStopRoaming: () -> Unit,
     onDismiss: () -> Unit,
+    ephemeralWaypoints: List<LatLng>? = null,
     recentSearches: List<RecentSearch> = emptyList(),
     onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     cooldownForPosition: ((LatLng) -> Flow<CooldownState>)? = null,
@@ -128,15 +129,9 @@ internal fun MapFloatingView(
     var showSearch by remember { mutableStateOf(false) }
     var showFavoritesPicker by remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
-    // Holds locally-computed waypoints during the walk→replay transition so the line doesn't flash.
-    var ephemeralHint by remember { mutableStateOf<List<LatLng>?>(null) }
 
     LaunchedEffect(walkTarget) {
         walkStart = if (walkTarget != null) currentPosition else null
-    }
-
-    LaunchedEffect(routeWaypoints) {
-        if (routeWaypoints != null) ephemeralHint = null
     }
 
     val mapView =
@@ -262,17 +257,16 @@ internal fun MapFloatingView(
                 val waypoints = routeWaypoints
                 val walkStartSnap = walkStart
                 val target = walkTarget
-                val hint = ephemeralHint
                 if (waypoints != null && position != null) {
                     val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(waypoints, position)
                     tracedSrc.setGeoJson(tracedGeoJson)
                     remainingSrc.setGeoJson(remainingGeoJson)
                     endpointsSrc.setGeoJson(buildPointsGeoJson(waypoints))
-                } else if (hint != null && position != null) {
-                    val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(hint, position)
+                } else if (ephemeralWaypoints != null && position != null) {
+                    val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(ephemeralWaypoints, position)
                     tracedSrc.setGeoJson(tracedGeoJson)
                     remainingSrc.setGeoJson(remainingGeoJson)
-                    endpointsSrc.setGeoJson(buildPointsGeoJson(hint))
+                    endpointsSrc.setGeoJson(buildPointsGeoJson(ephemeralWaypoints))
                 } else if (walkStartSnap != null && target != null && position != null) {
                     val walkPoints = listOf(walkStartSnap, target)
                     val (tracedGeoJson, remainingGeoJson) = buildRouteTraceGeoJson(walkPoints, position)
@@ -449,7 +443,6 @@ internal fun MapFloatingView(
                 onStopRouteAndWalkTo = onStopRouteAndWalkTo,
                 onFinishRouteAndWalkTo = onFinishRouteAndWalkTo,
                 onAddEphemeralWaypoint = onAddEphemeralWaypoint,
-                onEphemeralHintUpdate = { ephemeralHint = it },
                 onDismiss = { pendingTap = null },
             )
         }
@@ -554,7 +547,6 @@ private fun BoxScope.TapActionPanel(
     onStopRouteAndWalkTo: (LatLng) -> Unit,
     onFinishRouteAndWalkTo: (LatLng) -> Unit,
     onAddEphemeralWaypoint: (LatLng) -> Unit,
-    onEphemeralHintUpdate: (List<LatLng>?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     Column(
@@ -622,14 +614,6 @@ private fun BoxScope.TapActionPanel(
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
                     onClick = {
-                        val existingWaypoints = routeWaypoints
-                        onEphemeralHintUpdate(
-                            when {
-                                existingWaypoints != null -> existingWaypoints + tap
-                                walkStart != null && walkTarget != null -> listOf(walkStart, walkTarget, tap)
-                                else -> null
-                            },
-                        )
                         onAddEphemeralWaypoint(tap)
                         onDismiss()
                     },

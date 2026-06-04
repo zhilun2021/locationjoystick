@@ -109,6 +109,7 @@ class MapViewModel
             observeRoutes()
             observeFavorites()
             observeRouteWaypoints()
+            observeEphemeralWaypoints()
             observeRoaming()
             observeSpeedUnit()
             observeCooldownForPendingTap()
@@ -168,7 +169,26 @@ class MapViewModel
         private fun observeRouteWaypoints() {
             viewModelScope.launch {
                 locationRepository.routeWaypoints.collect { waypoints ->
+                    if (waypoints != null) ephemeralReplayController.clearPendingWaypoints()
                     _uiState.update { current -> current.copy(routeTrace = waypoints) }
+                }
+            }
+        }
+
+        private fun observeEphemeralWaypoints() {
+            viewModelScope.launch {
+                ephemeralReplayController.pendingWaypoints.collect { waypoints ->
+                    _uiState.update { current ->
+                        when {
+                            waypoints.isNotEmpty() && current.ephemeralWaypoints != waypoints -> {
+                                val followRoads = (current.walkMode as? WalkMode.EphemeralReplay)?.followRoads ?: false
+                                current.copy(walkMode = WalkMode.EphemeralReplay(waypoints, followRoads))
+                            }
+                            waypoints.isEmpty() && current.walkMode is WalkMode.EphemeralReplay ->
+                                current.copy(walkMode = WalkMode.Idle)
+                            else -> current
+                        }
+                    }
                 }
             }
         }
@@ -451,6 +471,7 @@ class MapViewModel
 
         private fun handleStopSpoofing() {
             stopSpoofing()
+            ephemeralReplayController.clearPendingWaypoints()
             _uiState.update {
                 it.copy(
                     pendingTapPosition = null,
@@ -475,6 +496,7 @@ class MapViewModel
             if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
                 context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
             }
+            ephemeralReplayController.clearPendingWaypoints()
             _uiState.update { it.copy(walkMode = WalkMode.Idle, isWalkPaused = false, isWalkControlsExpanded = false, routeTrace = null) }
         }
 
@@ -540,6 +562,7 @@ class MapViewModel
             if (_uiState.value.ephemeralWaypoints.isNotEmpty()) {
                 context.startService(MockLocationIntentBuilder.cancelRouteReplay(context))
             }
+            ephemeralReplayController.clearPendingWaypoints()
             _uiState.update {
                 it.copy(
                     pendingTapPosition = null,
@@ -586,7 +609,7 @@ class MapViewModel
                 val result =
                     ephemeralReplayController.addWaypoint(
                         newPoint = position,
-                        currentWaypoints = state.ephemeralWaypoints,
+                        currentWaypoints = ephemeralReplayController.pendingWaypoints.value,
                         walkStart = state.walkStart,
                         walkTarget = state.walkTarget,
                         followRoads = followRoads,

@@ -82,6 +82,7 @@ class MapViewModelTest {
         every { locationRepository.walkTarget } returns walkTargetFlow
         every { locationRepository.currentMode } returns MutableStateFlow(MockMode.JOYSTICK)
         every { locationRepository.routeWaypoints } returns MutableStateFlow(null)
+        every { ephemeralReplayController.pendingWaypoints } returns MutableStateFlow(emptyList())
         every { routeRepository.getRoutes() } returns flowOf(emptyList<Route>())
         every { favoriteRepository.getFavorites() } returns flowOf(emptyList<FavoriteLocation>())
         every { roamingRepository.isRoaming } returns MutableStateFlow(false)

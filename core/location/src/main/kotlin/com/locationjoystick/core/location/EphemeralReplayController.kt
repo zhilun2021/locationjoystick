@@ -8,6 +8,9 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.routing.OsrmClient
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +34,17 @@ class EphemeralReplayController
         private val walkCoordinator: WalkCoordinator,
         private val osrmClient: OsrmClient,
     ) {
+        private val _pendingWaypoints = MutableStateFlow<List<LatLng>>(emptyList())
+
+        /** Current ephemeral waypoint list, shared across all surfaces. Both [MapViewModel] and
+         * [FloatingWidgetService] observe this instead of tracking the list locally. */
+        val pendingWaypoints: StateFlow<List<LatLng>> = _pendingWaypoints.asStateFlow()
+
+        /** Clears [pendingWaypoints] when the ephemeral replay commits to a real route or is cancelled. */
+        fun clearPendingWaypoints() {
+            _pendingWaypoints.value = emptyList()
+        }
+
         /**
          * Called when the user taps "Add next point".
          *
@@ -59,31 +73,35 @@ class EphemeralReplayController
             followRoads: Boolean = false,
             context: Context,
             launchIntent: (Intent) -> Unit,
-        ): List<LatLng>? =
-            if (currentWaypoints.isEmpty() && walkTarget != null) {
-                // First "Add next point" — transition from WalkCoordinator to RouteReplayEngine
-                val startPos = walkStart ?: locationRepository.currentPosition.value ?: newPoint
-                val segment = osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads)
-                val initial = listOf(startPos) + segment
-                walkCoordinator.cancel()
-                val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                launchIntent(MockLocationIntentBuilder.startEphemeralReplay(context, initial, speedMs))
-                initial
-            } else if (currentWaypoints.isNotEmpty() ||
-                locationRepository.currentMode.value == MockMode.ROUTE_REPLAY
-            ) {
-                val appendSegment =
-                    if (followRoads && currentWaypoints.isNotEmpty()) {
-                        val from = currentWaypoints.last()
-                        osrmClient
-                            .resolveRoute(OsrmClient.PROFILE_FOOT, from, newPoint, followRoads = true)
-                            .drop(1) // first point is `from`, already in the route
-                    } else {
-                        listOf(newPoint)
-                    }
-                appendSegment.forEach { launchIntent(MockLocationIntentBuilder.appendWaypoint(context, it)) }
-                currentWaypoints + appendSegment
-            } else {
-                null // no active walk, no-op
-            }
+        ): List<LatLng>? {
+            val result =
+                if (currentWaypoints.isEmpty() && walkTarget != null) {
+                    // First "Add next point" — transition from WalkCoordinator to RouteReplayEngine
+                    val startPos = walkStart ?: locationRepository.currentPosition.value ?: newPoint
+                    val segment = osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads)
+                    val initial = listOf(startPos) + segment
+                    walkCoordinator.cancel()
+                    val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
+                    launchIntent(MockLocationIntentBuilder.startEphemeralReplay(context, initial, speedMs))
+                    initial
+                } else if (currentWaypoints.isNotEmpty() ||
+                    locationRepository.currentMode.value == MockMode.ROUTE_REPLAY
+                ) {
+                    val appendSegment =
+                        if (followRoads && currentWaypoints.isNotEmpty()) {
+                            val from = currentWaypoints.last()
+                            osrmClient
+                                .resolveRoute(OsrmClient.PROFILE_FOOT, from, newPoint, followRoads = true)
+                                .drop(1) // first point is `from`, already in the route
+                        } else {
+                            listOf(newPoint)
+                        }
+                    appendSegment.forEach { launchIntent(MockLocationIntentBuilder.appendWaypoint(context, it)) }
+                    currentWaypoints + appendSegment
+                } else {
+                    null // no active walk, no-op
+                }
+            if (result != null) _pendingWaypoints.value = result
+            return result
+        }
     }

@@ -171,6 +171,7 @@ class FloatingWidgetService :
                 locationRepository = locationRepository,
                 roamingRepository = roamingRepository,
                 teleportUseCase = teleportUseCase,
+                ephemeralReplayController = ephemeralReplayController,
                 callbacks = panelCallbacks,
             )
         serviceBinder.bind()
@@ -602,7 +603,7 @@ class FloatingWidgetService :
             try {
                 ephemeralReplayController.addWaypoint(
                     newPoint = pos,
-                    currentWaypoints = emptyList(), // widget doesn't track local ephemeral list
+                    currentWaypoints = ephemeralReplayController.pendingWaypoints.value,
                     walkStart = locationRepository.currentPosition.value,
                     walkTarget = locationRepository.walkTarget.value,
                     followRoads = false, // widget has no walk-mode state; always straight-line
