@@ -363,8 +363,7 @@ internal fun MapScreen(
                             CameraUpdateFactory.newLatLngZoom(MapLatLng(lat, lon), AppConstants.MapConstants.DEFAULT_ZOOM),
                             500,
                         )
-                        val src = searchMarkerSource.value ?: return@NominatimSearchBar
-                        src.setGeoJson(buildMarkerGeoJson(lat, lon))
+                        searchMarkerSource.value?.setGeoJson(buildMarkerGeoJson(lat, lon))
                         showSearch.value = false
                         onAction(MapAction.TapToTeleport(position))
                     },
