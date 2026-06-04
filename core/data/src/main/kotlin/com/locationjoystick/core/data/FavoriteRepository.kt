@@ -79,11 +79,11 @@ class FavoriteRepository
             withContext(Dispatchers.IO) {
                 runCatching {
                     HOT_LOCATIONS.forEach { (name, lat, lon) ->
-                        val existing = favoriteDao.getByName(name)
+                        val id = HOT_ID_PREFIX + name.lowercase().replace(Regex("[^a-z0-9]"), "_")
+                        val existing = favoriteDao.getById(id)
                         if (existing != null) {
                             favoriteDao.update(existing.copy(latitude = lat, longitude = lon))
                         } else {
-                            val id = HOT_ID_PREFIX + name.lowercase().replace(Regex("[^a-z0-9]"), "_")
                             favoriteDao.insert(
                                 FavoriteEntity(
                                     id = id,

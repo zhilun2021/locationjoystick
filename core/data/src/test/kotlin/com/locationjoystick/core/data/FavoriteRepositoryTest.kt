@@ -179,7 +179,7 @@ class FavoriteRepositoryTest {
         }
 
     @Test
-    fun `upsertHotLocations updates coordinates when name already exists`() =
+    fun `upsertHotLocations does not modify user favorite with same name`() =
         runTest {
             // Pre-existing favorite with same name as a hot location, different coords
             repository.addFavorite("user-id", "Singapore", LatLng(0.0, 0.0), createdAt = 1_000L)
@@ -188,12 +188,21 @@ class FavoriteRepositoryTest {
 
             repository.getFavorites().test {
                 val list = awaitItem()
-                val singapore = list.first { it.name == "Singapore" }
-                // Coords updated to hot location values
-                assertEquals(1.288719, singapore.position.latitude, 0.000001)
-                assertEquals(103.848742, singapore.position.longitude, 0.000001)
-                // Original id preserved (not replaced with hot_ prefix)
-                assertEquals("user-id", singapore.id)
+                // Should have 27 entries: 26 hot locations + 1 user favorite
+                assertEquals(27, list.size)
+
+                // Find the hot location entry
+                val hotSingapore = list.first { it.id == "hot_singapore" }
+                assertEquals("Singapore", hotSingapore.name)
+                assertEquals(1.288719, hotSingapore.position.latitude, 0.000001)
+                assertEquals(103.848742, hotSingapore.position.longitude, 0.000001)
+
+                // Find the user favorite entry - should be unchanged
+                val userSingapore = list.first { it.id == "user-id" }
+                assertEquals("Singapore", userSingapore.name)
+                assertEquals(0.0, userSingapore.position.latitude, 0.000001)
+                assertEquals(0.0, userSingapore.position.longitude, 0.000001)
+
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -207,6 +216,40 @@ class FavoriteRepositoryTest {
             repository.getFavorites().test {
                 val list = awaitItem()
                 assertEquals(FavoriteRepository.HOT_LOCATIONS.size, list.size)
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
+
+    @Test
+    fun `upsertHotLocations updates coordinates on second call via id lookup`() =
+        runTest {
+            // First upsert inserts all hot locations
+            repository.upsertHotLocations()
+
+            repository.getFavorites().test {
+                val initialList = awaitItem()
+                assertEquals(FavoriteRepository.HOT_LOCATIONS.size, initialList.size)
+                val initialSingapore = initialList.first { it.id == "hot_singapore" }
+                assertEquals(1.288719, initialSingapore.position.latitude, 0.000001)
+                assertEquals(103.848742, initialSingapore.position.longitude, 0.000001)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            // Manually update hot_singapore to wrong coordinates
+            val wrongEntity = dao.getById("hot_singapore")!!.copy(latitude = 99.99, longitude = 99.99)
+            dao.update(wrongEntity)
+
+            // Second upsert should find and update via ID
+            repository.upsertHotLocations()
+
+            repository.getFavorites().test {
+                val finalList = awaitItem()
+                // Should still have exactly 26 entries (no duplicate created)
+                assertEquals(FavoriteRepository.HOT_LOCATIONS.size, finalList.size)
+                // hot_singapore should be updated back to correct coordinates
+                val finalSingapore = finalList.first { it.id == "hot_singapore" }
+                assertEquals(1.288719, finalSingapore.position.latitude, 0.000001)
+                assertEquals(103.848742, finalSingapore.position.longitude, 0.000001)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -242,17 +285,20 @@ class FavoriteRepositoryTest {
     @Test
     fun `removeHotLocations preserves user favorite that had name collision with hot location`() =
         runTest {
-            // User had "Singapore" before hot locations were enabled — upsert updates coords, keeps user id
+            // User had "Singapore" before hot locations were enabled — upsert does NOT modify it (separate ID)
             repository.addFavorite("user-id", "Singapore", LatLng(0.0, 0.0), createdAt = 1_000L)
             repository.upsertHotLocations()
             repository.removeHotLocations()
 
             // "Singapore" kept because its id is "user-id", not "hot_*"
+            // Coords remain unchanged (0.0, 0.0) because upsert only touched the hot_singapore entry
             repository.getFavorites().test {
                 val list = awaitItem()
                 assertEquals(1, list.size)
                 assertEquals("Singapore", list.first().name)
                 assertEquals("user-id", list.first().id)
+                assertEquals(0.0, list.first().position.latitude, 0.000001)
+                assertEquals(0.0, list.first().position.longitude, 0.000001)
                 cancelAndIgnoreRemainingEvents()
             }
         }
