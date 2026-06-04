@@ -1,9 +1,9 @@
 package com.locationjoystick.core.data
 
 import com.locationjoystick.core.model.LatLng
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,13 +11,13 @@ import javax.inject.Singleton
 class DeepLinkRepository
     @Inject
     constructor() {
-        private val _pendingCoords = Channel<LatLng>(Channel.CONFLATED)
-        val pendingCoords: Flow<LatLng> = _pendingCoords.receiveAsFlow()
+        private val _pendingCoords = MutableSharedFlow<LatLng>(replay = 0)
+        val pendingCoords: Flow<LatLng> = _pendingCoords.asSharedFlow()
 
         fun setPendingCoords(
             lat: Double,
             lon: Double,
         ) {
-            _pendingCoords.trySend(LatLng(lat, lon))
+            _pendingCoords.tryEmit(LatLng(lat, lon))
         }
     }
