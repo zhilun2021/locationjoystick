@@ -75,6 +75,50 @@ class FavoriteRepository
                 }
             }
 
+        /**
+         * Upserts all hot locations from [HOT_LOCATIONS] into the favorites table.
+         *
+         * ## ID Derivation Strategy
+         *
+         * Hot location IDs are deterministically derived from their names:
+         * ```
+         * id = HOT_ID_PREFIX + name.lowercase().replace(Regex("[^a-z0-9]"), "_")
+         * ```
+         * Examples:
+         * - "Osaka Tokyo" → "hot_osaka_tokyo"
+         * - "Sydney" → "hot_sydney"
+         * - "Bryant Park NY" → "hot_bryant_park_ny"
+         *
+         * This enables idempotent upserts (update if exists by ID, insert if not).
+         *
+         * ## Stale Entry Risk: Name Changes Across Versions
+         *
+         * **Problem:** If a hot location name is corrected in a future app version
+         * (e.g., "Osaka Tokyo" → "Osaka"), the old-derived ID persists:
+         *
+         * 1. User has app v1 with "Osaka Tokyo" → "hot_osaka_tokyo" inserted
+         * 2. User updates to app v2 with corrected name "Osaka" → ID becomes "hot_osaka"
+         * 3. `upsertHotLocations()` calls `favoriteDao.getById("hot_osaka")` → null (new name)
+         * 4. Inserts new favorite with ID "hot_osaka"
+         * 5. Old "hot_osaka_tokyo" entry is NOT deleted — it's orphaned
+         *
+         * The upsert uses [name] matching (via ID derivation), not ID lookup, so it
+         * cannot detect the name change. Removal logic in [removeHotLocations] only
+         * deletes entries with IDs starting with [HOT_ID_PREFIX] "hot_", so both entries
+         * remain until the user manually deletes the stale entry (rare).
+         *
+         * **Risk Level:** LOW. The [HOT_LOCATIONS] list is stable and curated. Name
+         * corrections are infrequent and unlikely.
+         *
+         * **Mitigation:** Avoid changing existing hot location names without manual
+         * cleanup. If a name must change in the code, consider deleting the old entry
+         * from [HOT_LOCATIONS] instead of renaming (forcing a fresh insertion).
+         *
+         * ## See Also
+         * - [removeHotLocations] — deletes all hot location entries
+         * - [HOT_LOCATIONS] — the canonical list of hot location definitions
+         * - ISSUES.md (lines 75–87) — full technical debt entry
+         */
         suspend fun upsertHotLocations(): Result<Unit> =
             withContext(Dispatchers.IO) {
                 runCatching {
@@ -108,6 +152,35 @@ class FavoriteRepository
         companion object {
             private const val HOT_ID_PREFIX = "hot_"
 
+            /**
+             * Curated list of hot favorite locations bundled with the app.
+             *
+             * Each location is upserted via [upsertHotLocations] when the user enables
+             * the "Show hot locations" feature in Settings. Locations are matched by
+             * their derived ID (see [upsertHotLocations] for ID derivation logic).
+             *
+             * ## Adding New Locations
+             *
+             * Append new `Triple("Name", latitude, longitude)` entries to the list.
+             * The name will be converted to a deterministic ID:
+             * ```
+             * "Bryant Park NY" → "hot_bryant_park_ny"
+             * ```
+             *
+             * ## Changing Existing Locations
+             *
+             * - **Updating coordinates:** Simply change the lat/lon. The name stays the same,
+             *   so the ID remains unchanged. Existing entries are updated in-place.
+             * - **Renaming a location:** Creates a new ID, so the old entry orphans (see
+             *   [upsertHotLocations] "Stale Entry Risk" section). To avoid orphans:
+             *   1. Delete the old entry from this list (removes it from the bundle)
+             *   2. Add the new entry with the corrected name
+             *   3. Users who enable hot locations will get a fresh insert of the corrected name
+             *
+             * ## See Also
+             * - [upsertHotLocations] — full technical debt entry with risk analysis
+             * - ISSUES.md (lines 75–87) — additional context on stale entry accumulation
+             */
             val HOT_LOCATIONS =
                 listOf(
                     Triple("Kiritimati", 1.98715, -157.47714),
