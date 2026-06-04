@@ -10,6 +10,7 @@ No outstanding documentation issues.
 
 ## Bugs
 
+- Speed profiles cap at ~15 display units (km/h or mph) — hardcoded `0.1..15.0` validation in `SpeedProfileInput` applies to display value not m/s, blocking any speed above 15 km/h. Any speed should be allowed; anti-cheat warning already shows correctly for speeds above threshold.
 - FloatingWidgetService -> Map -> Search -> Select result -> Doesn't show the anti-cheat cooldown timeout
 - "Add next point" should be "straight" line if the user only clicked "walk here", if he clicked "walk here via roads" it should be adding a point following roads
 - Stopping a "walk here" road from the map screen doesn't clear the traced points

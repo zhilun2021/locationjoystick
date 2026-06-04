@@ -501,7 +501,7 @@ private fun SpeedProfileInput(
     }
 
     val parsedValue = localValue.toDoubleOrNull()
-    val isValid = parsedValue != null && parsedValue in 0.1..15.0
+    val isValid = parsedValue != null && parsedValue > 0.0
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -525,7 +525,7 @@ private fun SpeedProfileInput(
                     localValue = newValue
 
                     val parsed = newValue.toDoubleOrNull()
-                    if (parsed != null && parsed in 0.1..15.0) {
+                    if (parsed != null && parsed > 0.0) {
                         onSpeedChange(parsed)
                         lastSentValue = parsed
                     }
