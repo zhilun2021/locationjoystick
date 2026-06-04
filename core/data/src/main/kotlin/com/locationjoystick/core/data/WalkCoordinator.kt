@@ -84,10 +84,11 @@ class WalkCoordinator
             }
         }
 
-        /** Cancels any active walk and clears the walk target. */
+        /** Cancels any active walk and clears the walk target and route waypoints. */
         fun cancel() {
             activeWalkJob?.cancel()
             activeWalkJob = null
             locationRepository.setWalkTarget(null)
+            locationRepository.setRouteWaypoints(null)
         }
     }

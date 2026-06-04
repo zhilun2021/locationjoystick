@@ -669,10 +669,10 @@ class MapViewModel
                     walkTo(position)
                     return@launch
                 }
+                locationRepository.setRouteWaypoints(waypoints)
                 _uiState.update {
                     it.copy(
                         walkMode = WalkMode.Walking(target = position, start = it.currentPosition, isViaRoads = true),
-                        routeTrace = null,
                     )
                 }
                 walkCoordinator.startWalkAlongRoute(waypoints, viewModelScope) { newPos, speedMs, bearing ->

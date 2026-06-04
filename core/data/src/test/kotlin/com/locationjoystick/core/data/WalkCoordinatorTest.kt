@@ -137,6 +137,23 @@ class WalkCoordinatorTest {
         }
 
     @Test
+    fun `cancel clears route waypoints`() =
+        runTest {
+            val wp1 = LatLng(48.8566, 2.3522)
+            val wp2 = LatLng(48.9000, 2.3522)
+            locationRepository.setPositionInternal(wp1)
+            locationRepository.setRouteWaypoints(listOf(wp1, wp2))
+
+            walkCoordinator.startWalkAlongRoute(listOf(wp1, wp2), backgroundScope)
+            walkCoordinator.cancel()
+
+            assertNull(
+                "Route waypoints should be null after cancel",
+                locationRepository.routeWaypoints.value,
+            )
+        }
+
+    @Test
     fun `startWalkAlongRoute empty list throws`() =
         runTest {
             var threw = false
