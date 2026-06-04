@@ -11,6 +11,7 @@ clean:
 	find . -name "build" -type d -not -path "*/.git/*" | xargs rm -rf
 	find . -name ".gradle" -type d -not -path "*/.git/*" | xargs rm -rf
 
+.PHONY: build
 build:
 	./gradlew assembleRelease
 
