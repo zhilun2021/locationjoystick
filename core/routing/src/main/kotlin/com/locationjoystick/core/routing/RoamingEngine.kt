@@ -119,7 +119,7 @@ class RoamingEngine
                     isPaused = false
                     val initialLocation = config.centerPosition
                     var currentPosition = config.centerPosition
-                    var remainingMeters = config.distanceMeters
+                    var remainingMeters = if (config.returnToInitialLocation) config.distanceMeters / 2.0 else config.distanceMeters
                     val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
 
                     val firstLegPreview = config.previewWaypoints?.takeIf { it.size >= 2 }
