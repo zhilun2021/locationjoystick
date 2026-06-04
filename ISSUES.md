@@ -1,6 +1,6 @@
 # Known Issues & Backlog
 
-> Tasks are being processed. See .shortcuts/ISSUES_STEPS.json for execution order.
+> Session 2026-06-04: 4 bugs fixed (speed-profile-cap, add-next-point-roads, traced-points-clear, anticheat-cooldown). 4 tasks failed in agent queue (roaming-return-to-start, isactivitypaused, floatingwidgetservice-toconfig, apppreferences-pref). See .shortcuts/ISSUES_STEPS.json for details.
 
 ## Documentation Outdated Items
 
@@ -10,10 +10,6 @@ No outstanding documentation issues.
 
 ## Bugs
 
-- Speed profiles cap at ~15 display units (km/h or mph) — hardcoded `0.1..15.0` validation in `SpeedProfileInput` applies to display value not m/s, blocking any speed above 15 km/h. Any speed should be allowed; anti-cheat warning already shows correctly for speeds above threshold.
-- FloatingWidgetService -> Map -> Search -> Select result -> Doesn't show the anti-cheat cooldown timeout
-- "Add next point" should be "straight" line if the user only clicked "walk here", if he clicked "walk here via roads" it should be adding a point following roads
-- Stopping a "walk here" road from the map screen doesn't clear the traced points
 - When we generate a "roaming" road with "return to start", we walk to the given "distance", we should create a loop of that distance in the given radius, the idea is to walk to half that distance, then come back
 
 ---
@@ -47,18 +43,17 @@ override fun getElevationNoiseAmplitudeMs2(): Flow<Float> =
 
 ---
 
-### [MEDIUM] `isActivityPaused` mode-dispatch lives in the UI layer
+### [RESOLVED] `isActivityPaused` mode-dispatch refactored to repository layer
 
-**File:** `FloatingWidgetService.kt:255–261`
+**Status:** Completed in commit `a6f6bb0`
 
-```kotlin
-val isActivityPaused =
-    isWalkPaused ||
-        (mockMode == ROUTE_REPLAY && mockLocationState == PAUSED) ||
-        (mockMode == ROAMING && isRoamingPausedWidget)
-```
+The triple-condition business logic was moved from the UI layer to the repository layer:
 
-This is mode-dispatch business logic embedded inline in a Composable in a service. The same concept likely exists elsewhere. `LocationRepository` or a dedicated query already owns `isWalkPaused`, `currentMode`, and `mockLocationState` — it should expose a single `isCurrentActivityPaused: Flow<Boolean>` derived property so this triple-condition isn't reimplemented at each call site.
+- **`LocationRepository.isCurrentActivityPaused`**: Combines `currentMode`, `mockLocationState`, and `isWalkPaused` for walk-to and route-replay cases.
+- **`ActivityStateRepository.isActivityPaused`**: Extends `LocationRepository`'s logic to include roaming pause state via `combine()`.
+- **`FloatingWidgetService.kt:256`**: Now uses `activityStateRepository.isActivityPaused` directly.
+
+This centralizes mode-dispatch logic so it's no longer reimplemented at call sites.
 
 ---
 
