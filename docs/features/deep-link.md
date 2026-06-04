@@ -63,7 +63,7 @@ Rules:
 | Layer | Detail |
 |-------|--------|
 | Entry | `MainActivity.handleIntent` → `parseDeepLinkCoords` (in `DeepLinkParser.kt`) |
-| Channel | `DeepLinkRepository` — `Channel.CONFLATED`; holds the latest unread coordinate |
+| Channel | `DeepLinkRepository` — `SharedFlow(replay=1)`; `consume()` calls `resetReplayCache()` to clear after delivery |
 | Consumer | `MapViewModel.observeDeepLinkCoords` — sets `pendingTapPosition` + `pendingCameraTarget` |
 | URL builder | `AppConstants.AppInfo.buildDeepLink(lat, lon)` |
 | Manifest | Two intent filters on `MainActivity`: HTTPS (`autoVerify`) + custom scheme |

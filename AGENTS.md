@@ -103,6 +103,9 @@ Rules:
 | `JoystickOverlayService` | `:feature:joystick:impl` | Service | Extends `OverlayService`. Manages `WindowManager` overlay. Reads joystick input → `LocationRepository.updatePosition()`. |
 | `FloatingWidgetService` | `:feature:widget:impl` | Service | Manages widget overlay. Binds to `MockLocationService`. |
 | `RoamingEngine` | `:core:routing` | Class (not service) | Instantiated by `MockLocationService`. Owns OSRM client + random waypoint picker. Runs on service scope. |
+| `EphemeralReplayController` | `:core:location` | Class (`@Singleton`) | Owns the walk→ephemeral-replay transition. Injected by both `MapViewModel` and `FloatingWidgetService`. `addWaypoint()` decides whether to start a new ephemeral replay (walk→replay transition) or append to an existing one. Eliminates duplicated state-machine logic across call sites. |
+| `WalkCoordinator` | `:core:data` | Class (`@Singleton`) | Thin facade over `WalkToEngine`. Cancels any in-flight walk before starting a new one, forwards position ticks to `LocationRepository`, clears `walkTarget` on arrival or cancellation. |
+| `ActivityStateRepository` | `:core:data` | Repository (`@Singleton`) | Single source of truth for unified pause state across all movement modes. Exposes `isActivityPaused: Flow<Boolean>` combining walk-to, route replay, and roaming pause. Prefer over manually combining individual flows from `LocationRepository` and `RoamingRepository`. |
 
 ---
 
