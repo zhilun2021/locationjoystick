@@ -66,6 +66,7 @@ class MapController
         private val osrmClient: OsrmClient,
         @ApplicationScope private val appScope: CoroutineScope,
     ) {
+        @Suppress("ktlint:standard:backing-property-naming")
         private val _state = MutableStateFlow(MapSharedState())
         val sharedState: StateFlow<MapSharedState> = _state.asStateFlow()
 

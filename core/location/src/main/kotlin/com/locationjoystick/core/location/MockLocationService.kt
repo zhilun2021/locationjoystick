@@ -417,7 +417,8 @@ class MockLocationService : Service() {
         removeTestProvider()
         // Persist last location on external kill (process killed, OOM, etc.)
         // stopSpoofing() handles this on normal stop, but onDestroy may be called without it.
-        if (realism.rememberLastLocation && _state.value == MockLocationState.RUNNING) {
+        // Always persist location; the rememberLastLocation setting only controls whether to restore it.
+        if (_state.value == MockLocationState.RUNNING) {
             val pos = LatLng(currentLat, currentLon)
             kotlinx.coroutines.runBlocking { settingsRepository.setLastLocation(pos) }
         }
@@ -503,10 +504,9 @@ class MockLocationService : Service() {
         if (roamingRepository.isRoaming.value) {
             serviceScope.launch { roamingRepository.stopRoaming() }
         }
-        if (realism.rememberLastLocation) {
-            val pos = LatLng(currentLat, currentLon)
-            serviceScope.launch { settingsRepository.setLastLocation(pos) }
-        }
+        // Always persist location; the rememberLastLocation setting only controls whether to restore it.
+        val pos = LatLng(currentLat, currentLon)
+        serviceScope.launch { settingsRepository.setLastLocation(pos) }
         removeTestProvider()
         _state.value = MockLocationState.IDLE
         locationRepository.setMockMode(MockMode.TELEPORT)
