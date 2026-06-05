@@ -171,6 +171,7 @@ internal fun MapScreen(
     val ephemeralRouteSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val ephemeralEndpointsSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val searchMarkerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
+    val pendingTapMarkerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
 
@@ -258,6 +259,7 @@ internal fun MapScreen(
                                 remainingSource.value = layers.remainingSource
                                 endpointsSource.value = layers.endpointsSource
                                 searchMarkerSource.value = layers.searchMarkerSource
+                                pendingTapMarkerSource.value = layers.pendingTapSource
                                 val ephemeralSrcs = style.addEphemeralRouteLayers()
                                 ephemeralRouteSource.value = ephemeralSrcs.routeSource
                                 ephemeralEndpointsSource.value = ephemeralSrcs.endpointsSource
@@ -307,6 +309,8 @@ internal fun MapScreen(
                     val position = uiState.currentPosition
 
                     src.setGeoJson(buildPositionGeoJson(position))
+
+                    pendingTapMarkerSource.value?.setGeoJson(buildPositionGeoJson(uiState.pendingTapPosition))
 
                     val traceWaypoints =
                         uiState.routeTrace

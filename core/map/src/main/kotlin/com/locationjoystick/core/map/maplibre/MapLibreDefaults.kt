@@ -20,6 +20,7 @@ object MapLibreSourceIds {
     const val SEARCH_MARKER = "search-marker-source"
     val EPHEMERAL_ROUTE: String = AppConstants.MapConstants.EPHEMERAL_ROUTE_SOURCE_ID
     val EPHEMERAL_ENDPOINTS: String = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_SOURCE_ID
+    const val PENDING_TAP = "pending-tap-source"
 }
 
 /**
@@ -39,4 +40,5 @@ object MapLibreLayerIds {
     const val SEARCH_MARKER = "search-marker-layer"
     val EPHEMERAL_ROUTE: String = AppConstants.MapConstants.EPHEMERAL_ROUTE_LAYER_ID
     val EPHEMERAL_ENDPOINTS: String = AppConstants.MapConstants.EPHEMERAL_ENDPOINTS_LAYER_ID
+    const val PENDING_TAP = "pending-tap-layer"
 }

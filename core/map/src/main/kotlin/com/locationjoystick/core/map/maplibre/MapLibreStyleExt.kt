@@ -22,6 +22,7 @@ private val COLOR_CURRENT_POS_CIRCLE = Color(0xFF1976D2).toArgb()
 private val COLOR_WAYPOINT = Color(0xFF4CAF50).toArgb()
 private val COLOR_SEGMENT = Color(0xFF2196F3).toArgb()
 private val COLOR_MARKER = Color(0xFFFF5722).toArgb()
+private val COLOR_PENDING_TAP = Color(0xFFE53935).toArgb()
 
 /**
  * Adds the OSM raster tile layer to the style.
@@ -51,6 +52,7 @@ data class LocationLayerSources(
     val remainingSource: GeoJsonSource,
     val endpointsSource: GeoJsonSource,
     val searchMarkerSource: GeoJsonSource? = null,
+    val pendingTapSource: GeoJsonSource? = null,
 )
 
 /**
@@ -141,12 +143,25 @@ fun Style.addLocationLayers(
         )
     }
 
+    val pendingTapSrc = GeoJsonSource(MapLibreSourceIds.PENDING_TAP, emptyGeoJson())
+    addSource(pendingTapSrc)
+    addLayer(
+        CircleLayer(MapLibreLayerIds.PENDING_TAP, MapLibreSourceIds.PENDING_TAP)
+            .withProperties(
+                PropertyFactory.circleRadius(12f),
+                PropertyFactory.circleColor(COLOR_PENDING_TAP),
+                PropertyFactory.circleStrokeColor(COLOR_POSITION_STROKE),
+                PropertyFactory.circleStrokeWidth(3f),
+            ),
+    )
+
     return LocationLayerSources(
         positionSource = positionSrc,
         tracedSource = tracedSrc,
         remainingSource = remainingSrc,
         endpointsSource = endpointsSrc,
         searchMarkerSource = searchMarkerSrc,
+        pendingTapSource = pendingTapSrc,
     )
 }
 
