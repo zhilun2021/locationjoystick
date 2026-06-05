@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -88,6 +89,7 @@ class MapViewModel
         private fun observeCooldownForPendingTap() {
             viewModelScope.launch {
                 _uiState
+                    .distinctUntilChangedBy { it.pendingTapPosition }
                     .flatMapLatest { state ->
                         val target = state.pendingTapPosition
                         if (target != null) teleportUseCase.cooldownFor(target) else flowOf(CooldownState.Ready)
