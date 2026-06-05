@@ -65,20 +65,33 @@
     </div>
 
     <h2>Click-to-move</h2>
-    <p>Long-pressing any point on the map opens a bottom sheet with two movement options:</p>
+    <p>Long-pressing any point on the map opens a bottom sheet. The options shown depend on current state:</p>
     <table class="option-table">
       <thead><tr><th>Action</th><th>Behaviour</th></tr></thead>
       <tbody>
         <tr>
-          <td><strong>Walk here</strong></td>
-          <td>The simulated device moves from the current position to the tapped point at the active speed profile. The movement is interpolated along a straight line (no road-following). GPS updates continue at ~1 Hz during the walk. Walk-to is automatically paused if a route replay is started, and resumes when the route ends or is stopped.</td>
+          <td><strong>Teleport here</strong></td>
+          <td>Position jumps instantly to the tapped point in the next GPS update. No movement interpolation is applied.</td>
         </tr>
         <tr>
-          <td><strong>Teleport here</strong></td>
-          <td>Position jumps instantly to the tapped point in the next GPS update. No movement interpolation is applied. Use this when you need to reposition quickly without the path between points mattering.</td>
+          <td><strong>Walk here</strong></td>
+          <td>The simulated device moves from the current position to the tapped point at the active speed profile, interpolated along a straight line. GPS updates continue at ~1 Hz during the walk.</td>
+        </tr>
+        <tr>
+          <td><strong>Walk here via roads</strong></td>
+          <td>Fetches a real road route from OSRM and walks along it segment by segment at the active speed profile. Falls back to straight-line walk silently if OSRM is unreachable.</td>
+        </tr>
+        <tr>
+          <td><strong>Add next point</strong></td>
+          <td>Visible only while a walk-to is active. Chains a new destination onto the current walk without saving a route. The first tap converts the active walk into an ephemeral replay (current position → walk target → new point); subsequent taps append to the live route. If the current walk was "via roads", the new leg is also resolved via OSRM.</td>
+        </tr>
+        <tr>
+          <td><strong>Share this location</strong></td>
+          <td>Fires the system share sheet with a deep-link URL for the tapped coordinate. See <a href="share.html">Share &amp; Deep Links</a> for details.</td>
         </tr>
       </tbody>
     </table>
+    <p>When a route replay is in progress, the sheet shows different actions instead: <strong>Stop route and teleport</strong>, <strong>Stop route and walk here</strong>, and <strong>Finish route and walk here</strong> (appends the point to the live ephemeral replay rather than stopping it).</p>
 
     <h2>Routes sheet</h2>
     <p>Open your saved routes and start replaying one directly from the map.</p>
@@ -98,9 +111,10 @@
     <div class="feature-section" id="map-favorites-sheet">
       <img class="phone-shot" src="screenshots/07_map_favorites_sheet.png" alt="Map favorites bottom sheet">
       <ul class="section-bullets">
-        <li>Tap a favorite to walk or teleport there instantly.</li>
+        <li>Tap a favorite to expand its detail panel with three movement options: <strong>Set location</strong> (teleport), <strong>Walk to location</strong> (straight line), and <strong>Walk via roads</strong> (OSRM road-following).</li>
         <li>Saved favorites appear with their name and distance from the current spoofed position.</li>
         <li>Distance is calculated as straight-line (great-circle) distance, not road distance.</li>
+        <li>Tap <strong>Save current location</strong> to add your current spoofed position as a new favorite directly from this sheet.</li>
       </ul>
     </div>
 
