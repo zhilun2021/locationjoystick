@@ -19,7 +19,7 @@ bundle:
 	./gradlew bundleRelease
 
 format:
-	ktlint --format
+	ktlint -F '**/*.{kt,kts}' '!**/build/**'
 
 lint:
 	./gradlew lintRelease

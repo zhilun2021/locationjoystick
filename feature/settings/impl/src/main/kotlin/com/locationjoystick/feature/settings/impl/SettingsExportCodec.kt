@@ -280,11 +280,12 @@ internal object SettingsExportCodec {
                         AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2.toDouble(),
                     ).toFloat(),
             hotLocationsEnabled = root.optBoolean("hotLocationsEnabled", false),
-            selectedHotLocationIds = buildSet {
-                root.optJSONArray("selectedHotLocationIds")?.let { arr ->
-                    for (i in 0 until arr.length()) add(arr.getString(i))
-                }
-            },
+            selectedHotLocationIds =
+                buildSet {
+                    root.optJSONArray("selectedHotLocationIds")?.let { arr ->
+                        for (i in 0 until arr.length()) add(arr.getString(i))
+                    }
+                },
         )
     }
 }

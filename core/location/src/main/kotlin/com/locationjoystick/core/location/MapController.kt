@@ -216,11 +216,13 @@ class MapController
                                 locationRepository.setRouteWaypoints(null)
                                 _state.update { it.copy(walkMode = WalkMode.Idle) }
                             }
+
                             MockMode.ROUTE_REPLAY -> {
                                 if (_state.value.walkMode is WalkMode.EphemeralReplay) {
                                     ephemeralReplayController.clearPendingWaypoints()
                                 }
                             }
+
                             else -> {}
                         }
                     }
