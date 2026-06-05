@@ -111,6 +111,11 @@ internal object SettingsExportCodec {
         root.put("jitterMovingRadius", data.jitterMovingRadius)
         root.put("jitterIntervalSeconds", data.jitterIntervalSeconds)
         root.put("jitterIdleIntervalSeconds", data.jitterIdleIntervalSeconds)
+        root.put("jitterSpeedIdleVariationPct", data.jitterSpeedIdleVariationPct)
+        root.put("jitterSpeedMovingVariationPct", data.jitterSpeedMovingVariationPct)
+        root.put("elevationTiltJitterDegrees", data.elevationTiltJitterDegrees)
+        root.put("elevationNoiseAmplitudeMs2", data.elevationNoiseAmplitudeMs2)
+        root.put("hotLocationsEnabled", data.hotLocationsEnabled)
 
         return root.toString()
     }
@@ -251,6 +256,29 @@ internal object SettingsExportCodec {
                     "jitterIdleIntervalSeconds",
                     AppConstants.JitterConstants.DEFAULT_IDLE_INTERVAL_SECONDS,
                 ),
+            jitterSpeedIdleVariationPct =
+                root.optInt(
+                    "jitterSpeedIdleVariationPct",
+                    AppConstants.JitterConstants.SPEED_IDLE_VARIATION_PCT_DEFAULT,
+                ),
+            jitterSpeedMovingVariationPct =
+                root.optInt(
+                    "jitterSpeedMovingVariationPct",
+                    AppConstants.JitterConstants.SPEED_MOVING_VARIATION_PCT_DEFAULT,
+                ),
+            elevationTiltJitterDegrees =
+                root
+                    .optDouble(
+                        "elevationTiltJitterDegrees",
+                        AppConstants.ElevationConstants.DEFAULT_TILT_JITTER_DEGREES.toDouble(),
+                    ).toFloat(),
+            elevationNoiseAmplitudeMs2 =
+                root
+                    .optDouble(
+                        "elevationNoiseAmplitudeMs2",
+                        AppConstants.ElevationConstants.DEFAULT_NOISE_AMPLITUDE_MS2.toDouble(),
+                    ).toFloat(),
+            hotLocationsEnabled = root.optBoolean("hotLocationsEnabled", false),
         )
     }
 }
