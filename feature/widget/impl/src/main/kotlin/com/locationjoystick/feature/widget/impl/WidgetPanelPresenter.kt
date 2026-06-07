@@ -219,26 +219,14 @@ internal class WidgetPanelPresenter(
                     hidePanelView()
                     callbacks.moveAppToBack()
                 },
-                onWalkTo = { pos ->
-                    callbacks.walkTo(pos)
-                    hidePanelView()
-                    callbacks.moveAppToBack()
-                },
-                onWalkViaRoads = { pos ->
-                    callbacks.walkViaRoads(pos)
-                    hidePanelView()
-                    callbacks.moveAppToBack()
-                },
+                onWalkTo = { pos -> callbacks.walkTo(pos) },
+                onWalkViaRoads = { pos -> callbacks.walkViaRoads(pos) },
                 onStopRouteAndTeleport = { pos ->
                     callbacks.stopRouteAndTeleport(pos)
                     hidePanelView()
                     callbacks.moveAppToBack()
                 },
-                onStopRouteAndWalkTo = { pos ->
-                    callbacks.stopRouteAndWalkTo(pos)
-                    hidePanelView()
-                    callbacks.moveAppToBack()
-                },
+                onStopRouteAndWalkTo = { pos -> callbacks.stopRouteAndWalkTo(pos) },
                 onFinishRouteAndWalkTo = { pos -> callbacks.finishRouteAndWalkTo(pos) },
                 onAddEphemeralWaypoint = { pos -> callbacks.addEphemeralWaypoint(pos) },
                 onStartRoaming = { defaults -> callbacks.startRoamingWith(defaults) },
