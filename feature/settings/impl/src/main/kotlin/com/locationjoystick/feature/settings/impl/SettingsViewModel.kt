@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.common.root.SensorPermissionBootstrap
 import com.locationjoystick.core.data.FavoriteRepository
+import com.locationjoystick.core.data.HotLocation
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.datastore.SettingsSnapshot
@@ -250,15 +251,20 @@ class SettingsViewModel
         }
 
         fun setHotLocationsEnabled(enabled: Boolean) {
-            mutableDraft.update { it.copy(hotLocationsEnabled = enabled) }
+            val allIds = FavoriteRepository.HOT_LOCATIONS.map { FavoriteRepository.idForName(it.name) }.toSet()
+            mutableDraft.update { draft ->
+                val currentSelectedIds = draft.selectedHotLocationIds ?: uiState.value.selectedHotLocationIds
+                val newSelectedIds = if (enabled && currentSelectedIds.isEmpty()) allIds else draft.selectedHotLocationIds
+                draft.copy(hotLocationsEnabled = enabled, selectedHotLocationIds = newSelectedIds)
+            }
         }
 
         fun setSelectedHotLocationIds(ids: Set<String>) {
             mutableDraft.update { it.copy(selectedHotLocationIds = ids) }
         }
 
-        val availableHotLocations: List<Pair<String, String>> =
-            FavoriteRepository.HOT_LOCATIONS.map { (name, _, _) -> FavoriteRepository.idForName(name) to name }
+        val availableHotLocations: List<HotLocation> =
+            FavoriteRepository.HOT_LOCATIONS
 
         fun saveChanges() {
             viewModelScope.launch {

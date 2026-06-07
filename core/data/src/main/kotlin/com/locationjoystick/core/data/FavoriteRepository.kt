@@ -16,6 +16,19 @@ import javax.inject.Singleton
 
 private const val TAG = "FavoriteRepository"
 
+/**
+ * A curated hot location entry. The [name] is the stable identity key — do not rename
+ * existing entries (the ID is derived from the name). [country] and [city] are used for
+ * UI grouping only and do not affect storage identity.
+ */
+data class HotLocation(
+    val name: String,
+    val lat: Double,
+    val lon: Double,
+    val country: String,
+    val city: String,
+)
+
 @Singleton
 class FavoriteRepository
     @Inject
@@ -119,24 +132,22 @@ class FavoriteRepository
          * - [HOT_LOCATIONS] — the canonical list of hot location definitions
          * - ISSUES.md (lines 75–87) — full technical debt entry
          */
-        suspend fun upsertHotLocations(
-            selectedIds: Set<String> = HOT_LOCATIONS.map { (name, _, _) -> idForName(name) }.toSet(),
-        ): Result<Unit> =
+        suspend fun upsertHotLocations(selectedIds: Set<String> = HOT_LOCATIONS.map { idForName(it.name) }.toSet()): Result<Unit> =
             withContext(Dispatchers.IO) {
                 runCatching {
-                    HOT_LOCATIONS.forEach { (name, lat, lon) ->
-                        val id = idForName(name)
+                    HOT_LOCATIONS.forEach { location ->
+                        val id = idForName(location.name)
                         if (id in selectedIds) {
                             val existing = favoriteDao.getById(id)
                             if (existing != null) {
-                                favoriteDao.update(existing.copy(latitude = lat, longitude = lon))
+                                favoriteDao.update(existing.copy(latitude = location.lat, longitude = location.lon))
                             } else {
                                 favoriteDao.insert(
                                     FavoriteEntity(
                                         id = id,
-                                        name = name,
-                                        latitude = lat,
-                                        longitude = lon,
+                                        name = location.name,
+                                        latitude = location.lat,
+                                        longitude = location.lon,
                                         createdAt = System.currentTimeMillis(),
                                     ),
                                 )
@@ -161,69 +172,40 @@ class FavoriteRepository
 
             fun idForName(name: String): String = HOT_ID_PREFIX + name.lowercase().replace(Regex("[^a-z0-9]"), "_")
 
-            /**
-             * Curated list of hot favorite locations bundled with the app.
-             *
-             * Each location is upserted via [upsertHotLocations] when the user enables
-             * the "Show hot locations" feature in Settings. Locations are matched by
-             * their derived ID (see [upsertHotLocations] for ID derivation logic).
-             *
-             * ## Adding New Locations
-             *
-             * Append new `Triple("Name", latitude, longitude)` entries to the list.
-             * The name will be converted to a deterministic ID:
-             * ```
-             * "Bryant Park NY" → "hot_bryant_park_ny"
-             * ```
-             *
-             * ## Changing Existing Locations
-             *
-             * - **Updating coordinates:** Simply change the lat/lon. The name stays the same,
-             *   so the ID remains unchanged. Existing entries are updated in-place.
-             * - **Renaming a location:** Creates a new ID, so the old entry orphans (see
-             *   [upsertHotLocations] "Stale Entry Risk" section). To avoid orphans:
-             *   1. Delete the old entry from this list (removes it from the bundle)
-             *   2. Add the new entry with the corrected name
-             *   3. Users who enable hot locations will get a fresh insert of the corrected name
-             *
-             * ## See Also
-             * - [upsertHotLocations] — full technical debt entry with risk analysis
-             * - ISSUES.md (lines 75–87) — additional context on stale entry accumulation
-             */
             val HOT_LOCATIONS =
                 listOf(
-                    Triple("Kiritimati", 1.98715, -157.47714),
-                    Triple("Wellington Botanical Gardens", -41.28141, 174.76649),
-                    Triple("Melbourne Australia", -37.81751, 144.96330),
-                    Triple("Sydney", -33.868820, 151.209296),
-                    Triple("Osaka Tokyo", 34.70246, 135.50024),
-                    Triple("Taipei Taiwan", 25.05544, 121.52250),
-                    Triple("Singapore", 1.288719, 103.848742),
-                    Triple("Antalya Turkey", 36.87944, 30.70900),
-                    Triple("Bornova Buyuk Park Turkey", 38.46314, 27.21649),
-                    Triple("Budapest", 47.52876, 19.05138),
-                    Triple("Canary Islands", 28.12890, -15.43390),
-                    Triple("Dubai", 25.07675, 55.13294),
-                    Triple("Thessaloniki Greece", 40.62773, 22.95471),
-                    Triple("UK", 53.190085, -2.89158),
-                    Triple("Zaragoza Spain", 41.661342, -0.892832),
-                    Triple("Santa Cruz Spain", 28.48952, -16.31807),
-                    Triple("Indaial Brazil", -26.89304, -49.22998),
-                    Triple("Sao Paulo Brazil", -23.58659, -46.65702),
-                    Triple("Bryant Park NY", 40.7537, -73.9835),
-                    Triple("Times Square NYC", 40.7589, -73.9851),
-                    Triple("Millennium Park Chicago", 41.886473, -87.626356),
-                    Triple("Niantic HQ", 37.789464, -122.401621),
-                    Triple("SF Union Square", 37.787993, -122.407437),
-                    Triple("Pier 39 California", 37.808673, -122.409821),
-                    Triple("Honolulu Hawaii", 21.29836, -157.86011),
-                    Triple("Pago Pago", -14.27859, -170.68886),
-                    Triple("Chicago 2026 Fest Park", 41.875549, -87.619066),
-                    Triple("Chicago City Experience", 41.891797, -87.611083),
-                    Triple("Chicago Friendship District", 41.828436, -87.633616),
-                    Triple("Chicago Scouting District", 41.861967, -87.663436),
-                    Triple("Chicago Investigation District", 41.916267, -87.63231),
-                    Triple("Chicago Collection District", 41.877598, -87.62369),
+                    HotLocation("Kiritimati", 1.98715, -157.47714, "Kiribati", "Kiritimati"),
+                    HotLocation("Wellington Botanical Gardens", -41.28141, 174.76649, "New Zealand", "Wellington"),
+                    HotLocation("Melbourne Australia", -37.81751, 144.96330, "Australia", "Melbourne"),
+                    HotLocation("Sydney", -33.868820, 151.209296, "Australia", "Sydney"),
+                    HotLocation("Osaka Tokyo", 34.70246, 135.50024, "Japan", "Osaka"),
+                    HotLocation("Taipei Taiwan", 25.05544, 121.52250, "Taiwan", "Taipei"),
+                    HotLocation("Singapore", 1.288719, 103.848742, "Singapore", "Singapore"),
+                    HotLocation("Antalya Turkey", 36.87944, 30.70900, "Turkey", "Antalya"),
+                    HotLocation("Bornova Buyuk Park Turkey", 38.46314, 27.21649, "Turkey", "Izmir"),
+                    HotLocation("Budapest", 47.52876, 19.05138, "Hungary", "Budapest"),
+                    HotLocation("Canary Islands", 28.12890, -15.43390, "Spain", "Las Palmas"),
+                    HotLocation("Dubai", 25.07675, 55.13294, "United Arab Emirates", "Dubai"),
+                    HotLocation("Thessaloniki Greece", 40.62773, 22.95471, "Greece", "Thessaloniki"),
+                    HotLocation("UK", 53.190085, -2.89158, "United Kingdom", "Cheshire"),
+                    HotLocation("Zaragoza Spain", 41.661342, -0.892832, "Spain", "Zaragoza"),
+                    HotLocation("Santa Cruz Spain", 28.48952, -16.31807, "Spain", "Santa Cruz de Tenerife"),
+                    HotLocation("Indaial Brazil", -26.89304, -49.22998, "Brazil", "Indaial"),
+                    HotLocation("Sao Paulo Brazil", -23.58659, -46.65702, "Brazil", "São Paulo"),
+                    HotLocation("Bryant Park NY", 40.7537, -73.9835, "United States", "New York City"),
+                    HotLocation("Times Square NYC", 40.7589, -73.9851, "United States", "New York City"),
+                    HotLocation("Millennium Park Chicago", 41.886473, -87.626356, "United States", "Chicago"),
+                    HotLocation("Niantic HQ", 37.789464, -122.401621, "United States", "San Francisco"),
+                    HotLocation("SF Union Square", 37.787993, -122.407437, "United States", "San Francisco"),
+                    HotLocation("Pier 39 California", 37.808673, -122.409821, "United States", "San Francisco"),
+                    HotLocation("Honolulu Hawaii", 21.29836, -157.86011, "United States", "Honolulu"),
+                    HotLocation("Pago Pago", -14.27859, -170.68886, "American Samoa", "Pago Pago"),
+                    HotLocation("Chicago 2026 Fest Park", 41.875549, -87.619066, "United States", "Chicago"),
+                    HotLocation("Chicago City Experience", 41.891797, -87.611083, "United States", "Chicago"),
+                    HotLocation("Chicago Friendship District", 41.828436, -87.633616, "United States", "Chicago"),
+                    HotLocation("Chicago Scouting District", 41.861967, -87.663436, "United States", "Chicago"),
+                    HotLocation("Chicago Investigation District", 41.916267, -87.63231, "United States", "Chicago"),
+                    HotLocation("Chicago Collection District", 41.877598, -87.62369, "United States", "Chicago"),
                 )
         }
     }
