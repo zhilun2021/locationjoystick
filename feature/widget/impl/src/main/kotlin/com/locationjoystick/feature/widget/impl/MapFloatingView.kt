@@ -433,6 +433,7 @@ internal fun MapFloatingView(
             TapActionPanel(
                 tap = tap,
                 isRouteReplay = isRouteReplay,
+                isEphemeralReplay = ephemeralWaypoints?.isNotEmpty() == true,
                 isWalkActive = isWalkActive,
                 walkStart = walkStart,
                 walkTarget = walkTarget,
@@ -538,6 +539,7 @@ private fun BoxScope.OverlayRoamingSheet(
 private fun BoxScope.TapActionPanel(
     tap: LatLng,
     isRouteReplay: Boolean,
+    isEphemeralReplay: Boolean,
     isWalkActive: Boolean,
     walkStart: LatLng?,
     walkTarget: LatLng?,
@@ -561,7 +563,7 @@ private fun BoxScope.TapActionPanel(
                 .clickable {}
                 .padding(16.dp),
     ) {
-        if (isRouteReplay) {
+        if (isRouteReplay && !isEphemeralReplay) {
             Text("Route in progress", style = MaterialTheme.typography.titleMedium, color = LjText)
             Spacer(Modifier.height(16.dp))
             Button(
