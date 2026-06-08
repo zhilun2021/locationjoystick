@@ -6,6 +6,7 @@
   <title>Routes — locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
 </head>
 <body>
 <div class="layout">
@@ -15,6 +16,7 @@
       <img src="icon.png" alt="" width="32" height="32">
       <span class="brand-name">locationjoystick</span>
     </a>
+    <div id="docsearch"></div>
     <button class="nav-toggle-btn" aria-label="Toggle navigation" onclick="this.closest('.sidebar').querySelector('nav').classList.toggle('open')">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
     </button>
@@ -159,6 +161,15 @@ fetch('https://api.github.com/repos/shortcuts/locationjoystick')
     document.querySelectorAll('.gh-star-count').forEach(function(el){el.textContent=t});
   })
   .catch(function(){});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@docsearch/js@4"></script>
+<script>
+docsearch({
+  appId: 'qpbq67wnig',
+  apiKey: '2f78aa72d06b6402b38d1e345021bddc',
+  indexName: 'locationjoystick',
+  container: '#docsearch',
+});
 </script>
 </body>
 </html>
