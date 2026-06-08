@@ -23,7 +23,7 @@ import javax.inject.Inject
 class OnboardingViewModel
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
         private val settingsRepository: SettingsRepository,
     ) : ViewModel() {
         private val _uiState = MutableStateFlow(OnboardingUiState(isDebugBuild = BuildConfig.DEBUG))

@@ -10,7 +10,7 @@ import javax.inject.Singleton
 class ImportExportRepository
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         fun readTextFromUri(uri: Uri): String =
             context.contentResolver

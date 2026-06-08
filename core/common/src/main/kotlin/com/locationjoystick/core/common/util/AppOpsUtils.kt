@@ -8,7 +8,7 @@ import android.provider.Settings
 fun isMockLocationEnabled(context: Context): Boolean {
     val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
     val mode =
-        appOps.unsafeCheckOpNoThrow(
+        appOps.checkOpNoThrow(
             AppOpsManager.OPSTR_MOCK_LOCATION,
             Process.myUid(),
             context.packageName,

@@ -18,7 +18,7 @@ import kotlin.random.Random
 class SensorInjector
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         private val tag = "SensorInjector"
         private val sensorManager = context.getSystemService(SensorManager::class.java)

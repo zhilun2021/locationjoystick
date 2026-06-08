@@ -12,7 +12,7 @@ import javax.inject.Singleton
 class SensorPermissionBootstrap
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         private val permission = "android.permission.INJECT_EVENTS"
 

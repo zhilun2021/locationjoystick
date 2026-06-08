@@ -41,7 +41,7 @@ class RoutesViewModel
         private val routeRepository: RouteRepository,
         private val locationRepository: LocationRepository,
         private val settingsRepository: SettingsRepository,
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
         val uiState: StateFlow<RoutesUiState> =
             combine(
