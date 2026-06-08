@@ -301,7 +301,7 @@ internal fun FavoritesFloatingView(
     onTeleport: (FavoriteLocation) -> Unit,
     onWalk: (FavoriteLocation) -> Unit,
     onWalkViaRoads: (FavoriteLocation) -> Unit,
-    onAddFromHere: (name: String) -> Unit,
+    onAddFromHere: ((name: String) -> Unit)? = null,
 ) {
     var showAddForm by remember { mutableStateOf(false) }
     var newFavName by remember { mutableStateOf("") }
@@ -388,60 +388,62 @@ internal fun FavoritesFloatingView(
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            if (showAddForm) {
-                val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
-                OutlinedTextField(
-                    value = newFavName,
-                    onValueChange = { newFavName = it },
-                    label = { Text("Name", color = LjText) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions =
-                        KeyboardActions(
-                            onDone = {
+            if (onAddFromHere != null) {
+                Spacer(Modifier.height(12.dp))
+                if (showAddForm) {
+                    val focusRequester = remember { FocusRequester() }
+                    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                    OutlinedTextField(
+                        value = newFavName,
+                        onValueChange = { newFavName = it },
+                        label = { Text("Name", color = LjText) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions =
+                            KeyboardActions(
+                                onDone = {
+                                    if (newFavName.isNotBlank()) {
+                                        onAddFromHere(newFavName.trim())
+                                        newFavName = ""
+                                        showAddForm = false
+                                    }
+                                },
+                            ),
+                        modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        TextButton(onClick = {
+                            showAddForm = false
+                            newFavName = ""
+                        }) {
+                            Text("Cancel", color = LjText)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Button(
+                            onClick = {
                                 if (newFavName.isNotBlank()) {
                                     onAddFromHere(newFavName.trim())
                                     newFavName = ""
                                     showAddForm = false
                                 }
                             },
-                        ),
-                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    TextButton(onClick = {
-                        showAddForm = false
-                        newFavName = ""
-                    }) {
-                        Text("Cancel", color = LjText)
+                        ) {
+                            Text("Save")
+                        }
                     }
-                    Spacer(Modifier.width(8.dp))
+                } else {
                     Button(
-                        onClick = {
-                            if (newFavName.isNotBlank()) {
-                                onAddFromHere(newFavName.trim())
-                                newFavName = ""
-                                showAddForm = false
-                            }
-                        },
+                        onClick = { showAddForm = true },
+                        modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Save")
+                        Icon(LjIcons.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Add from current location")
                     }
-                }
-            } else {
-                Button(
-                    onClick = { showAddForm = true },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Icon(LjIcons.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add from current location")
                 }
             }
         }

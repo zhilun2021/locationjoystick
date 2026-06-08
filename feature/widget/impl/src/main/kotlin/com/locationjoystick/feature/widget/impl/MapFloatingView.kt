@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -118,6 +116,7 @@ internal fun MapFloatingView(
     recentSearches: List<RecentSearch> = emptyList(),
     onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     cooldownForPosition: ((LatLng) -> Flow<CooldownState>)? = null,
+    onSaveCurrentLocation: ((String) -> Unit)? = null,
 ) {
     val isRoaming = mockMode == MockMode.ROAMING
     val isRouteReplay = mockMode == MockMode.ROUTE_REPLAY
@@ -455,19 +454,22 @@ internal fun MapFloatingView(
         }
 
         if (showFavoritesPicker) {
-            FavoritesOverlayPicker(
+            FavoritesFloatingView(
                 favorites = favorites,
-                onTeleport = { pos ->
-                    onTeleport(pos)
-                    showFavoritesPicker = false
-                    onDismiss()
-                },
-                onWalkTo = { pos ->
-                    onWalkTo(pos)
-                    showFavoritesPicker = false
-                    onDismiss()
-                },
                 onDismiss = { showFavoritesPicker = false },
+                onTeleport = { fav ->
+                    onTeleport(fav.position)
+                    onDismiss()
+                },
+                onWalk = { fav ->
+                    onWalkTo(fav.position)
+                    onDismiss()
+                },
+                onWalkViaRoads = { fav ->
+                    onWalkViaRoads(fav.position)
+                    onDismiss()
+                },
+                onAddFromHere = onSaveCurrentLocation,
             )
         }
     }
@@ -645,71 +647,3 @@ private fun BoxScope.TapActionPanel(
     }
 }
 
-@Composable
-private fun BoxScope.FavoritesOverlayPicker(
-    favorites: List<FavoriteLocation>,
-    onTeleport: (LatLng) -> Unit,
-    onWalkTo: (LatLng) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    Box(modifier = Modifier.fillMaxSize().clickable { onDismiss() })
-    Column(
-        modifier =
-            Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .fillMaxHeight(0.8f)
-                .background(LjBg, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .clickable {}
-                .padding(16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Favorites", style = MaterialTheme.typography.titleLarge, color = LjText)
-            IconButton(onClick = { onDismiss() }) {
-                Icon(LjIcons.Close, contentDescription = "Close favorites", tint = LjText)
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        if (favorites.isEmpty()) {
-            Text(
-                "No favorites saved yet",
-                style = MaterialTheme.typography.bodyMedium,
-                color = LjText.copy(alpha = 0.6f),
-            )
-        } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(favorites, key = { it.id }) { fav ->
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
-                                .padding(12.dp),
-                    ) {
-                        Text(fav.name, style = MaterialTheme.typography.titleMedium, color = LjText)
-                        Text(
-                            text = "${String.format("%.4f", fav.position.latitude)}, ${String.format("%.4f", fav.position.longitude)}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = LjText.copy(alpha = 0.7f),
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { onTeleport(fav.position) },
-                                modifier = Modifier.weight(1f),
-                            ) { Text("Teleport") }
-                            OutlinedButton(
-                                onClick = { onWalkTo(fav.position) },
-                                modifier = Modifier.weight(1f),
-                            ) { Text("Walk") }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

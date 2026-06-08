@@ -234,6 +234,7 @@ internal class WidgetPanelPresenter(
                 onDismiss = { hidePanelView() },
                 onSearchCommitted = { name, lat, lon -> mapController.addRecentSearch(name, lat, lon) },
                 cooldownForPosition = { pos -> mapController.cooldownForPosition(pos) },
+                onSaveCurrentLocation = { name -> callbacks.saveCurrentLocation(name) },
             )
         }
     }
