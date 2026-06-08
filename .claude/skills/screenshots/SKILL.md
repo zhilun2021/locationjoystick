@@ -84,12 +84,13 @@ Once past onboarding, proceed to Step 2.
 cd /path/to/project && ./scripts/screenshot-gallery.sh --auto --output docs/wiki/screenshots
 ```
 
-The `--auto` flag replaces the 3 former manual pause points with adb automation:
+The `--auto` flag replaces all manual pause points with adb automation:
 
-| Pause | What `--auto` does |
+| Phase | What `--auto` does |
 |-------|--------------------|
-| A (step 10: route detail) | Checks UI dump for existing route; if none, navigates to route creator, drops a waypoint, saves "Auto" route |
-| B (step 14: joystick overlay) | Navigates to Map, starts `MockLocationService` via `am start-foreground-service`, starts `JoystickOverlayService` with `extra_show_overlay=true` |
+| Seed (pre-screenshots) | Navigates to Routes — if empty, creates "Morning Walk" and "City Loop" routes (2 waypoints each). Then navigates to Favorites — if empty, adds Tokyo, Paris, London via coordinates dialog. Ensures steps 03, 04, 06, 07, 10 all show populated lists. |
+| A (step 10: route detail) | Routes already seeded; opens overflow menu on first route and taps Edit |
+| B (step 14: joystick overlay) | Navigates to Map, taps the "start simulation" FAB to start spoofing via the UI (required for joystick service to bind correctly), then starts `JoystickOverlayService` with `extra_show_overlay=true` |
 | C (step 15: widget overlay) | Stops joystick service, starts `FloatingWidgetService` (auto-shows on start) |
 
 The script will print progress for every step. Total runtime ~2–3 minutes.

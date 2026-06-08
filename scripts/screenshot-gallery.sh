@@ -200,46 +200,90 @@ pause_for_user() {
   echo ""
 }
 
-# Ensure at least one route exists. If the Routes list is empty, navigate there
-# and create a minimal one-waypoint route so step 10 (route detail) can proceed.
+# Ensure routes exist in the list. If empty, navigate to the creator and create
+# two seed routes so list screenshots and route detail are non-empty.
 seed_route_if_needed() {
-  log "Checking if a route exists..."
+  log "Checking if routes exist..."
   wait_s 2 "Routes list settling"
   local dump
   dump=$(ui_dump)
   if grep -q 'Menu' "$dump" 2>/dev/null; then
     rm -f "$dump"
-    log "Route found — no seeding needed."
+    log "Routes found — no seeding needed."
     return 0
   fi
   rm -f "$dump"
-  log "No routes — creating seed route..."
-  go_idle
-  tap_text_below "Routes" "$CARD_Y_MIN"
-  wait_s 2 "Routes loading"
-  tap_text "Add route"
-  wait_s 1 "Add menu opening"
-  tap_text "from map"
-  wait_s 4 "Route creator loading"
+  log "No routes — creating seed routes..."
   local cx=$(( SCREEN_W / 2 ))
-  # Need ≥2 waypoints before Save FAB appears — tap two distinct map positions.
   local y1=$(( SCREEN_H * 35 / 100 ))
   local y2=$(( SCREEN_H * 55 / 100 ))
-  log "Placing waypoint 1 at ($cx,$y1)"
-  $ADB shell input tap "$cx" "$y1"
-  wait_s 2 "Placing waypoint 1"
-  log "Placing waypoint 2 at ($cx,$y2)"
-  $ADB shell input tap "$cx" "$y2"
-  wait_s 2 "Placing waypoint 2"
-  tap_text "Save route"
-  wait_s 1 "Save dialog opening"
-  $ADB shell input text "Auto"
-  wait_s 1
-  tap_text_exact "Save"
-  wait_s 2 "Saving route"
+  local y3=$(( SCREEN_H * 45 / 100 ))
+  local -a route_names=("Morning Walk" "City Loop")
+  for name in "${route_names[@]}"; do
+    go_idle
+    tap_text_below "Routes" "$CARD_Y_MIN"
+    wait_s 2 "Routes loading"
+    tap_text "Add route"
+    wait_s 1 "Add menu opening"
+    tap_text "from map"
+    wait_s 4 "Route creator loading"
+    # Need ≥2 waypoints before Save FAB appears.
+    $ADB shell input tap "$cx" "$y1"
+    wait_s 2 "Placing waypoint 1"
+    $ADB shell input tap "$(( cx + 60 ))" "$y2"
+    wait_s 2 "Placing waypoint 2"
+    $ADB shell input tap "$cx" "$y3"
+    wait_s 2 "Placing waypoint 3"
+    tap_text "Save route"
+    wait_s 1 "Save dialog opening"
+    $ADB shell input text "$name"
+    wait_s 1
+    tap_text_exact "Save"
+    wait_s 2 "Saving route"
+  done
   go_idle
   tap_text_below "Routes" "$CARD_Y_MIN"
   wait_s 2 "Routes loading"
+}
+
+# Ensure favorites exist in the list. If empty, add three named locations via
+# the coordinates dialog so list screenshots are non-empty.
+seed_favorites_if_needed() {
+  log "Checking if favorites exist..."
+  wait_s 2 "Favorites list settling"
+  local dump
+  dump=$(ui_dump)
+  # Favorite list items expose "More options" overflow buttons in the UI tree.
+  if grep -q 'More options\|Walk to\|Teleport to' "$dump" 2>/dev/null; then
+    rm -f "$dump"
+    log "Favorites found — no seeding needed."
+    return 0
+  fi
+  rm -f "$dump"
+  log "No favorites — creating seed favorites..."
+  local -a fav_names=("Tokyo" "Paris" "London")
+  local -a fav_lats=("35.6762" "48.8566" "51.5074")
+  local -a fav_lons=("139.6503" "2.3522" "-0.1278")
+  for i in "${!fav_names[@]}"; do
+    tap_text "Add favorite"
+    wait_s 1 "Add menu opening"
+    tap_text "from coordinates"
+    wait_s 1 "Dialog opening"
+    tap_text "Name"
+    wait_s 1
+    $ADB shell input text "${fav_names[$i]}"
+    wait_s 1
+    tap_text "Latitude"
+    wait_s 1
+    $ADB shell input text "${fav_lats[$i]}"
+    wait_s 1
+    tap_text "Longitude"
+    wait_s 1
+    $ADB shell input text "${fav_lons[$i]}"
+    wait_s 1
+    tap_text_exact "Save"
+    wait_s 2 "Saving favorite"
+  done
 }
 
 # Start MockLocationService via direct intent (ACTION_START with default coords).
@@ -328,9 +372,29 @@ if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
 fi
 rm -f "$dump"
 
+# ── Seed data (--auto only) ───────────────────────────────────────────────────
+# Routes and favorites must be non-empty before capturing list screenshots (03,
+# 04, 06, 07) and the route detail (10). Seed them once up front so every
+# subsequent step sees populated lists.
+
+if $AUTO; then
+  log "=== SEEDING ROUTES ==="
+  go_idle
+  tap_text_below "Routes" "$CARD_Y_MIN"
+  wait_s 2 "Routes loading"
+  seed_route_if_needed
+
+  log "=== SEEDING FAVORITES ==="
+  go_idle
+  tap_text_below "Favorites" "$CARD_Y_MIN"
+  wait_s 2 "Favorites loading"
+  seed_favorites_if_needed
+fi
+
 # ── 01. IdleScreen ───────────────────────────────────────────────────────────
 
 log "=== 01 IDLE ==="
+go_idle
 screenshot "01_idle"
 
 # ── 02. Map screen ───────────────────────────────────────────────────────────
@@ -470,8 +534,12 @@ if $AUTO; then
   go_idle
   tap_text_below "Map" "$CARD_Y_MIN"
   wait_s 3 "Map loading"
-  start_mock_location
+  # Start spoofing via the UI "start simulation" FAB — direct service calls leave
+  # the app in a state where JoystickOverlayService won't bind correctly.
+  tap_text "start simulation"
+  wait_s 3 "Starting simulation"
   start_joystick_overlay
+  wait_s 3 "Joystick overlay appearing"
 else
   pause_for_user "Start mock location then enable the Floating Joystick.
   The joystick overlay should be visible on screen before you press ENTER.
