@@ -42,7 +42,7 @@ Complete every item in order. Items marked `[x]` are already done.
 
 ## 4. Play Console Account & App Entry
 
-- [ ] Create Google Play Console developer account ($25 one-time fee)
+- [x] Create Google Play Console developer account ($25 one-time fee)
 - [ ] Create app entry — package `com.locationjoystick.app`, Android App Bundle
 - [ ] On first upload, enrol in **Play App Signing**: upload your upload key (the JKS above). Google manages the final signing key from that point on — keep the upload key safe for all future uploads.
 
