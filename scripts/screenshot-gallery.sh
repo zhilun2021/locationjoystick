@@ -304,6 +304,70 @@ start_joystick_overlay() {
   wait_s 2 "Joystick overlay appearing"
 }
 
+# Show joystick via widget panel toggle.
+# EXTRA_SHOW_OVERLAY via am startservice is unreliable when the service is already
+# running (the extra is not re-delivered). The correct flow is:
+#   1. Start FloatingWidgetService (collapsed FAB appears)
+#   2. Tap the master FAB to expand the panel
+#   3. Tap JOYSTICK_TOGGLE (2nd feature icon, after MAP_FLOATING)
+# Widget FAB position is read from the live overlay window bounds via dumpsys.
+show_joystick_via_widget() {
+  log "Starting widget service and toggling joystick..."
+  $ADB shell am startservice \
+    -n "${PACKAGE}/com.locationjoystick.feature.widget.impl.FloatingWidgetService" 2>/dev/null || true
+  wait_s 2 "Widget overlay appearing"
+
+  # Read overlay window position from WindowManager
+  local wx wy
+  read -r wx wy < <(
+    $ADB shell dumpsys window windows 2>/dev/null \
+      | perl -lne 'if (/mAttrs=\{(-?\d+),(\d+)\}\(wrapxwrap\).*APPLICATION_OVERLAY/) { print "$1 $2"; last; }'
+  )
+  if [[ -z "$wx" || -z "$wy" ]]; then
+    warn "Widget window not found via dumpsys — using calculated fallback"
+    local screen_h
+    screen_h=$($ADB shell wm size | awk '{print $NF}' | cut -dx -f2)
+    wx=0; wy=$(( (screen_h - 136 - 66) / 2 ))  # appHeight/2 ≈ layout y
+  fi
+
+  # 440 dpi: 1dp = 2.75px. FAB = 36dp + 4dp padding each side = 44dp = 121px.
+  # Overlay y in LayoutParams is relative to the content area (below status bar).
+  local STATUS_BAR=136
+  local FAB_PX=121
+  local cx=$(( wx + FAB_PX / 2 ))
+  local fab_cy=$(( STATUS_BAR + wy + FAB_PX / 2 ))
+  # MAP_FLOATING is icon 0, JOYSTICK_TOGGLE is icon 1 → offset = (1+1)*FAB_PX + FAB_PX/2
+  local toggle_y=$(( STATUS_BAR + wy + FAB_PX * 2 + FAB_PX / 2 ))
+
+  log "Expanding widget at ($cx, $fab_cy)"
+  $ADB shell input tap "$cx" "$fab_cy"
+  wait_s 1 "Panel expanding"
+
+  log "Tapping JOYSTICK_TOGGLE at ($cx, $toggle_y)"
+  $ADB shell input tap "$cx" "$toggle_y"
+  wait_s 2 "Joystick appearing"
+}
+
+# Collapse widget panel (tap master FAB to toggle).
+collapse_widget_panel() {
+  local wx wy
+  read -r wx wy < <(
+    $ADB shell dumpsys window windows 2>/dev/null \
+      | perl -lne 'if (/mAttrs=\{(-?\d+),(\d+)\}\(wrapxwrap\).*APPLICATION_OVERLAY/) { print "$1 $2"; last; }'
+  )
+  [[ -z "$wx" ]] && wx=0
+  [[ -z "$wy" ]] && wy=1069
+  local STATUS_BAR=136 FAB_PX=121
+  local cx=$(( wx + FAB_PX / 2 ))
+  local cy=$(( STATUS_BAR + wy + FAB_PX / 2 ))
+  log "Collapsing widget panel at ($cx, $cy)"
+  $ADB shell input tap "$cx" "$cy"
+  wait_s 1 "Panel collapsing"
+}
+
+# Expand widget panel (same tap — toggles).
+expand_widget_panel() { collapse_widget_panel; }
+
 # Stop JoystickOverlayService (removes the overlay).
 stop_joystick_overlay() {
   log "Stopping joystick overlay..."
@@ -403,6 +467,10 @@ log "=== 02 MAP ==="
 # Y-min filter prevents matching the closed drawer "Map" item in the semantics tree.
 tap_text_below "Map" "$CARD_Y_MIN"
 wait_s 3 "Map loading"
+# Start spoofing so the map screenshot shows the running state (stop button visible).
+# content-desc is "Start location simulation" — "location simulation" is a reliable substring.
+tap_text "location simulation"
+wait_s 3 "Starting simulation"
 screenshot "02_map"
 
 # ── 03. Routes screen ────────────────────────────────────────────────────────
@@ -534,12 +602,15 @@ if $AUTO; then
   go_idle
   tap_text_below "Map" "$CARD_Y_MIN"
   wait_s 3 "Map loading"
-  # Start spoofing via the UI "start simulation" FAB — direct service calls leave
-  # the app in a state where JoystickOverlayService won't bind correctly.
-  tap_text "start simulation"
+  # Start spoofing first — required for JoystickOverlayService to bind correctly.
+  # content-desc is "Start location simulation"; "location simulation" is a safe substring.
+  tap_text "location simulation"
   wait_s 3 "Starting simulation"
-  start_joystick_overlay
-  wait_s 3 "Joystick overlay appearing"
+  # Show joystick via widget panel toggle (EXTRA_SHOW_OVERLAY via am startservice is
+  # unreliable when the service is already running — the extra is not re-delivered).
+  show_joystick_via_widget
+  # Collapse the widget panel so the joystick is the focus of the screenshot.
+  collapse_widget_panel
 else
   pause_for_user "Start mock location then enable the Floating Joystick.
   The joystick overlay should be visible on screen before you press ENTER.
@@ -551,8 +622,8 @@ screenshot "14_joystick_overlay"
 
 log "=== 15 FLOATING WIDGET ==="
 if $AUTO; then
-  stop_joystick_overlay
-  start_widget_overlay
+  # Widget service already running; expand the panel for the screenshot.
+  expand_widget_panel
 else
   pause_for_user "Dismiss the joystick (if open) and enable the Floating Widget instead.
   The widget bubble should be visible on screen before you press ENTER."

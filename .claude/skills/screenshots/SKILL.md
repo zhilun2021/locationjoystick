@@ -163,9 +163,10 @@ The `--auto` flag replaces all manual pause points with adb automation:
 | Phase | What `--auto` does |
 |-------|--------------------|
 | Seed (pre-screenshots) | Navigates to Routes — if empty, creates "Morning Walk" and "City Loop" routes (2 waypoints each). Then navigates to Favorites — if empty, adds Tokyo, Paris, London via coordinates dialog. Ensures steps 03, 04, 06, 07, 10 all show populated lists. |
-| A (step 10: route detail) | Routes already seeded; opens overflow menu on first route and taps Edit |
-| B (step 14: joystick overlay) | Navigates to Map, taps the "start simulation" FAB to start spoofing via the UI (required for joystick service to bind correctly), then starts `JoystickOverlayService` with `extra_show_overlay=true` |
-| C (step 15: widget overlay) | Stops joystick service, starts `FloatingWidgetService` (auto-shows on start) |
+| A (step 02: map) | Navigates to Map, taps the "start simulation" FAB to start spoofing so the map screenshot shows the running state (stop button visible, location marker active). `go_idle` between steps force-stops the app, ending spoofing cleanly before step 03. |
+| B (step 10: route detail) | Routes already seeded; opens overflow menu on first route and taps Edit |
+| C (step 14: joystick overlay) | Navigates to Map, taps "Start location simulation" FAB (`content-desc` substring `"location simulation"`), starts `FloatingWidgetService`, expands the widget panel (tap master FAB), taps `JOYSTICK_TOGGLE` (2nd feature icon after `MAP_FLOATING`), then collapses the panel so the joystick is the screenshot focus. Widget window position is read from `dumpsys window` to handle user drags. |
+| D (step 15: widget overlay) | Widget service already running from step 14; expands the panel (tap master FAB again) for the screenshot. |
 
 The script will print progress for every step. Total runtime ~2–3 minutes.
 
