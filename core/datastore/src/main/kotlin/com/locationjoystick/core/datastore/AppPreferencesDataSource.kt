@@ -134,6 +134,8 @@ interface PreferencesDataSource {
 
     fun getRealismSuspendedMockingEnabled(): Flow<Boolean>
 
+    fun getRealismPedometerMockingEnabled(): Flow<Boolean>
+
     suspend fun setRealismBearingHoldIdle(enabled: Boolean)
 
     suspend fun setRealismAltitudeEnabled(enabled: Boolean)
@@ -143,6 +145,8 @@ interface PreferencesDataSource {
     suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean)
 
     suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean)
+
+    suspend fun setRealismPedometerMockingEnabled(enabled: Boolean)
 
     /** Gets the list of recently searched locations, newest first. */
     fun getRecentSearches(): Flow<List<RecentSearch>>
@@ -222,6 +226,7 @@ data class SettingsSnapshot(
     val realismWarmupEnabled: Boolean,
     val realismSatelliteExtrasEnabled: Boolean,
     val realismSuspendedMockingEnabled: Boolean,
+    val realismPedometerMockingEnabled: Boolean,
     val jitterSpeedIdleVariationPct: Int,
     val jitterSpeedMovingVariationPct: Int,
     val elevationTiltJitterDegrees: Float,
@@ -284,6 +289,7 @@ class AppPreferencesDataSource
             val REALISM_WARMUP_ENABLED = booleanPreferencesKey("realism_warmup_enabled")
             val REALISM_SATELLITE_EXTRAS_ENABLED = booleanPreferencesKey("realism_satellite_extras_enabled")
             val REALISM_SUSPENDED_MOCKING_ENABLED = booleanPreferencesKey("realism_suspended_mocking_enabled")
+            val REALISM_PEDOMETER_MOCKING_ENABLED = booleanPreferencesKey("realism_pedometer_mocking_enabled")
             val RECENT_SEARCHES = stringPreferencesKey("recent_searches")
             val ROUTES_SORT_NEWEST_FIRST = booleanPreferencesKey("routes_sort_newest_first")
             val FAVORITES_SORT_NEWEST_FIRST = booleanPreferencesKey("favorites_sort_newest_first")
@@ -471,6 +477,8 @@ class AppPreferencesDataSource
 
         override fun getRealismSuspendedMockingEnabled(): Flow<Boolean> = pref(Keys.REALISM_SUSPENDED_MOCKING_ENABLED, false)
 
+        override fun getRealismPedometerMockingEnabled(): Flow<Boolean> = pref(Keys.REALISM_PEDOMETER_MOCKING_ENABLED, false)
+
         override suspend fun setRealismBearingHoldIdle(enabled: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.REALISM_BEARING_HOLD_IDLE] = enabled }
         }
@@ -489,6 +497,10 @@ class AppPreferencesDataSource
 
         override suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) {
             dataStore.edit { prefs -> prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] = enabled }
+        }
+
+        override suspend fun setRealismPedometerMockingEnabled(enabled: Boolean) {
+            dataStore.edit { prefs -> prefs[Keys.REALISM_PEDOMETER_MOCKING_ENABLED] = enabled }
         }
 
         override fun getRecentSearches(): Flow<List<RecentSearch>> =
@@ -616,6 +628,7 @@ class AppPreferencesDataSource
                 prefs[Keys.REALISM_WARMUP_ENABLED] = snapshot.realismWarmupEnabled
                 prefs[Keys.REALISM_SATELLITE_EXTRAS_ENABLED] = snapshot.realismSatelliteExtrasEnabled
                 prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] = snapshot.realismSuspendedMockingEnabled
+                prefs[Keys.REALISM_PEDOMETER_MOCKING_ENABLED] = snapshot.realismPedometerMockingEnabled
                 prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT] =
                     snapshot.jitterSpeedIdleVariationPct.coerceIn(
                         AppConstants.JitterConstants.SPEED_VARIATION_PCT_MIN,
@@ -683,6 +696,7 @@ class AppPreferencesDataSource
                         realismWarmupEnabled = prefs[Keys.REALISM_WARMUP_ENABLED] ?: false,
                         realismSatelliteExtrasEnabled = prefs[Keys.REALISM_SATELLITE_EXTRAS_ENABLED] ?: true,
                         realismSuspendedMockingEnabled = prefs[Keys.REALISM_SUSPENDED_MOCKING_ENABLED] ?: false,
+                        realismPedometerMockingEnabled = prefs[Keys.REALISM_PEDOMETER_MOCKING_ENABLED] ?: false,
                         jitterSpeedIdleVariationPct =
                             prefs[Keys.JITTER_SPEED_IDLE_VARIATION_PCT]
                                 ?: DEFAULT_JITTER_SPEED_IDLE_VARIATION_PCT,

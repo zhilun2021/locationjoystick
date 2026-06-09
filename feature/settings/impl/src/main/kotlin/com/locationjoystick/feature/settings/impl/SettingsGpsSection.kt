@@ -245,4 +245,13 @@ internal fun GpsRealismSection(
                 "Off by default because the pauses cause visible position freezes in many apps. " +
                 "Automatically skipped during route replay.",
     )
+    LjCheckboxRow(
+        checked = uiState.realismPedometerMockingEnabled,
+        onCheckedChange = { onAction(SettingsAction.SetRealismPedometerMockingEnabled(it)) },
+        title = "Mock step counter",
+        description =
+            "Injects synthetic step counts that match your movement speed. " +
+                "Some apps cross-check GPS movement against pedometer data to detect spoofing. " +
+                "Steps are only injected while walking or running (not while using the bike profile).",
+    )
 }

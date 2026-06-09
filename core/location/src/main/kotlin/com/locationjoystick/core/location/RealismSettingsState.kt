@@ -43,6 +43,9 @@ internal class RealismSettingsState {
     @Volatile var suspendedMockingEnabled: Boolean = AppConstants.RealismConstants.SUSPENDED_MOCKING_ENABLED_DEFAULT
         private set
 
+    @Volatile var pedometerMockingEnabled: Boolean = AppConstants.RealismConstants.PEDOMETER_MOCKING_ENABLED_DEFAULT
+        private set
+
     @Volatile var rememberLastLocation: Boolean = false
         private set
 
@@ -79,6 +82,7 @@ internal class RealismSettingsState {
         scope.collectInto(settingsRepository.getRealismWarmupEnabled()) { warmupEnabled = it }
         scope.collectInto(settingsRepository.getRealismSatelliteExtrasEnabled()) { satelliteExtrasEnabled = it }
         scope.collectInto(settingsRepository.getRealismSuspendedMockingEnabled()) { suspendedMockingEnabled = it }
+        scope.collectInto(settingsRepository.getRealismPedometerMockingEnabled()) { pedometerMockingEnabled = it }
         scope.collectInto(settingsRepository.getRememberLastLocation()) { rememberLastLocation = it }
         scope.collectInto(settingsRepository.getJitterSpeedIdleVariationPct()) { speedIdleVariationPct = it }
         scope.collectInto(settingsRepository.getJitterSpeedMovingVariationPct()) { speedMovingVariationPct = it }

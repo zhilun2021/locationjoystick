@@ -63,6 +63,7 @@ object AppConstants {
         const val WARMUP_INITIAL_ACCURACY_METERS = 50.0f
         const val WARMUP_ENABLED_DEFAULT = false
         const val SUSPENDED_MOCKING_ENABLED_DEFAULT = false
+        const val PEDOMETER_MOCKING_ENABLED_DEFAULT = false
         const val SUSPENDED_PUSH_DURATION_MS = 8_000L
         const val SUSPENDED_PAUSE_DURATION_MS = 2_000L
         const val SUSPENDED_PAUSE_JITTER_MS = 800L
@@ -73,6 +74,13 @@ object AppConstants {
         const val ALTITUDE_HUMAN_OFFSET_METERS = 0.8
         const val ALTITUDE_HUMAN_OFFSET_JITTER_PCT = 0.05
         const val ALTITUDE_HUMAN_OFFSET_CLAMP_FACTOR = 0.5
+    }
+
+    object PedometerConstants {
+        const val MAX_WALKING_SPEED_MPS = 4.0f
+        const val STRIDE_BASE_METERS = 0.4f
+        const val STRIDE_SPEED_FACTOR = 0.25f
+        const val STRIDE_JITTER_PCT = 0.15f
     }
 
     object RoamingConstants {

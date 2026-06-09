@@ -278,6 +278,10 @@ fun SettingsRoute(
                     viewModel.setRealismSuspendedMockingEnabled(action.enabled)
                 }
 
+                is SettingsAction.SetRealismPedometerMockingEnabled -> {
+                    viewModel.setRealismPedometerMockingEnabled(action.enabled)
+                }
+
                 is SettingsAction.SetJitterSpeedIdleVariationPct -> {
                     viewModel.setJitterSpeedIdleVariationPct(action.pct)
                 }

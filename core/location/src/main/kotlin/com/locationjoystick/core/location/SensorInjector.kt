@@ -39,6 +39,18 @@ class SensorInjector
             }
         }
 
+        fun injectSteps(
+            cumulativeSteps: Long,
+            stepCount: Int,
+        ) {
+            val method = injectMethod ?: return
+            val timestamp = System.nanoTime()
+            injectSensor(method, Sensor.TYPE_STEP_COUNTER, floatArrayOf(cumulativeSteps.toFloat()), timestamp)
+            repeat(stepCount) {
+                injectSensor(method, Sensor.TYPE_STEP_DETECTOR, floatArrayOf(1.0f), timestamp)
+            }
+        }
+
         fun inject(
             mode: ElevationMode,
             tiltDegrees: Float,

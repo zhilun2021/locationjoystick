@@ -69,6 +69,10 @@ internal sealed class SettingsAction {
         val enabled: Boolean,
     ) : SettingsAction()
 
+    data class SetRealismPedometerMockingEnabled(
+        val enabled: Boolean,
+    ) : SettingsAction()
+
     data class SetJitterSpeedIdleVariationPct(
         val pct: Int,
     ) : SettingsAction()

@@ -45,7 +45,6 @@ class LjApplicationConventionPlugin : Plugin<Project> {
                     release {
                         isMinifyEnabled = true
                         isShrinkResources = true
-                        nativeDebugSymbolLevel = "SYMBOL_TABLE"
                         proguardFiles(
                             getDefaultProguardFile("proguard-android-optimize.txt"),
                             "proguard-rules.pro",

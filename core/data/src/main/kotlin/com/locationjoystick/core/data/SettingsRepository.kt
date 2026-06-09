@@ -155,6 +155,8 @@ class SettingsRepository
 
         fun getRealismSuspendedMockingEnabled(): Flow<Boolean> = dataSource.getRealismSuspendedMockingEnabled()
 
+        fun getRealismPedometerMockingEnabled(): Flow<Boolean> = dataSource.getRealismPedometerMockingEnabled()
+
         suspend fun setRealismBearingHoldIdle(enabled: Boolean) = dataSource.setRealismBearingHoldIdle(enabled)
 
         suspend fun setRealismAltitudeEnabled(enabled: Boolean) = dataSource.setRealismAltitudeEnabled(enabled)
@@ -164,6 +166,8 @@ class SettingsRepository
         suspend fun setRealismSatelliteExtrasEnabled(enabled: Boolean) = dataSource.setRealismSatelliteExtrasEnabled(enabled)
 
         suspend fun setRealismSuspendedMockingEnabled(enabled: Boolean) = dataSource.setRealismSuspendedMockingEnabled(enabled)
+
+        suspend fun setRealismPedometerMockingEnabled(enabled: Boolean) = dataSource.setRealismPedometerMockingEnabled(enabled)
 
         fun getRoutesSortNewestFirst(): Flow<Boolean> = dataSource.getRoutesSortNewestFirst()
 
