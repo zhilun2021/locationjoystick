@@ -36,7 +36,7 @@ Execution order inside `buildLocation`:
 
 ## GPS Realism
 
-Five independent toggles in `AppSettings` (persisted via DataStore).
+Six independent toggles in `AppSettings` (persisted via DataStore).
 
 Defaults: `bearingHoldOnIdle = true`, `altitudeEnabled = true`, `satelliteExtrasEnabled = true`. Others default `false`.
 
@@ -47,5 +47,6 @@ Defaults: `bearingHoldOnIdle = true`, `altitudeEnabled = true`, `satelliteExtras
 | Warm-up envelope | `warmupEnabled` | Accuracy degrades at start, converges over `RealismConstants.WARMUP_DURATION_SECONDS` (≈ 30 s). `warmupStartMs` set once in `startSpoofing`, never reset on pause/resume. |
 | Satellite extras | `satelliteExtrasEnabled` | Attaches `Bundle` extras with slow-churning total + in-fix satellite counts. Refreshed every `RealismConstants.SATELLITE_UPDATE_INTERVAL_MS`. |
 | Suspended mocking | `suspendedMockingEnabled` | Push/pause cycle: pushes for `RealismConstants.SUSPENDED_PUSH_DURATION_MS`, skips for `RealismConstants.SUSPENDED_PAUSE_DURATION_MS` + random jitter up to `SUSPENDED_PAUSE_JITTER_MS`. Auto-disabled in `ROUTE_REPLAY` and `WALK_TO` modes. |
+| Mock step counter | `pedometerMockingEnabled` | Injects `TYPE_STEP_COUNTER` and `TYPE_STEP_DETECTOR` events via `SensorInjector.injectPedometerTick(speedMs)` at 1 Hz. Steps calculated from stride model (base 0.4 m + speed factor, ±15% jitter). Only fires when `0 < speedMs ≤ 4.0 m/s` (walk/run profiles only — not bike). Requires root (`INJECT_EVENTS`, same as Elevation Controls). Default: `false`. |
 
 All realism tuning values in `AppConstants.RealismConstants`.

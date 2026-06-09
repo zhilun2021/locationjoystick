@@ -47,7 +47,8 @@ class SensorInjector
         fun injectPedometerTick(speedMs: Float) {
             val method = injectMethod ?: return
             if (speedMs <= 0f || speedMs > AppConstants.PedometerConstants.MAX_WALKING_SPEED_MPS) return
-            val baseStride = AppConstants.PedometerConstants.STRIDE_BASE_METERS + speedMs * AppConstants.PedometerConstants.STRIDE_SPEED_FACTOR
+            val baseStride =
+                AppConstants.PedometerConstants.STRIDE_BASE_METERS + speedMs * AppConstants.PedometerConstants.STRIDE_SPEED_FACTOR
             val timestamp = System.nanoTime()
             var distanceM = speedMs
             while (distanceM > 0f) {

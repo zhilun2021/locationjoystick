@@ -80,52 +80,57 @@ class CooldownEngineTest {
 
     @Test
     fun `computeState returns Ready when lastPosition is null`() {
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = System.currentTimeMillis(),
-            lastPosition = null,
-            target = LatLng(0.0, 0.0),
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = System.currentTimeMillis(),
+                lastPosition = null,
+                target = LatLng(0.0, 0.0),
+            )
         assertEquals(CooldownState.Ready, result)
     }
 
     @Test
     fun `computeState returns Ready when lastTeleportMs is 0`() {
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = 0L,
-            lastPosition = LatLng(0.0, 0.0),
-            target = LatLng(1.0, 1.0),
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = 0L,
+                lastPosition = LatLng(0.0, 0.0),
+                target = LatLng(1.0, 1.0),
+            )
         assertEquals(CooldownState.Ready, result)
     }
 
     @Test
     fun `computeState returns Ready for very short distance (no cooldown tier hit)`() {
         // Distance < 10 m → tier 0 → cooldownSeconds = 0 → Ready
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = System.currentTimeMillis(),
-            lastPosition = LatLng(0.0, 0.0),
-            target = LatLng(0.0, 0.00001), // ~1 m
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = System.currentTimeMillis(),
+                lastPosition = LatLng(0.0, 0.0),
+                target = LatLng(0.0, 0.00001), // ~1 m
+            )
         assertEquals(CooldownState.Ready, result)
     }
 
     @Test
     fun `computeState returns Cooling for large distance and recent teleport`() {
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = System.currentTimeMillis(),
-            lastPosition = LatLng(0.0, 0.0),
-            target = LatLng(10.0, 10.0), // ~1550 km
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = System.currentTimeMillis(),
+                lastPosition = LatLng(0.0, 0.0),
+                target = LatLng(10.0, 10.0), // ~1550 km
+            )
         assertTrue(result is CooldownState.Cooling)
     }
 
     @Test
     fun `Cooling state has consistent values`() {
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = System.currentTimeMillis(),
-            lastPosition = LatLng(0.0, 0.0),
-            target = LatLng(10.0, 10.0),
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = System.currentTimeMillis(),
+                lastPosition = LatLng(0.0, 0.0),
+                target = LatLng(10.0, 10.0),
+            )
         val cooling = result as CooldownState.Cooling
         assertTrue(cooling.remainingSeconds > 0)
         assertTrue(cooling.totalSeconds > 0)
@@ -137,11 +142,12 @@ class CooldownEngineTest {
     fun `computeState returns Ready after cooldown expires`() {
         // Highest tier is 7200s. Use 3h+ ago to ensure all tiers expired.
         val longAgo = System.currentTimeMillis() - 12_000_000L
-        val result = CooldownEngine.computeState(
-            lastTeleportMs = longAgo,
-            lastPosition = LatLng(0.0, 0.0),
-            target = LatLng(10.0, 10.0),
-        )
+        val result =
+            CooldownEngine.computeState(
+                lastTeleportMs = longAgo,
+                lastPosition = LatLng(0.0, 0.0),
+                target = LatLng(10.0, 10.0),
+            )
         assertEquals(CooldownState.Ready, result)
     }
 }

@@ -216,11 +216,12 @@ class GpsJoystickMigratorTest {
     fun `single coord pair with matching name array produces favorites only`() {
         // count=1 string array + count=1 lat array + count=1 lon array
         // hasMatchingNameArray=true → favPair set, routePair=null
-        val bytes = buildRealm(
-            stringBlock("Paris"),
-            doubleBlock(48.8566), // lat
-            doubleBlock(2.3522),  // lon
-        )
+        val bytes =
+            buildRealm(
+                stringBlock("Paris"),
+                doubleBlock(48.8566), // lat
+                doubleBlock(2.3522), // lon
+            )
         val result = GpsJoystickMigrator.parse(bytes)
         assertTrue(result.isSuccess)
         val m = result.getOrThrow()
@@ -233,10 +234,11 @@ class GpsJoystickMigratorTest {
     fun `single coord pair with no matching name array produces routes only`() {
         // count=2 lat + count=2 lon, no string array → hasMatchingNameArray=false
         // favPair=null, routePair set
-        val bytes = buildRealm(
-            doubleBlock(48.8566, 48.9000), // lats
-            doubleBlock(2.3522, 2.4000),   // lons
-        )
+        val bytes =
+            buildRealm(
+                doubleBlock(48.8566, 48.9000), // lats
+                doubleBlock(2.3522, 2.4000), // lons
+            )
         val result = GpsJoystickMigrator.parse(bytes)
         assertTrue(result.isSuccess)
         val m = result.getOrThrow()

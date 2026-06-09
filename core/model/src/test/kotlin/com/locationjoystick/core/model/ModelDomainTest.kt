@@ -322,13 +322,14 @@ class ModelDomainTest {
     @Test
     fun `toConfig copies all fields from defaults`() {
         val center = LatLng(35.6762, 139.6503)
-        val defaults = RoamingDefaults(
-            radiusMeters = 2000.0,
-            distanceMeters = 500.0,
-            speedProfileId = "bike",
-            followRoads = false,
-            returnToInitialLocation = true,
-        )
+        val defaults =
+            RoamingDefaults(
+                radiusMeters = 2000.0,
+                distanceMeters = 500.0,
+                speedProfileId = "bike",
+                followRoads = false,
+                returnToInitialLocation = true,
+            )
         val config = defaults.toConfig(center)
         assertEquals(center, config.centerPosition)
         assertEquals(2000.0, config.radiusMeters, 0.001)
@@ -342,11 +343,12 @@ class ModelDomainTest {
 
     @Test
     fun `sortedByAge newestFirst sorts descending by createdAt`() {
-        val favorites = listOf(
-            FavoriteLocation("1", "Old", LatLng(0.0, 0.0), 1000L),
-            FavoriteLocation("2", "Newest", LatLng(0.0, 0.0), 3000L),
-            FavoriteLocation("3", "Mid", LatLng(0.0, 0.0), 2000L),
-        )
+        val favorites =
+            listOf(
+                FavoriteLocation("1", "Old", LatLng(0.0, 0.0), 1000L),
+                FavoriteLocation("2", "Newest", LatLng(0.0, 0.0), 3000L),
+                FavoriteLocation("3", "Mid", LatLng(0.0, 0.0), 2000L),
+            )
         val sorted = favorites.sortedByAge(newestFirst = true)
         assertEquals("Newest", sorted[0].name)
         assertEquals("Mid", sorted[1].name)
@@ -355,11 +357,12 @@ class ModelDomainTest {
 
     @Test
     fun `sortedByAge oldestFirst sorts ascending by createdAt`() {
-        val favorites = listOf(
-            FavoriteLocation("1", "Old", LatLng(0.0, 0.0), 1000L),
-            FavoriteLocation("2", "Newest", LatLng(0.0, 0.0), 3000L),
-            FavoriteLocation("3", "Mid", LatLng(0.0, 0.0), 2000L),
-        )
+        val favorites =
+            listOf(
+                FavoriteLocation("1", "Old", LatLng(0.0, 0.0), 1000L),
+                FavoriteLocation("2", "Newest", LatLng(0.0, 0.0), 3000L),
+                FavoriteLocation("3", "Mid", LatLng(0.0, 0.0), 2000L),
+            )
         val sorted = favorites.sortedByAge(newestFirst = false)
         assertEquals("Old", sorted[0].name)
         assertEquals("Mid", sorted[1].name)

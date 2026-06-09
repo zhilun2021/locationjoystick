@@ -782,7 +782,11 @@ class MapViewModelTest {
         runTest {
             viewModel.onAction(MapAction.OpenRoamingSheet)
             viewModel.onAction(MapAction.UpdateRoamingRadius(500.0))
-            assertEquals(500.0, viewModel.uiState.value.roamingDraft?.radiusMeters)
+            assertEquals(
+                500.0,
+                viewModel.uiState.value.roamingDraft
+                    ?.radiusMeters,
+            )
         }
 
     @Test
@@ -790,7 +794,11 @@ class MapViewModelTest {
         runTest {
             viewModel.onAction(MapAction.OpenRoamingSheet)
             viewModel.onAction(MapAction.UpdateRoamingDistance(2000.0))
-            assertEquals(2000.0, viewModel.uiState.value.roamingDraft?.distanceMeters)
+            assertEquals(
+                2000.0,
+                viewModel.uiState.value.roamingDraft
+                    ?.distanceMeters,
+            )
         }
 
     @Test

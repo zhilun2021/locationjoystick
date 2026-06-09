@@ -122,6 +122,40 @@ Expected files:
 15_widget_overlay.png
 ```
 
+---
+
+## Step 3b — Generate Play Store variants (agent runs this)
+
+After capturing screenshots, generate 1024×500 Play Store versions for each PNG.
+Each source screenshot is scaled to fit within 500 px height and centered on a
+1024×500 canvas with a Material dark surface background (`#1C1B1F`).
+Output files use the same name with `_playstore` appended before the extension.
+
+```bash
+python3 << 'EOF'
+from PIL import Image
+import os
+
+src_dir = "docs/wiki/screenshots"
+canvas_w, canvas_h = 1024, 500
+bg_color = (28, 27, 31)
+
+files = sorted(f for f in os.listdir(src_dir) if f.endswith(".png") and "_playstore" not in f)
+for fname in files:
+    src_path = os.path.join(src_dir, fname)
+    name, ext = os.path.splitext(fname)
+    dst_path = os.path.join(src_dir, f"{name}_playstore{ext}")
+    img = Image.open(src_path)
+    img.thumbnail((canvas_w, canvas_h), Image.LANCZOS)
+    canvas = Image.new("RGB", (canvas_w, canvas_h), bg_color)
+    x = (canvas_w - img.width) // 2
+    y = (canvas_h - img.height) // 2
+    canvas.paste(img, (x, y), img if img.mode == "RGBA" else None)
+    canvas.save(dst_path, "PNG", optimize=True)
+    print(f"  {fname} → {os.path.basename(dst_path)}")
+EOF
+```
+
 If any file is missing:
 - **14_joystick_overlay.png / 15_widget_overlay.png**: overlay service failed to start.
   Capture manually: put the overlay on screen, then run
@@ -136,6 +170,8 @@ If any file is missing:
 git add docs/wiki/screenshots/
 git diff --cached --name-only | grep screenshots/
 ```
+
+This will include both the raw `*.png` captures and the `*_playstore.png` variants.
 
 Report how many files changed. Offer to commit alongside the user's next code change,
 or commit immediately if requested.
