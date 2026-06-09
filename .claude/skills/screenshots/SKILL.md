@@ -74,7 +74,81 @@ adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
 grep -o 'text="[^"]*"' /tmp/ui.xml | sort -u
 ```
 
-Once past onboarding, proceed to Step 2.
+Once past onboarding, proceed to Step 1c.
+
+---
+
+## Step 1c — Seed realistic data (agent runs this, after onboarding)
+
+Do this **before** running the script. The script skips seeding steps if data already exists.
+
+### Enable Hot Locations
+
+Navigate to Settings and enable the "Show hot locations" toggle:
+
+```bash
+# Open the app (should already be on Idle screen)
+adb shell am start -n com.locationjoystick.app/.MainActivity
+sleep 2
+
+# Dump UI and find the Settings card
+adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
+grep -o 'text="[^"]*"' /tmp/ui.xml | sort -u
+```
+
+If on the Idle screen, tap Settings card (find its bounds from the dump, typically around `540,900`):
+
+```bash
+# Tap Settings card on Idle screen — find exact coords from dump
+adb shell input tap 540 900
+sleep 2
+```
+
+In Settings, scroll down to find "Show hot locations" toggle and enable it:
+
+```bash
+adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
+grep -i "hot" /tmp/ui.xml
+```
+
+Locate the toggle bounds from the XML (`bounds="[x1,y1][x2,y2]"`), compute center, and tap:
+
+```bash
+# Example — use actual bounds from dump:
+adb shell input tap <CENTER_X> <CENTER_Y>
+sleep 1
+```
+
+Verify the toggle is now checked:
+
+```bash
+adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml /tmp/ui.xml
+grep -A2 -i "hot" /tmp/ui.xml
+```
+
+### Create 3 Routes
+
+Navigate back to Idle, then to Routes, and create three routes with realistic names.
+Use the "Add route → from map" flow. Two waypoints per route is sufficient.
+
+**Route 1 — "Morning Walk"** (e.g. Central Park area, NYC):
+- Waypoint A: tap map near `40.7829° N, 73.9654° W`
+- Waypoint B: tap map ~500 m north
+
+**Route 2 — "Riverside Jog"** (e.g. along the Seine, Paris):
+- Waypoint A: near `48.8566° N, 2.3522° E`
+- Waypoint B: tap map ~600 m east
+
+**Route 3 — "Harbor Stroll"** (e.g. Sydney Harbour):
+- Waypoint A: near `-33.8688° S, 151.2093° E`
+- Waypoint B: tap map ~400 m southeast
+
+For each route, use the RouteCreator UI via adb taps derived from `uiautomator dump`.
+The "Add route" FAB is at the bottom right of the Routes screen. After adding both
+waypoints, tap the save button (checkmark in the top bar).
+
+Once all 3 routes exist, the script's seed phase will detect non-empty Routes and skip
+auto-creation. Proceed to Step 2.
 
 ---
 
