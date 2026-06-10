@@ -376,7 +376,7 @@ show_joystick_via_widget() {
   read -r wx wy < <(
     $ADB shell dumpsys window windows 2>/dev/null \
       | perl -lne 'if (/mAttrs=\{(-?\d+),(\d+)\}\(wrapxwrap\).*APPLICATION_OVERLAY/) { print "$1 $2"; last; }'
-  )
+  ) || true
   if [[ -z "$wx" || -z "$wy" ]]; then
     warn "Widget window not found via dumpsys — using calculated fallback"
     local screen_h
@@ -408,7 +408,7 @@ collapse_widget_panel() {
   read -r wx wy < <(
     $ADB shell dumpsys window windows 2>/dev/null \
       | perl -lne 'if (/mAttrs=\{(-?\d+),(\d+)\}\(wrapxwrap\).*APPLICATION_OVERLAY/) { print "$1 $2"; last; }'
-  )
+  ) || true
   [[ -z "$wx" ]] && wx=0
   [[ -z "$wy" ]] && wy=1069
   local STATUS_BAR=136 FAB_PX=121
@@ -513,6 +513,16 @@ log "Device: $DEVICE_MODEL ($SCREEN_SIZE)"
 demo_mode_enter
 trap demo_mode_exit EXIT
 
+# Ensure app is installed
+log "Checking app installation..."
+if ! $ADB shell pm list packages 2>/dev/null | grep -q "$PACKAGE"; then
+  echo ""
+  echo "Error: $PACKAGE not installed."
+  echo "Run 'make install-on-phone' to build and install the debug APK,"
+  echo "then re-run this script."
+  exit 1
+fi
+
 # Screen height for Y-threshold disambiguation of IdleScreen card taps.
 SCREEN_W=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $1}')
 SCREEN_H=$(echo "$SCREEN_SIZE" | awk -F'x' '{print $2}')
@@ -530,10 +540,42 @@ wait_s 4 "App launching"
 dump=$(ui_dump)
 if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
   rm -f "$dump"
-  echo ""
-  echo "Error: App appears to be on the onboarding screen."
-  echo "Complete onboarding (grant permissions, enable mock location) then re-run."
-  exit 1
+  if $AUTO; then
+    log "App appears to be on onboarding screen — completing via adb..."
+    $ADB shell pm grant "$PACKAGE" android.permission.ACCESS_FINE_LOCATION 2>/dev/null || true
+    $ADB shell pm grant "$PACKAGE" android.permission.ACCESS_COARSE_LOCATION 2>/dev/null || true
+    $ADB shell appops set "$PACKAGE" SYSTEM_ALERT_WINDOW allow 2>/dev/null || true
+    $ADB shell appops set "$PACKAGE" android:mock_location allow 2>/dev/null || true
+    log "Permissions granted. Restarting app..."
+    $ADB shell am force-stop "$PACKAGE"
+    sleep 1
+    $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" >/dev/null
+    wait_s 3 "App starting"
+    # Dismiss notification permission dialog — "Allow" is on the right side.
+    if ! tap_text_exact "Allow" 2>/dev/null; then
+      allow_x=$(( SCREEN_W * 65 / 100 ))
+      allow_y=$(( SCREEN_H * 60 / 100 ))
+      log "Allow button not found in UI tree — tapping at ($allow_x, $allow_y)"
+      $ADB shell input tap "$allow_x" "$allow_y"
+    fi
+    wait_s 2 "Dialog dismissing"
+    # Verify onboarding is past
+    dump=$(ui_dump)
+    if grep -qi "onboarding\|Welcome\|grant\|permission" "$dump" 2>/dev/null; then
+      rm -f "$dump"
+      echo ""
+      echo "Error: Auto-onboarding failed — still on onboarding screen."
+      echo "Complete onboarding manually then re-run."
+      exit 1
+    fi
+    rm -f "$dump"
+    log "Onboarding auto-completed successfully."
+  else
+    echo ""
+    echo "Error: App appears to be on the onboarding screen."
+    echo "Complete onboarding (grant permissions, enable mock location) then re-run."
+    exit 1
+  fi
 fi
 rm -f "$dump"
 
