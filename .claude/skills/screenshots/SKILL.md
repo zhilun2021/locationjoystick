@@ -1,15 +1,19 @@
 ---
 name: screenshots
-description: Refresh all wiki/Play Store gallery screenshots from a connected Android device. Use this skill whenever the user asks to update, regenerate, recapture, or refresh screenshots for the wiki, docs, or Play Store. Also triggers on "run screenshot script", "capture gallery", "update docs screenshots", "screenshot-gallery", or any mention of refreshing the 01_idle through 15_widget_overlay PNGs. Always use this skill for screenshot-related tasks — don't attempt to run screenshot-gallery.sh manually without it.
+description: Refresh all wiki/Play Store gallery screenshots from a connected Android device. Use this skill whenever the user asks to update, regenerate, recapture, or refresh screenshots for the wiki, docs, or Play Store. Also triggers on "run screenshot script", "capture gallery", "update docs screenshots", "screenshot-gallery", or any mention of refreshing the 01_idle through 17_favorites_add_button PNGs. Always use this skill for screenshot-related tasks — don't attempt to run screenshot-gallery.sh manually without it.
 ---
 
 # Screenshots Skill
 
-Captures all 15 canonical gallery screenshots from a connected Android device using
+Captures all 17 canonical gallery screenshots from a connected Android device using
 `scripts/screenshot-gallery.sh --auto`, saving them to `docs/wiki/screenshots/`.
 
 In `--auto` mode the script runs fully non-interactively: the agent executes it
 directly via the Bash tool. No manual terminal steps needed.
+
+**New in v2:** Screenshots 16 and 17 show the "add button" (FAB) in the top-right
+corner of Routes and Favorites screens. Screenshots 14 and 15 (overlays) now include
+service startup verification to improve reliability.
 
 ---
 
@@ -165,8 +169,10 @@ The `--auto` flag replaces all manual pause points with adb automation:
 | Seed (pre-screenshots) | Navigates to Routes — if empty, creates "Morning Walk" and "City Loop" routes (2 waypoints each). Then navigates to Favorites — if empty, adds Tokyo, Paris, London via coordinates dialog. Ensures steps 03, 04, 06, 07, 10 all show populated lists. |
 | A (step 02: map) | Navigates to Map, taps the "start simulation" FAB to start spoofing so the map screenshot shows the running state (stop button visible, location marker active). `go_idle` between steps force-stops the app, ending spoofing cleanly before step 03. |
 | B (step 10: route detail) | Routes already seeded; opens overflow menu on first route and taps Edit |
-| C (step 14: joystick overlay) | Navigates to Map, taps "Start location simulation" FAB (`content-desc` substring `"location simulation"`), starts `FloatingWidgetService`, expands the widget panel (tap master FAB), taps `JOYSTICK_TOGGLE` (2nd feature icon after `MAP_FLOATING`), then collapses the panel so the joystick is the screenshot focus. Widget window position is read from `dumpsys window` to handle user drags. |
-| D (step 15: widget overlay) | Widget service already running from step 14; expands the panel (tap master FAB again) for the screenshot. |
+| C (step 14: joystick overlay) | Navigates to Map, taps "Start location simulation" FAB (`content-desc` substring `"location simulation"`), starts `FloatingWidgetService`, expands the widget panel (tap master FAB), taps `JOYSTICK_TOGGLE` (2nd feature icon after `MAP_FLOATING`), then collapses the panel so the joystick is the screenshot focus. Widget window position is read from `dumpsys window` to handle user drags. **Improved:** Service startup now verified via `dumpsys window` with retries; 3 failed attempts fall back gracefully. |
+| D (step 15: widget overlay) | Widget service already running from step 14; expands the panel (tap master FAB again) for the screenshot. **Improved:** Service startup now verified via `dumpsys window` with retries. |
+| E (step 16: routes add button) | Navigates to Routes list and captures the FAB (plus button) in the top-right corner. Shows the entry point for creating new routes. |
+| F (step 17: favorites add button) | Navigates to Favorites list and captures the FAB (plus button) in the top-right corner. Shows the entry point for adding new favorites. |
 
 The script will print progress for every step. Total runtime ~2–3 minutes.
 
@@ -195,6 +201,8 @@ Expected files:
 13_qr_share.png
 14_joystick_overlay.png
 15_widget_overlay.png
+16_routes_add_button.png
+17_favorites_add_button.png
 ```
 
 ---
@@ -232,9 +240,17 @@ EOF
 ```
 
 If any file is missing:
-- **14_joystick_overlay.png / 15_widget_overlay.png**: overlay service failed to start.
-  Capture manually: put the overlay on screen, then run
+- **14_joystick_overlay.png**: joystick overlay service failed to start after 3 retries.
+  Troubleshoot: verify the app is running, mock location is active, and `FloatingWidgetService` started.
+  Fallback: manually start joystick via widget panel, position on screen, then capture with
   `adb exec-out screencap -p > docs/wiki/screenshots/14_joystick_overlay.png`
+- **15_widget_overlay.png**: widget overlay service failed to start after 3 retries.
+  Troubleshoot: verify the app is running and `FloatingWidgetService` bound correctly.
+  Fallback: manually expand the widget panel, then capture with
+  `adb exec-out screencap -p > docs/wiki/screenshots/15_widget_overlay.png`
+- **16_routes_add_button.png / 17_favorites_add_button.png**: navigation failed.
+  Verify routes or favorites screen loaded, re-run step only with
+  `adb shell am force-stop com.locationjoystick.app && sleep 1 && adb shell am start -n com.locationjoystick.app/.MainActivity`
 - **Any other file**: report which step failed and suggest re-running.
 
 ---

@@ -21,12 +21,13 @@
 # a clean status bar (neutral clock, full battery/signal, no notifications).
 # Demo mode exits automatically on completion or error.
 #
-# Output files (15 canonical PNGs):
+# Output files (17 canonical PNGs):
 #   01_idle, 02_map, 03_routes, 04_favorites, 05_settings,
 #   06_map_routes_sheet, 07_map_favorites_sheet, 08_map_roaming_sheet,
 #   09_route_creator, 10_route_detail, 11_map_picker,
 #   12_settings_scrolled, 13_qr_share,
-#   14_joystick_overlay, 15_widget_overlay
+#   14_joystick_overlay, 15_widget_overlay,
+#   16_routes_add_button, 17_favorites_add_button
 
 set -euo pipefail
 
@@ -301,7 +302,16 @@ start_joystick_overlay() {
   $ADB shell am startservice \
     -n "${PACKAGE}/com.locationjoystick.feature.joystick.impl.JoystickOverlayService" \
     --ez extra_show_overlay true 2>/dev/null || true
-  wait_s 2 "Joystick overlay appearing"
+  wait_s 3 "Joystick overlay appearing"
+  # Verify service is running via dumpsys
+  local attempts=0
+  while ! $ADB shell dumpsys window windows 2>/dev/null | grep -q "JoystickOverlayService"; do
+    if (( ++attempts > 3 )); then
+      warn "Joystick overlay service failed to start after 3 retries"
+      return 1
+    fi
+    wait_s 1 "Retrying joystick startup"
+  done
 }
 
 # Show joystick via widget panel toggle.
@@ -381,7 +391,16 @@ start_widget_overlay() {
   log "Starting widget overlay..."
   $ADB shell am startservice \
     -n "${PACKAGE}/com.locationjoystick.feature.widget.impl.FloatingWidgetService" 2>/dev/null || true
-  wait_s 2 "Widget overlay appearing"
+  wait_s 3 "Widget overlay appearing"
+  # Verify service is running via dumpsys
+  local attempts=0
+  while ! $ADB shell dumpsys window windows 2>/dev/null | grep -q "FloatingWidgetService"; do
+    if (( ++attempts > 3 )); then
+      warn "Widget overlay service failed to start after 3 retries"
+      return 1
+    fi
+    wait_s 1 "Retrying widget startup"
+  done
 }
 
 # Force-stop and restart the app to guarantee a clean IdleScreen landing.
@@ -629,6 +648,22 @@ else
   The widget bubble should be visible on screen before you press ENTER."
 fi
 screenshot "15_widget_overlay"
+
+# ── 16. Routes add button (FAB) ───────────────────────────────────────────────
+
+log "=== 16 ROUTES ADD BUTTON ==="
+go_idle
+tap_text_below "Routes" "$CARD_Y_MIN"
+wait_s 2 "Routes loading"
+screenshot "16_routes_add_button"
+
+# ── 17. Favorites add button (FAB) ────────────────────────────────────────────
+
+log "=== 17 FAVORITES ADD BUTTON ==="
+go_idle
+tap_text_below "Favorites" "$CARD_Y_MIN"
+wait_s 2 "Favorites loading"
+screenshot "17_favorites_add_button"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 
