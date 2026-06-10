@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -531,7 +531,7 @@ private fun SettingsHubScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(remember { ScrollState(0) })
                     .padding(horizontal = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -657,7 +657,7 @@ private fun SettingsGpsSubScreen(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(remember { ScrollState(0) })
                                 .padding(16.dp),
                     ) {
                         SpeedProfilesSection(uiState, onAction)
@@ -719,7 +719,7 @@ private fun SettingsMenusSubScreen(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(remember { ScrollState(0) })
                                 .padding(16.dp),
                     ) {
                         FloatingWidgetSection(uiState, isRooted, onAction)
@@ -760,7 +760,7 @@ private fun SettingsFavoritesRoutesSubScreen(
                         modifier =
                             Modifier
                                 .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(remember { ScrollState(0) })
                                 .padding(16.dp),
                     ) {
                         FavoritesSection(uiState, hotLocations, onAction)
