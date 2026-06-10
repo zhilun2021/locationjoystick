@@ -402,8 +402,12 @@ internal fun MapScreen(
         )
     }
 
+    DisposableEffect(Unit) {
+        onDispose { onAction(MapAction.ClearPinnedPoint) }
+    }
+
     val pending = uiState.pendingTapPosition
-    if (pending != null) {
+    if (uiState.isPendingTapSheetOpen && pending != null) {
         PendingTapSheet(
             position = pending,
             isRouteReplay = uiState.isRouteReplay,

@@ -36,6 +36,7 @@ data class MapUiState(
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val cooldownState: CooldownState = CooldownState.Ready,
     val favoriteCooldownStates: Map<String, CooldownState> = emptyMap(),
+    val isPendingTapSheetOpen: Boolean = false,
 )
 
 // Convenience accessors

@@ -176,7 +176,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `clearPendingTap_setsPendingToNull`() =
+    fun `clearPendingTap_closesSheetButKeepsPin`() =
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
@@ -185,10 +185,12 @@ class MapViewModelTest {
 
             viewModel.onAction(MapAction.TapToTeleport(LatLng(1.0, 2.0)))
             assertEquals(LatLng(1.0, 2.0), viewModel.uiState.value.pendingTapPosition)
+            assertEquals(true, viewModel.uiState.value.isPendingTapSheetOpen)
 
             viewModel.onAction(MapAction.ClearPendingTap)
 
-            assertNull(viewModel.uiState.value.pendingTapPosition)
+            assertEquals(LatLng(1.0, 2.0), viewModel.uiState.value.pendingTapPosition)
+            assertEquals(false, viewModel.uiState.value.isPendingTapSheetOpen)
         }
 
     @Test
@@ -285,7 +287,7 @@ class MapViewModelTest {
         }
 
     @Test
-    fun `clearPendingTap_actuallyClears`() =
+    fun `clearPendingTap_closesSheetAndKeepsPin`() =
         runTest {
             every { locationRepository.mockLocationState } returns MutableStateFlow(MockLocationState.RUNNING)
             every { locationRepository.currentPosition } returns MutableStateFlow(null)
@@ -295,9 +297,11 @@ class MapViewModelTest {
             val position = LatLng(10.5, 20.5)
             viewModel.onAction(MapAction.TapToTeleport(position))
             assertEquals(position, viewModel.uiState.value.pendingTapPosition)
+            assertEquals(true, viewModel.uiState.value.isPendingTapSheetOpen)
 
             viewModel.onAction(MapAction.ClearPendingTap)
-            assertNull(viewModel.uiState.value.pendingTapPosition)
+            assertEquals(position, viewModel.uiState.value.pendingTapPosition)
+            assertEquals(false, viewModel.uiState.value.isPendingTapSheetOpen)
         }
 
     // Walk lifecycle tests

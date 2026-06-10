@@ -113,7 +113,13 @@ class MapViewModel
         private fun observeDeepLinkCoords() {
             viewModelScope.launch {
                 deepLinkRepository.pendingCoords.collect { coords ->
-                    _uiState.update { it.copy(pendingTapPosition = coords, pendingCameraTarget = coords) }
+                    _uiState.update {
+                        it.copy(
+                            pendingTapPosition = coords,
+                            pendingCameraTarget = coords,
+                            isPendingTapSheetOpen = true,
+                        )
+                    }
                     deepLinkRepository.consume()
                 }
             }
@@ -128,17 +134,21 @@ class MapViewModel
 
                 is MapAction.ConfirmTeleport -> {
                     mapController.teleportTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false) }
                 }
 
                 is MapAction.ClearPendingTap -> {
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update { it.copy(isPendingTapSheetOpen = false) }
+                }
+
+                MapAction.ClearPinnedPoint -> {
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false) }
                 }
 
                 is MapAction.StopRouteAndTeleport -> {
                     mapController.stopRouteOnly()
                     mapController.teleportTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false) }
                 }
 
                 is MapAction.SetLocationTo -> {
@@ -165,12 +175,12 @@ class MapViewModel
                 is MapAction.StopRouteAndWalkTo -> {
                     mapController.stopRouteOnly()
                     mapController.walkTo(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false) }
                 }
 
                 is MapAction.FinishRouteAndWalkTo -> {
                     mapController.appendWaypointToRoute(action.position)
-                    _uiState.update { it.copy(pendingTapPosition = null) }
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false) }
                 }
 
                 is MapAction.AddEphemeralWaypoint -> {
@@ -201,7 +211,7 @@ class MapViewModel
 
                 MapAction.StopSpoofing -> {
                     mapController.stopSpoofing()
-                    _uiState.update { it.copy(pendingTapPosition = null, isWalkControlsExpanded = false) }
+                    _uiState.update { it.copy(pendingTapPosition = null, isPendingTapSheetOpen = false, isWalkControlsExpanded = false) }
                 }
 
                 MapAction.ClearMap -> {
@@ -209,6 +219,7 @@ class MapViewModel
                     _uiState.update {
                         it.copy(
                             pendingTapPosition = null,
+                            isPendingTapSheetOpen = false,
                             isWalkControlsExpanded = false,
                             roamingPreviewWaypoints = null,
                             showRoamingSheet = false,
@@ -220,7 +231,14 @@ class MapViewModel
 
                 // Camera
                 MapAction.RecenterCamera -> {
-                    _uiState.update { it.copy(isUserPanning = false, pendingCameraTarget = it.currentPosition) }
+                    _uiState.update {
+                        it.copy(
+                            isUserPanning = false,
+                            pendingCameraTarget = it.currentPosition,
+                            pendingTapPosition = null,
+                            isPendingTapSheetOpen = false,
+                        )
+                    }
                 }
 
                 MapAction.UserStartedPanning -> {
@@ -381,7 +399,7 @@ class MapViewModel
         private fun handleTapToTeleport(position: LatLng) {
             _uiState.update { it.copy(roamingPreviewWaypoints = null) }
             if (mapController.sharedState.value.isSpoofing) {
-                _uiState.update { it.copy(pendingTapPosition = position) }
+                _uiState.update { it.copy(pendingTapPosition = position, isPendingTapSheetOpen = true) }
             } else {
                 mapController.teleportTo(position)
             }

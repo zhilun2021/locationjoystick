@@ -139,4 +139,6 @@ sealed interface MapAction {
     data object ToggleRoamingControls : MapAction
 
     data object ToggleWalkControls : MapAction
+
+    data object ClearPinnedPoint : MapAction
 }

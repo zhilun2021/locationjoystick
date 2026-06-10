@@ -261,7 +261,7 @@ internal fun PendingTapSheet(
                 onClick = { onAction(MapAction.ClearPendingTap) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Do nothing")
+                Text("Close")
             }
         }
     }
