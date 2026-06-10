@@ -78,8 +78,17 @@ class EphemeralReplayController
                 if (currentWaypoints.isEmpty() && walkTarget != null) {
                     // First "Add next point" — transition from WalkCoordinator to RouteReplayEngine
                     val startPos = walkStart ?: locationRepository.currentPosition.value ?: newPoint
-                    val segment = osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads)
-                    val initial = listOf(startPos) + segment
+                    // When road-following, both legs (startPos→walkTarget and walkTarget→newPoint)
+                    // must be OSRM-resolved. The original walk was via roads; preserving that for
+                    // the first leg means the whole chain stays road-following.
+                    val initial =
+                        if (followRoads) {
+                            val toTarget = osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, startPos, walkTarget, followRoads = true)
+                            val toNewPoint = osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads = true)
+                            toTarget + toNewPoint.drop(1) // walkTarget is last of toTarget, first of toNewPoint
+                        } else {
+                            listOf(startPos) + osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads = false)
+                        }
                     walkCoordinator.cancel()
                     val speedMs = settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
                     launchIntent(MockLocationIntentBuilder.startEphemeralReplay(context, initial, speedMs))
