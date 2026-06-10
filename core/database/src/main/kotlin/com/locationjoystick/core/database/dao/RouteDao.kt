@@ -50,7 +50,7 @@ interface RouteDao {
     @Query("SELECT * FROM routes WHERE id = :id")
     suspend fun getById(id: String): RouteEntity?
 
-    @Query("SELECT * FROM routes ORDER BY createdAt DESC")
+    @Query("SELECT * FROM routes ORDER BY name ASC")
     fun getAll(): Flow<List<RouteEntity>>
 
     @Transaction
@@ -58,7 +58,7 @@ interface RouteDao {
     fun getWithWaypoints(routeId: String): Flow<RouteWithWaypoints?>
 
     @Transaction
-    @Query("SELECT * FROM routes ORDER BY createdAt DESC")
+    @Query("SELECT * FROM routes ORDER BY name ASC")
     fun getAllWithWaypoints(): Flow<List<RouteWithWaypoints>>
 
     @Query("DELETE FROM waypoints WHERE routeId = :routeId")

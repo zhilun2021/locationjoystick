@@ -689,7 +689,7 @@ private fun FavoritesSection(
         description = "Adds a curated list of popular locations to your favorites. Select which ones to include below.",
     )
     if (uiState.hotLocationsEnabled && hotLocations.isNotEmpty()) {
-        val allIds = remember(hotLocations) { hotLocations.map { FavoriteRepository.idForName(it.name) }.toSet() }
+        val allIds = remember(hotLocations) { hotLocations.map { FavoriteRepository.idForLocation(it.name, it.city) }.toSet() }
         val selectedIds = uiState.selectedHotLocationIds
         val groupedByCountry =
             remember(hotLocations) {
@@ -720,7 +720,7 @@ private fun FavoritesSection(
             val countryIds =
                 citiesMap.values
                     .flatten()
-                    .map { FavoriteRepository.idForName(it.name) }
+                    .map { FavoriteRepository.idForLocation(it.name, it.city) }
                     .toSet()
             val selectedInCountry = countryIds.count { it in selectedIds }
             val countryState =
@@ -761,7 +761,7 @@ private fun FavoritesSection(
 
             if (isCountryExpanded) {
                 citiesMap.forEach { (city, locations) ->
-                    val cityIds = locations.map { FavoriteRepository.idForName(it.name) }.toSet()
+                    val cityIds = locations.map { FavoriteRepository.idForLocation(it.name, it.city) }.toSet()
                     val hasMultiple = locations.size > 1
                     val cityKey = "$country/$city"
                     val isCityExpanded = cityKey in expandedCities
@@ -805,7 +805,7 @@ private fun FavoritesSection(
 
                     if (hasMultiple && isCityExpanded) {
                         locations.forEach { location ->
-                            val locId = FavoriteRepository.idForName(location.name)
+                            val locId = FavoriteRepository.idForLocation(location.name, location.city)
                             LjCheckboxRow(
                                 checked = locId in selectedIds,
                                 onCheckedChange = { isChecked ->

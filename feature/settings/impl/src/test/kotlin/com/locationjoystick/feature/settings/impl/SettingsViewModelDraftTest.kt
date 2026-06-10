@@ -212,7 +212,7 @@ class SettingsViewModelDraftTest {
             // All hot location IDs should be selected when enabling with empty selection
             val expectedIds =
                 FavoriteRepository.HOT_LOCATIONS
-                    .map { FavoriteRepository.idForName(it.name) }
+                    .map { FavoriteRepository.idForLocation(it.name, it.city) }
                     .toSet()
             assertEquals(expectedIds, viewModel.uiState.value.selectedHotLocationIds)
         }

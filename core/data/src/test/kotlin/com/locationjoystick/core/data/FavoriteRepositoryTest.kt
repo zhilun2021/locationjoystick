@@ -74,15 +74,16 @@ class FavoriteRepositoryTest {
         }
 
     @Test
-    fun `getFavorites sorts by createdAt descending`() =
+    fun `getFavorites sorts alphabetically ascending`() =
         runTest {
-            repository.addFavorite("a", "Old", LatLng(0.0, 0.0), createdAt = 100L)
-            repository.addFavorite("b", "New", LatLng(1.0, 0.0), createdAt = 200L)
+            repository.addFavorite("a", "Zebra", LatLng(0.0, 0.0), createdAt = 100L)
+            repository.addFavorite("b", "Apple", LatLng(1.0, 0.0), createdAt = 200L)
 
             repository.getFavorites().test {
                 val list = awaitItem()
                 assertEquals(2, list.size)
-                assertEquals("New", list.first().name)
+                assertEquals("Apple", list.first().name)
+                assertEquals("Zebra", list.last().name)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -135,19 +136,18 @@ class FavoriteRepositoryTest {
         }
 
     @Test
-    fun `multiple favorites maintain creation order`() =
+    fun `multiple favorites sort alphabetically`() =
         runTest {
-            repository.addFavorite("a", "First", LatLng(0.0, 0.0), createdAt = 100L)
-            repository.addFavorite("b", "Second", LatLng(1.0, 0.0), createdAt = 200L)
-            repository.addFavorite("c", "Third", LatLng(2.0, 0.0), createdAt = 300L)
+            repository.addFavorite("a", "Mango", LatLng(0.0, 0.0), createdAt = 100L)
+            repository.addFavorite("b", "Apple", LatLng(1.0, 0.0), createdAt = 200L)
+            repository.addFavorite("c", "Zebra", LatLng(2.0, 0.0), createdAt = 300L)
 
             repository.getFavorites().test {
                 val list = awaitItem()
                 assertEquals(3, list.size)
-                // Descending order (newest first)
-                assertEquals("Third", list[0].name)
-                assertEquals("Second", list[1].name)
-                assertEquals("First", list[2].name)
+                assertEquals("Apple", list[0].name)
+                assertEquals("Mango", list[1].name)
+                assertEquals("Zebra", list[2].name)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -191,7 +191,7 @@ class FavoriteRepositoryTest {
                 assertEquals(FavoriteRepository.HOT_LOCATIONS.size + 1, list.size)
 
                 // Find the hot location entry
-                val hotSingapore = list.first { it.id == "hot_singapore" }
+                val hotSingapore = list.first { it.id == "hot_singapore_singapore" }
                 assertEquals("Singapore", hotSingapore.name)
                 assertEquals(1.288719, hotSingapore.position.latitude, 0.000001)
                 assertEquals(103.848742, hotSingapore.position.longitude, 0.000001)
@@ -228,14 +228,14 @@ class FavoriteRepositoryTest {
             repository.getFavorites().test {
                 val initialList = awaitItem()
                 assertEquals(FavoriteRepository.HOT_LOCATIONS.size, initialList.size)
-                val initialSingapore = initialList.first { it.id == "hot_singapore" }
+                val initialSingapore = initialList.first { it.id == "hot_singapore_singapore" }
                 assertEquals(1.288719, initialSingapore.position.latitude, 0.000001)
                 assertEquals(103.848742, initialSingapore.position.longitude, 0.000001)
                 cancelAndIgnoreRemainingEvents()
             }
 
             // Manually update hot_singapore to wrong coordinates
-            val wrongEntity = dao.getById("hot_singapore")!!.copy(latitude = 99.99, longitude = 99.99)
+            val wrongEntity = dao.getById("hot_singapore_singapore")!!.copy(latitude = 99.99, longitude = 99.99)
             dao.update(wrongEntity)
 
             // Second upsert should find and update via ID
@@ -246,7 +246,7 @@ class FavoriteRepositoryTest {
                 // Should still have exactly 26 entries (no duplicate created)
                 assertEquals(FavoriteRepository.HOT_LOCATIONS.size, finalList.size)
                 // hot_singapore should be updated back to correct coordinates
-                val finalSingapore = finalList.first { it.id == "hot_singapore" }
+                val finalSingapore = finalList.first { it.id == "hot_singapore_singapore" }
                 assertEquals(1.288719, finalSingapore.position.latitude, 0.000001)
                 assertEquals(103.848742, finalSingapore.position.longitude, 0.000001)
                 cancelAndIgnoreRemainingEvents()

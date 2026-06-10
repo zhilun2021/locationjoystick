@@ -23,7 +23,7 @@ class FakeFavoriteDao : FavoriteDao {
 
     override suspend fun getById(id: String): FavoriteEntity? = state.value.find { it.id == id }
 
-    override fun getAll(): Flow<List<FavoriteEntity>> = state.map { list -> list.sortedByDescending { it.createdAt } }
+    override fun getAll(): Flow<List<FavoriteEntity>> = state.map { list -> list.sortedBy { it.name.lowercase() } }
 
     override suspend fun deleteAll() {
         state.value = emptyList()

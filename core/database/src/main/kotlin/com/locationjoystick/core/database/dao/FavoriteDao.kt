@@ -23,7 +23,7 @@ interface FavoriteDao {
     @Query("SELECT * FROM favorites WHERE id = :id")
     suspend fun getById(id: String): FavoriteEntity?
 
-    @Query("SELECT * FROM favorites ORDER BY createdAt DESC")
+    @Query("SELECT * FROM favorites ORDER BY name ASC")
     fun getAll(): Flow<List<FavoriteEntity>>
 
     @Query("DELETE FROM favorites")

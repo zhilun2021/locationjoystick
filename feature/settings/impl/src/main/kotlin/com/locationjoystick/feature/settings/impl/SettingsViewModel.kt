@@ -257,7 +257,7 @@ class SettingsViewModel
         }
 
         fun setHotLocationsEnabled(enabled: Boolean) {
-            val allIds = FavoriteRepository.HOT_LOCATIONS.map { FavoriteRepository.idForName(it.name) }.toSet()
+            val allIds = FavoriteRepository.HOT_LOCATIONS.map { FavoriteRepository.idForLocation(it.name, it.city) }.toSet()
             mutableDraft.update { draft ->
                 val currentSelectedIds = draft.selectedHotLocationIds ?: uiState.value.selectedHotLocationIds
                 val newSelectedIds = if (enabled && currentSelectedIds.isEmpty()) allIds else draft.selectedHotLocationIds

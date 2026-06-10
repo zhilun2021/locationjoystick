@@ -132,11 +132,11 @@ class FavoriteRepository
          * - [HOT_LOCATIONS] — the canonical list of hot location definitions
          * - ISSUES.md (lines 75–87) — full technical debt entry
          */
-        suspend fun upsertHotLocations(selectedIds: Set<String> = HOT_LOCATIONS.map { idForName(it.name) }.toSet()): Result<Unit> =
+        suspend fun upsertHotLocations(selectedIds: Set<String> = HOT_LOCATIONS.map { idForLocation(it.name, it.city) }.toSet()): Result<Unit> =
             withContext(Dispatchers.IO) {
                 runCatching {
                     HOT_LOCATIONS.forEach { location ->
-                        val id = idForName(location.name)
+                        val id = idForLocation(location.name, location.city)
                         if (id in selectedIds) {
                             val existing = favoriteDao.getById(id)
                             if (existing != null) {
@@ -170,7 +170,8 @@ class FavoriteRepository
         companion object {
             private const val HOT_ID_PREFIX = "hot_"
 
-            fun idForName(name: String): String = HOT_ID_PREFIX + name.lowercase().replace(Regex("[^a-z0-9]"), "_")
+            fun idForLocation(name: String, city: String): String =
+                HOT_ID_PREFIX + "$name $city".lowercase().replace(Regex("[^a-z0-9]"), "_")
 
             val HOT_LOCATIONS =
                 listOf(
@@ -195,8 +196,8 @@ class FavoriteRepository
                     HotLocation("Go Fest Investigation District", 41.916267, -87.63231, "United States", "Chicago"),
                     HotLocation("Go Fest Park", 41.875549, -87.619066, "United States", "Chicago"),
                     HotLocation("Go Fest Scouting District", 41.861967, -87.663436, "United States", "Chicago"),
-                    HotLocation("Go Fest Park Copenhagen", 55.701744, 12.569932, "Denmark", "Copenhagen"),
-                    HotLocation("Go Fest City Experience Copenhagen", 55.684220, 12.580021, "Denmark", "Copenhagen"),
+                    HotLocation("Go Fest Park", 55.701744, 12.569932, "Denmark", "Copenhagen"),
+                    HotLocation("Go Fest City Experience", 55.684220, 12.580021, "Denmark", "Copenhagen"),
                     HotLocation("Honolulu", 21.29836, -157.86011, "United States", "Honolulu"),
                     HotLocation("Indaial", -26.89304, -49.22998, "Brazil", "Indaial"),
                     HotLocation("Jabalquinto", 38.096122, -3.626411, "Spain", "Jabalquinto"),
