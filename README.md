@@ -35,7 +35,6 @@ Here's everything included:
 | **Background Service** | Spoofs while minimized or screen off via foreground service. Low-priority notification. |
 | **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
 | **Elevation Controls** | *(Experimental, root required)* Injects synthetic accelerometer + rotation-vector sensor events so apps see the phone as tilted. Three modes: tilt up / neutral / tilt down. Controlled from the floating widget. Disabled automatically for non-root devices. |
-| **About** | App version, GitHub, privacy policy, and open-source credits. Accessible from home screen and navigation drawer. |
 
 ---
 

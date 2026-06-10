@@ -1,5 +1,7 @@
 package com.locationjoystick.app.navigation
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,13 +18,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.locationjoystick.app.ABOUT_ROUTE
 import com.locationjoystick.app.IDLE_ROUTE
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.feature.favorites.api.FAVORITES_ROUTE
@@ -37,6 +39,7 @@ fun LjDrawerContent(
     navController: NavHostController,
     drawerState: DrawerState,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -116,15 +119,11 @@ fun LjDrawerContent(
             },
         )
         NavigationDrawerItem(
-            icon = { Icon(LjIcons.Info, "About") },
-            label = { Text("About") },
-            selected = currentRoute == ABOUT_ROUTE,
+            icon = { Icon(LjIcons.Explore, "Website") },
+            label = { Text("Website") },
+            selected = false,
             onClick = {
-                navController.navigate(ABOUT_ROUTE) {
-                    popUpTo(IDLE_ROUTE) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://locationjoystick.shrtcts.fr/")))
                 scope.launch { drawerState.close() }
             },
         )

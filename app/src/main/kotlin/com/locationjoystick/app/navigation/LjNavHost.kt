@@ -23,8 +23,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
-import com.locationjoystick.app.ABOUT_ROUTE
-import com.locationjoystick.app.AboutScreen
 import com.locationjoystick.app.IDLE_ROUTE
 import com.locationjoystick.app.IdleScreen
 import com.locationjoystick.core.common.util.isMockLocationEnabled
@@ -124,9 +122,6 @@ fun LjNavHost(
                 },
                 onNavigateToSettings = {
                     navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
-                },
-                onNavigateToAbout = {
-                    navController.navigate(ABOUT_ROUTE) { launchSingleTop = true }
                 },
             )
         }
@@ -261,16 +256,6 @@ fun LjNavHost(
                 onOpenDrawer = onOpenDrawer,
                 viewModel = hiltViewModel(),
             )
-        }
-
-        composable(
-            route = ABOUT_ROUTE,
-            enterTransition = { fadeInScale() },
-            exitTransition = { fadeOutScale() },
-            popEnterTransition = { fadeInScale() },
-            popExitTransition = { fadeOutScale() },
-        ) {
-            AboutScreen(onOpenDrawer = onOpenDrawer)
         }
     }
 }

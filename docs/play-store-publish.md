@@ -124,7 +124,6 @@ Play Console → App content:
 - [ ] Upload AAB to Play Console internal test track
 - [ ] Internal test track install succeeds on a device
 - [ ] Privacy Policy URL resolves in browser
-- [ ] About screen Privacy Policy link opens correctly in-app
 - [ ] Promote to production
 
 ---

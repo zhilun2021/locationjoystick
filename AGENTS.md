@@ -84,7 +84,6 @@ Rules:
 | Deep Links & Location Sharing | @docs/features/deep-link.md |
 | Last Remembered Location | @docs/features/last-location.md |
 | Onboarding | @docs/features/onboarding.md |
-| About Page | @docs/features/about-page.md |
 | Elevation Controls (Experimental) | @docs/features/elevation-controls.md |
 
 ---

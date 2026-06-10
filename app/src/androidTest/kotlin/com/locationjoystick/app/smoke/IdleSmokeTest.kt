@@ -28,7 +28,7 @@ class IdleSmokeTest : BaseSmokeTest() {
     @Test
     fun drawer_opens_and_shows_items() {
         composeRule.openDrawer()
-        listOf("Map", "Routes", "Favorites", "Settings", "About").forEach { label ->
+        listOf("Map", "Routes", "Favorites", "Settings").forEach { label ->
             composeRule
                 .onAllNodesWithText(label)
                 .filterToOne(hasAnyAncestor(hasTestTag("nav_drawer")))
@@ -69,12 +69,6 @@ class IdleSmokeTest : BaseSmokeTest() {
     }
 
     @Test
-    fun navigate_to_about_via_card() {
-        composeRule.navigateFromIdle("About")
-        composeRule.onNodeWithText("Credits").assertIsDisplayed()
-    }
-
-    @Test
     fun navigate_to_map_via_drawer() {
         composeRule.navigateViaDrawer("Map")
         composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
@@ -98,9 +92,4 @@ class IdleSmokeTest : BaseSmokeTest() {
         composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
     }
 
-    @Test
-    fun navigate_to_about_via_drawer() {
-        composeRule.navigateViaDrawer("About")
-        composeRule.onNodeWithText("Credits").assertIsDisplayed()
-    }
 }
