@@ -48,4 +48,40 @@ class MainActivityIntentTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Search location").assertIsDisplayed()
     }
+
+    @Test
+    fun intent_navigate_to_favorites_lands_on_favorites_screen() {
+        composeRule.activityRule.scenario.onActivity { activity ->
+            activity.handleIntent(
+                Intent(activity, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_NAVIGATE_TO_FAVORITES, true),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()
+    }
+
+    @Test
+    fun intent_navigate_to_routes_lands_on_routes_screen() {
+        composeRule.activityRule.scenario.onActivity { activity ->
+            activity.handleIntent(
+                Intent(activity, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_NAVIGATE_TO_ROUTES, true),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Add route").assertIsDisplayed()
+    }
+
+    @Test
+    fun existing_navigate_to_map_still_works_after_constant_migration() {
+        composeRule.activityRule.scenario.onActivity { activity ->
+            activity.handleIntent(
+                Intent(activity, MainActivity::class.java)
+                    .putExtra(MainActivity.EXTRA_NAVIGATE_TO_MAP, true),
+            )
+        }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
+    }
 }

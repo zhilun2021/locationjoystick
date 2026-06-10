@@ -23,6 +23,8 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_NAVIGATE_TO_MAP = "navigate_to_map"
         const val EXTRA_NAVIGATE_TO_ROUTE_CREATOR = "navigate_to_route_creator"
+        const val EXTRA_NAVIGATE_TO_FAVORITES = "navigate_to_favorites"
+        const val EXTRA_NAVIGATE_TO_ROUTES = "navigate_to_routes"
         const val ACTION_MOVE_TO_BACK = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
     }
 
@@ -30,6 +32,10 @@ class MainActivity : ComponentActivity() {
     internal val navigateToMapFlow = navigateToMapMutableFlow.asSharedFlow()
     private val navigateToRouteCreatorMutableFlow = MutableSharedFlow<Unit>(replay = 1)
     internal val navigateToRouteCreatorFlow = navigateToRouteCreatorMutableFlow.asSharedFlow()
+    private val navigateToFavoritesMutableFlow = MutableSharedFlow<Unit>(replay = 1)
+    internal val navigateToFavoritesFlow = navigateToFavoritesMutableFlow.asSharedFlow()
+    private val navigateToRoutesMutableFlow = MutableSharedFlow<Unit>(replay = 1)
+    internal val navigateToRoutesFlow = navigateToRoutesMutableFlow.asSharedFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +57,8 @@ class MainActivity : ComponentActivity() {
                 LjApp(
                     navigateToMapFlow = navigateToMapFlow,
                     navigateToRouteCreatorFlow = navigateToRouteCreatorFlow,
+                    navigateToFavoritesFlow = navigateToFavoritesFlow,
+                    navigateToRoutesFlow = navigateToRoutesFlow,
                 )
             }
         }
@@ -70,6 +78,12 @@ class MainActivity : ComponentActivity() {
         }
         if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_ROUTE_CREATOR, false) == true) {
             navigateToRouteCreatorMutableFlow.tryEmit(Unit)
+        }
+        if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_FAVORITES, false) == true) {
+            navigateToFavoritesMutableFlow.tryEmit(Unit)
+        }
+        if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_ROUTES, false) == true) {
+            navigateToRoutesMutableFlow.tryEmit(Unit)
         }
         if (intent?.action == ACTION_MOVE_TO_BACK) {
             moveTaskToBack(true)

@@ -42,6 +42,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -104,6 +106,11 @@ class MockLocationService : Service() {
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
     @Inject lateinit var sensorInjector: SensorInjector
+
+    private val notificationManager: android.app.NotificationManager by lazy {
+        getSystemService(android.app.NotificationManager::class.java)
+    }
+
     private val exceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             Log.e(TAG, "MockLocationService coroutine crashed", throwable)
@@ -250,6 +257,22 @@ class MockLocationService : Service() {
                     writeCurrentPosition(position.latitude, position.longitude)
                 }
             }
+        }
+        // Reactive notification refresh — source of truth is repository flows, not _state.
+        // distinctUntilChanged prevents notify storm during 1 Hz position ticks.
+        serviceScope.launch {
+            combine(locationRepository.currentMode, locationRepository.mockLocationState) { mode, state ->
+                Pair(mode, state)
+            }.distinctUntilChanged()
+                .collect { (mode, state) ->
+                    // Double-guarded: walk-to PAUSED never triggers replayPaused=true
+                    val replayActive = mode == MockMode.ROUTE_REPLAY
+                    val replayPaused = mode == MockMode.ROUTE_REPLAY && state == MockLocationState.PAUSED
+                    notificationManager.notify(
+                        AppConstants.NotificationConstants.ID_ACTIVE,
+                        buildMockLocationNotification(this@MockLocationService, replayActive, replayPaused),
+                    )
+                }
         }
         // Jitter and realism settings — each updates a @Volatile field consumed by captureSnapshot().
         realism.observe(serviceScope, settingsRepository)
@@ -753,5 +776,8 @@ class MockLocationService : Service() {
 
     private fun postPermissionErrorNotification() = postMockLocationPermissionErrorNotification(this)
 
-    private fun buildNotification(): Notification = buildMockLocationNotification(this)
+    private fun buildNotification(
+        replayActive: Boolean = false,
+        replayPaused: Boolean = false,
+    ): Notification = buildMockLocationNotification(this, replayActive, replayPaused)
 }

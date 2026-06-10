@@ -161,6 +161,11 @@ object AppConstants {
         const val TITLE_ACTIVE = "Mock location active"
         const val TEXT_ACTIVE = "locationjoystick is spoofing your GPS position"
         const val ACTION_STOP = "Stop"
+        const val ACTION_OPEN_MAP = "Map"
+        const val ACTION_OPEN_FAVORITES = "Favorites"
+        const val ACTION_OPEN_ROUTES = "Routes"
+        const val ACTION_PAUSE = "Pause"
+        const val ACTION_RESUME = "Resume"
     }
 
     object ServiceConstants {
@@ -191,6 +196,10 @@ object AppConstants {
 
         /** Compact encoding of ephemeral waypoints: "lat,lon;lat,lon;...". Replaces the old parallel DoubleArray extras. */
         const val EXTRA_EPHEMERAL_WAYPOINTS = "extra_ephemeral_waypoints"
+        const val EXTRA_NAVIGATE_TO_MAP = "navigate_to_map"
+        const val EXTRA_NAVIGATE_TO_FAVORITES = "navigate_to_favorites"
+        const val EXTRA_NAVIGATE_TO_ROUTES = "navigate_to_routes"
+        const val MAIN_ACTIVITY_CLASS = "com.locationjoystick.app.MainActivity"
         const val ACTION_OVERLAY_SHOW = "com.locationjoystick.action.OVERLAY_SHOW"
         const val ACTION_OVERLAY_HIDE = "com.locationjoystick.action.OVERLAY_HIDE"
         const val EXTRA_SHOW_OVERLAY = "extra_show_overlay"
