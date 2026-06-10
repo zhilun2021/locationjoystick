@@ -232,12 +232,11 @@ Expected output files (34 total: 17 source + 17 playstore variants):
 09_route_creator.png + 09_route_creator_playstore.png
 10_route_detail.png + 10_route_detail_playstore.png
 11_map_picker.png + 11_map_picker_playstore.png
-12_settings_scrolled.png + 12_settings_scrolled_playstore.png
-13_qr_share.png + 13_qr_share_playstore.png
-14_joystick_overlay.png + 14_joystick_overlay_playstore.png
-15_widget_overlay.png + 15_widget_overlay_playstore.png
-16_routes_add_button.png + 16_routes_add_button_playstore.png
-17_favorites_add_button.png + 17_favorites_add_button_playstore.png
+12_qr_share.png + 12_qr_share_playstore.png
+13_joystick_overlay.png + 13_joystick_overlay_playstore.png
+14_widget_overlay.png + 14_widget_overlay_playstore.png
+15_routes_add_button.png + 15_routes_add_button_playstore.png
+16_favorites_add_button.png + 16_favorites_add_button_playstore.png
 ```
 
 If any file is missing:

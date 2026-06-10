@@ -30,13 +30,13 @@
 #   --steps 01,03,05     (run steps 1, 3, 5)
 # Seeding (routes, favorites) always runs before the first selected step.
 #
-# Output files (17 canonical PNGs):
+# Output files (16 canonical PNGs):
 #   01_idle, 02_map, 03_routes, 04_favorites, 05_settings,
 #   06_map_routes_sheet, 07_map_favorites_sheet, 08_map_roaming_sheet,
 #   09_route_creator, 10_route_detail, 11_map_picker,
-#   12_settings_scrolled, 13_qr_share,
-#   14_joystick_overlay, 15_widget_overlay,
-#   16_routes_add_button, 17_favorites_add_button
+#   12_qr_share,
+#   13_joystick_overlay, 14_widget_overlay,
+#   15_routes_add_button, 16_favorites_add_button
 
 set -euo pipefail
 
@@ -85,7 +85,7 @@ if [[ -n "$STEPS_FILTER" ]]; then
   done
 else
   # No filter: enable all steps
-  for i in {01..17}; do ENABLED_STEPS="${ENABLED_STEPS}$(printf '%02d' $i) "; done
+  for i in {01..16}; do ENABLED_STEPS="${ENABLED_STEPS}$(printf '%02d' $i) "; done
 fi
 
 # Helper to check if a step should run (e.g. should_run_step "16")
@@ -739,22 +739,10 @@ if should_run_step "11"; then
   wait_s 1 "Returning to Favorites"
 fi
 
-# ── 12. Settings scrolled ────────────────────────────────────────────────────
+# ── 12. QR share dialog ──────────────────────────────────────────────────────
 
 if should_run_step "12"; then
-  log "=== 12 SETTINGS SCROLLED ==="
-  go_idle
-  tap_text_below "Settings" "$CARD_Y_MIN"
-  wait_s 2 "Settings loading"
-  $ADB shell input swipe 540 1800 540 600 600
-  wait_s 1 "Scrolling"
-  screenshot "12_settings_scrolled"
-fi
-
-# ── 13. QR share dialog ──────────────────────────────────────────────────────
-
-if should_run_step "13"; then
-  log "=== 13 QR SHARE ==="
+  log "=== 12 QR SHARE ==="
   tap_text "Export"
   wait_s 1 "Export menu opening"
   tap_text "QR"
@@ -764,10 +752,10 @@ if should_run_step "13"; then
   wait_s 1 "Dismissing QR dialog"
 fi
 
-# ── 14. Joystick overlay ─────────────────────────────────────────────────────
+# ── 13. Joystick overlay ─────────────────────────────────────────────────────
 
-if should_run_step "14"; then
-  log "=== 14 JOYSTICK OVERLAY ==="
+if should_run_step "13"; then
+  log "=== 13 JOYSTICK OVERLAY ==="
   if $AUTO; then
     go_idle
     tap_text_below "Map" "$CARD_Y_MIN"
@@ -789,10 +777,10 @@ if should_run_step "14"; then
   screenshot "14_joystick_overlay"
 fi
 
-# ── 15. Floating widget ──────────────────────────────────────────────────────
+# ── 14. Floating widget ──────────────────────────────────────────────────────
 
-if should_run_step "15"; then
-  log "=== 15 FLOATING WIDGET ==="
+if should_run_step "14"; then
+  log "=== 14 FLOATING WIDGET ==="
   if $AUTO; then
     # Widget service already running; expand the panel for the screenshot.
     expand_widget_panel
@@ -803,10 +791,10 @@ if should_run_step "15"; then
   screenshot "15_widget_overlay"
 fi
 
-# ── 16. Routes add button (FAB) ───────────────────────────────────────────────
+# ── 15. Routes add button (FAB) ───────────────────────────────────────────────
 
-if should_run_step "16"; then
-  log "=== 16 ROUTES ADD BUTTON ==="
+if should_run_step "15"; then
+  log "=== 15 ROUTES ADD BUTTON ==="
   go_idle
   tap_text_below "Routes" "$CARD_Y_MIN"
   wait_s 2 "Routes loading"
@@ -815,10 +803,10 @@ if should_run_step "16"; then
   screenshot "16_routes_add_button"
 fi
 
-# ── 17. Favorites add button (FAB) ────────────────────────────────────────────
+# ── 16. Favorites add button (FAB) ────────────────────────────────────────────
 
-if should_run_step "17"; then
-  log "=== 17 FAVORITES ADD BUTTON ==="
+if should_run_step "16"; then
+  log "=== 16 FAVORITES ADD BUTTON ==="
   go_idle
   tap_text_below "Favorites" "$CARD_Y_MIN"
   wait_s 2 "Favorites loading"
