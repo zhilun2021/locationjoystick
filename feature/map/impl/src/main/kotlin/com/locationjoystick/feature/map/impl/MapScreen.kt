@@ -130,6 +130,11 @@ fun MapRoute(
             snackbarHostState.showSnackbar(msg)
         }
     }
+    LaunchedEffect(Unit) {
+        viewModel.routingErrors.collect { msg ->
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
     MapScreen(
         uiState = uiState,
         recentSearches = recentSearches,

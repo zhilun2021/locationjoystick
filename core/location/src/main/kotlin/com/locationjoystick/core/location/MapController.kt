@@ -23,8 +23,11 @@ import com.locationjoystick.core.routing.OsrmClient
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -71,6 +74,9 @@ class MapController
         val sharedState: StateFlow<MapSharedState> = _state.asStateFlow()
 
         val completionMessages = locationRepository.completionEvents
+
+        private val _routingErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+        val routingErrors: SharedFlow<String> = _routingErrors.asSharedFlow()
 
         init {
             observeLocationState()
@@ -285,6 +291,7 @@ class MapController
             appScope.launch {
                 val current = locationRepository.currentPosition.value
                 if (current == null) {
+                    Log.w(TAG, "walkViaRoads: no current position, straight walk")
                     walkTo(position)
                     return@launch
                 }
@@ -294,6 +301,7 @@ class MapController
                         .getOrNull()
                 if (waypoints.isNullOrEmpty()) {
                     Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
+                    _routingErrors.tryEmit("Road routing unavailable — using straight walk")
                     walkTo(position)
                     return@launch
                 }

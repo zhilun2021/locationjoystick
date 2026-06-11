@@ -4,6 +4,7 @@ import android.content.Intent
 import android.util.Log
 import android.view.Gravity
 import android.view.View
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
@@ -165,6 +166,11 @@ class FloatingWidgetService :
         lifecycleScope.launch {
             locationRepository.isActivityActive.collect { active ->
                 if (!active) routeExpandedFlow.value = false
+            }
+        }
+        lifecycleScope.launch {
+            mapController.routingErrors.collect { msg ->
+                Toast.makeText(this@FloatingWidgetService, msg, Toast.LENGTH_SHORT).show()
             }
         }
         lifecycleScope.launch {

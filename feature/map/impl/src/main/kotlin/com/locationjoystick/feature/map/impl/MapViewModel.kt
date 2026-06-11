@@ -60,6 +60,7 @@ class MapViewModel
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RoamingDefaults())
 
         val completionMessages: SharedFlow<String> = mapController.completionMessages
+        val routingErrors: SharedFlow<String> = mapController.routingErrors
 
         init {
             observeSharedState()
