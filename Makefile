@@ -5,7 +5,10 @@ stop:
 	pkill -f "adb logcat" || true
 
 clean:
-	./gradlew clean
+	rm -rf ~/.gradle/caches
+	rm -rf ~/.gradle/.tmp
+	rm -rf ~/.gradle/daemon
+	rm -rf ~/.gradle/configuration-cache
 	rm -rf .gradle
 	rm -rf build
 	find . -name "build" -type d -not -path "*/.git/*" | xargs rm -rf
