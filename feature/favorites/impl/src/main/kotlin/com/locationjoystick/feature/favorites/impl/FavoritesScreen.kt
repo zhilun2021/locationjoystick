@@ -45,7 +45,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.CooldownState
+import com.locationjoystick.core.model.LatLng
+import java.util.Locale
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.component.CooldownAdvisoryBadge
 import com.locationjoystick.core.designsystem.component.EmptyState
@@ -209,6 +212,7 @@ internal fun FavoritesScreen(
                                 modifier = Modifier.animateItem(),
                                 favorite = favorite,
                                 cooldownState = cooldownStates[favorite.id] ?: CooldownState.Ready,
+                                currentPosition = getCurrentPosition(),
                                 onRowClick = { onTeleport(favorite) },
                                 onEdit = { editingFavorite = it },
                                 onDelete = { onSetPendingDeleteId(it.id) },
@@ -268,6 +272,7 @@ internal fun FavoritesScreen(
 private fun FavoriteCard(
     favorite: com.locationjoystick.core.model.FavoriteLocation,
     cooldownState: CooldownState,
+    currentPosition: LatLng?,
     onRowClick: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
     onEdit: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
     onDelete: (com.locationjoystick.core.model.FavoriteLocation) -> Unit,
@@ -293,7 +298,12 @@ private fun FavoriteCard(
             )
             Spacer(Modifier.height(6.dp))
             CooldownAdvisoryBadge(
-                (cooldownState as? CooldownState.Cooling)?.toAdvisoryLabel() ?: "No wait needed",
+                (cooldownState as? CooldownState.Cooling)?.run { "Suggested wait: ${toAdvisoryLabel()}" }
+                    ?: currentPosition?.let { pos ->
+                        val m = haversineDistance(pos, favorite.position)
+                        if (m >= 1000.0) "%.1f km away".format(Locale.US, m / 1000.0)
+                        else "%.0f m away".format(Locale.US, m)
+                    } ?: "No wait needed",
             )
         }
         Box {

@@ -100,7 +100,7 @@ fun FavoritesList(
                         )
                         if (cooldownLabel != null) {
                             Spacer(Modifier.height(6.dp))
-                            CooldownAdvisoryBadge(cooldownLabel.invoke(favorite) ?: "No wait needed")
+                            CooldownAdvisoryBadge(cooldownLabel.invoke(favorite)?.let { "Suggested wait: $it" } ?: "No wait needed")
                         }
                     }
                 }
@@ -120,7 +120,7 @@ fun CooldownAdvisoryBadge(
         modifier = modifier.fillMaxWidth(),
     ) {
         Text(
-            text = "Suggested wait: $label",
+            text = label,
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
         )

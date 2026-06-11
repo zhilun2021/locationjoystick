@@ -153,10 +153,11 @@ internal class WidgetPanelPresenter(
 
     fun showFavoritesFloatingView() {
         showPanel(params = mapPanelLayoutParams(), logTag = "favorites") {
-            val favs by remember { mapController.sharedState.map { it.favorites } }
-                .collectAsStateWithLifecycle(initialValue = emptyList())
+            val shared by mapController.sharedState.collectAsStateWithLifecycle()
             FavoritesFloatingView(
-                favorites = favs,
+                favorites = shared.favorites,
+                cooldownStates = shared.favoriteCooldownStates,
+                currentPosition = shared.currentPosition,
                 onDismiss = { hidePanelView() },
                 onTeleport = { fav ->
                     callbacks.teleportToFavorite(fav)
