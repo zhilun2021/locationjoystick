@@ -130,6 +130,7 @@ class MapViewModelTest {
             roamingRepository = roamingRepository,
             deepLinkRepository = deepLinkRepository,
             teleportUseCase = teleportUseCase,
+            settingsRepository = settingsRepository,
         )
     }
 

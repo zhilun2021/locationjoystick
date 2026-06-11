@@ -372,6 +372,7 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
                 elevationNoiseAmplitudeMs2 = AppPreferencesDataSource.DEFAULT_ELEVATION_NOISE_AMPLITUDE_MS2,
                 hotLocationsEnabled = false,
                 selectedHotLocationIds = emptySet(),
+                mapFabFeatures = emptySet(),
                 roamingDefaults = roamingDefaultsFlow.value,
             ),
         )
