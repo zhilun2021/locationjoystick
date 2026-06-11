@@ -12,7 +12,9 @@ import com.locationjoystick.core.routing.RoamingEngine
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import android.content.Context
 import javax.inject.Singleton
 
 @Module
@@ -20,7 +22,7 @@ import javax.inject.Singleton
 object DataModule {
     @Provides
     @Singleton
-    fun provideRouteRepository(routeDao: RouteDao): RouteRepository = RouteRepository(routeDao)
+    fun provideRouteRepository(routeDao: RouteDao, @ApplicationContext context: Context): RouteRepository = RouteRepository(routeDao, context)
 
     @Provides
     @Singleton
