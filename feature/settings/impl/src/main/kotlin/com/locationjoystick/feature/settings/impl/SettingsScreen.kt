@@ -68,7 +68,7 @@ import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.WidgetFeature
 
-private enum class SettingsSection { GPS, MENUS, FAVORITES_ROUTES, MAP }
+private enum class SettingsSection { GPS, MENUS, FAVORITES_ROUTES }
 
 private sealed class PendingImport {
     data class File(
@@ -457,15 +457,6 @@ internal fun SettingsScreen(
             )
         }
 
-        SettingsSection.MAP -> {
-            SettingsMapSubScreen(
-                uiState = uiState,
-                onNavigateBack = { currentSection = null },
-                onAction = onAction,
-                bottomBar = bottomBar,
-                snackbarHost = snackbarHost,
-            )
-        }
     }
 }
 
@@ -583,7 +574,7 @@ private fun SettingsHubScreen(
             SettingsDestinationCard(
                 icon = LjIcons.Joystick,
                 title = "Menus",
-                description = "Quick-access buttons in the floating widget panel.",
+                description = "Quick-access buttons in the floating widget and map screen.",
                 onClick = { onNavigate(SettingsSection.MENUS) },
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -593,13 +584,7 @@ private fun SettingsHubScreen(
                 description = "Hot locations and default roaming settings.",
                 onClick = { onNavigate(SettingsSection.FAVORITES_ROUTES) },
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            SettingsDestinationCard(
-                icon = LjIcons.LocationOn,
-                title = "Map",
-                description = "Choose which buttons appear on the map screen.",
-                onClick = { onNavigate(SettingsSection.MAP) },
-            )
+
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -758,6 +743,8 @@ private fun SettingsMenusSubScreen(
                                 .padding(16.dp),
                     ) {
                         FloatingWidgetSection(uiState, isRooted, onAction)
+                        Spacer(modifier = Modifier.height(24.dp))
+                        MapButtonsSection(uiState, onAction)
                     }
                 }
             }
@@ -1430,43 +1417,6 @@ private fun RoamingSection(
     )
 }
 
-@Composable
-private fun SettingsMapSubScreen(
-    uiState: SettingsUiState,
-    onNavigateBack: () -> Unit,
-    onAction: (SettingsAction) -> Unit,
-    bottomBar: @Composable () -> Unit,
-    snackbarHost: @Composable () -> Unit,
-) {
-    LjScaffold(
-        title = "Map",
-        onNavigationClick = onNavigateBack,
-        navigationIcon = LjIcons.ArrowBack,
-        bottomBar = bottomBar,
-        snackbarHost = snackbarHost,
-        actions = { SubScreenActions(uiState.isDirty, onAction) },
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                else -> {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .verticalScroll(remember { ScrollState(0) })
-                                .padding(16.dp),
-                    ) {
-                        MapButtonsSection(uiState, onAction)
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 private fun MapButtonsSection(
