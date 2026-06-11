@@ -25,6 +25,7 @@ data class HotRoute(
     val country: String,
     val city: String,
     val assetPath: String,
+    val routeType: String = "STRAIGHT",
 )
 
 @Singleton
@@ -144,7 +145,7 @@ class RouteRepository
                                         id = id,
                                         name = hotRoute.name,
                                         isLooping = false,
-                                        routeType = "STRAIGHT",
+                                        routeType = hotRoute.routeType,
                                         createdAt = now,
                                         updatedAt = now,
                                     ),
@@ -188,8 +189,11 @@ class RouteRepository
             val HOT_ROUTES =
                 listOf(
                     HotRoute("City - Copenhagen", "Denmark", "Copenhagen", "hot_routes/cph_city.gpx"),
+                    HotRoute("City - Copenhagen (Via Roads)", "Denmark", "Copenhagen", "hot_routes/cph_city.gpx", "GUIDED"),
                     HotRoute("Park - Faelledparken", "Denmark", "Copenhagen", "hot_routes/cph_park.gpx"),
+                    HotRoute("Park - Faelledparken (Via Roads)", "Denmark", "Copenhagen", "hot_routes/cph_park.gpx", "GUIDED"),
                     HotRoute("Stamp Rally - LEGO", "Denmark", "Copenhagen", "hot_routes/cph_stamp_rally.gpx"),
+                    HotRoute("Stamp Rally - LEGO (Via Roads)", "Denmark", "Copenhagen", "hot_routes/cph_stamp_rally.gpx", "GUIDED"),
                 )
         }
     }
