@@ -556,7 +556,14 @@ private fun SettingsHubScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 textAlign = TextAlign.Center,
             )
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "v${AppConstants.AppInfo.VERSION_NAME}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(28.dp))
             SettingsDestinationCard(
                 icon = LjIcons.LocationOn,
                 title = "GPS Settings",
