@@ -126,24 +126,30 @@ class RouteRepository
                         val id = idForRoute(hotRoute.name, hotRoute.city)
                         val existing = routeDao.getById(id)
                         if (id in selectedIds) {
-                            val gpxContent = context.assets.open(hotRoute.assetPath).bufferedReader().readText()
-                            val waypoints = parseWptGpx(gpxContent).mapIndexed { index, latLng ->
-                                WaypointEntity(
-                                    id = "$id:$index",
-                                    routeId = id,
-                                    latitude = latLng.latitude,
-                                    longitude = latLng.longitude,
-                                    orderIndex = index,
+                            val gpxContent =
+                                context.assets
+                                    .open(hotRoute.assetPath)
+                                    .bufferedReader()
+                                    .readText()
+                            val waypoints =
+                                parseWptGpx(gpxContent).mapIndexed { index, latLng ->
+                                    WaypointEntity(
+                                        id = "$id:$index",
+                                        routeId = id,
+                                        latitude = latLng.latitude,
+                                        longitude = latLng.longitude,
+                                        orderIndex = index,
+                                    )
+                                }
+                            val entity =
+                                RouteEntity(
+                                    id = id,
+                                    name = hotRoute.name,
+                                    isLooping = false,
+                                    routeType = hotRoute.routeType.name,
+                                    createdAt = existing?.createdAt ?: now,
+                                    updatedAt = now,
                                 )
-                            }
-                            val entity = RouteEntity(
-                                id = id,
-                                name = hotRoute.name,
-                                isLooping = false,
-                                routeType = hotRoute.routeType.name,
-                                createdAt = existing?.createdAt ?: now,
-                                updatedAt = now,
-                            )
                             if (existing != null) toUpdate.add(entity to waypoints) else toInsert.add(entity to waypoints)
                         } else if (existing != null) {
                             toDelete.add(existing)

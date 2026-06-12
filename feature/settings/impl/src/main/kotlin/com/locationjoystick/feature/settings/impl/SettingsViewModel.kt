@@ -7,8 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.common.root.SensorPermissionBootstrap
 import com.locationjoystick.core.data.FavoriteRepository
-import com.locationjoystick.core.data.HotLocation
-import com.locationjoystick.core.data.HotRoute
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.datastore.SettingsSnapshot
@@ -281,8 +279,19 @@ class SettingsViewModel
             mutableDraft.update { it.copy(selectedHotLocationIds = ids) }
         }
 
-        val availableHotLocations: List<HotLocation> =
-            FavoriteRepository.HOT_LOCATIONS
+        val hotLocationTree: HotItemTree =
+            run {
+                val locations = FavoriteRepository.HOT_LOCATIONS
+                HotItemTree(
+                    allIds = locations.map { FavoriteRepository.idForLocation(it.name, it.city) }.toSet(),
+                    byCountry =
+                        locations.groupBy { it.country }.mapValues { (_, locs) ->
+                            locs.groupBy { it.city }.mapValues { (_, items) ->
+                                items.map { HotItemEntry(FavoriteRepository.idForLocation(it.name, it.city), it.name) }
+                            }
+                        },
+                )
+            }
 
         fun setHotRoutesEnabled(enabled: Boolean) {
             val allIds = RouteRepository.HOT_ROUTES.map { RouteRepository.idForRoute(it.name, it.city) }.toSet()
@@ -297,8 +306,19 @@ class SettingsViewModel
             mutableDraft.update { it.copy(selectedHotRouteIds = ids) }
         }
 
-        val availableHotRoutes: List<HotRoute> =
-            RouteRepository.HOT_ROUTES
+        val hotRouteTree: HotItemTree =
+            run {
+                val routes = RouteRepository.HOT_ROUTES
+                HotItemTree(
+                    allIds = routes.map { RouteRepository.idForRoute(it.name, it.city) }.toSet(),
+                    byCountry =
+                        routes.groupBy { it.country }.mapValues { (_, rs) ->
+                            rs.groupBy { it.city }.mapValues { (_, items) ->
+                                items.map { HotItemEntry(RouteRepository.idForRoute(it.name, it.city), it.name) }
+                            }
+                        },
+                )
+            }
 
         fun saveChanges() {
             viewModelScope.launch {
