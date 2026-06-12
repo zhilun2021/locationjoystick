@@ -74,6 +74,7 @@ internal fun WidgetPanel(
     routeExpanded: Boolean,
     isPanelExpanded: Boolean,
     elevationMode: ElevationMode?,
+    hasPendingCompletion: Boolean,
     onToggleMaster: () -> Unit,
     onFeatureClicked: (WidgetFeature) -> Unit,
     onElevationModeSelected: (ElevationMode?) -> Unit,
@@ -84,41 +85,52 @@ internal fun WidgetPanel(
 ) {
     Column(horizontalAlignment = Alignment.Start) {
         // Master toggle icon — always visible; drag to reposition, tap to toggle panel
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier =
-                Modifier
-                    .padding(4.dp)
-                    .size(UiConstants.FAB_CONTAINER_SIZE)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    .pointerInput(Unit) {
-                        var isDragging = false
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitFirstDown(requireUnconsumed = false)
-                                isDragging = false
-                                do {
-                                    val event = awaitPointerEvent()
-                                    val drag = event.changes.firstOrNull() ?: break
-                                    val delta = drag.position - drag.previousPosition
-                                    if (delta != androidx.compose.ui.geometry.Offset.Zero) {
-                                        isDragging = true
-                                        onDrag(delta.x, delta.y)
-                                        drag.consume()
+        Box {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier =
+                    Modifier
+                        .padding(4.dp)
+                        .size(UiConstants.FAB_CONTAINER_SIZE)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .pointerInput(Unit) {
+                            var isDragging = false
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitFirstDown(requireUnconsumed = false)
+                                    isDragging = false
+                                    do {
+                                        val event = awaitPointerEvent()
+                                        val drag = event.changes.firstOrNull() ?: break
+                                        val delta = drag.position - drag.previousPosition
+                                        if (delta != androidx.compose.ui.geometry.Offset.Zero) {
+                                            isDragging = true
+                                            onDrag(delta.x, delta.y)
+                                            drag.consume()
+                                        }
+                                    } while (event.changes.any { it.pressed })
+                                    if (!isDragging) {
+                                        onToggleMaster()
                                     }
-                                } while (event.changes.any { it.pressed })
-                                if (!isDragging) {
-                                    onToggleMaster()
                                 }
                             }
-                        }
-                    },
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_app_launcher),
-                contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
-                modifier = Modifier.fillMaxSize().clip(CircleShape),
-            )
+                        },
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_app_launcher),
+                    contentDescription = if (isPanelExpanded) "Collapse widget" else "Expand widget",
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                )
+            }
+            if (hasPendingCompletion) {
+                Box(
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .size(10.dp)
+                            .background(Color.Red, CircleShape),
+                )
+            }
         }
 
         // Feature icons — only shown when panel expanded

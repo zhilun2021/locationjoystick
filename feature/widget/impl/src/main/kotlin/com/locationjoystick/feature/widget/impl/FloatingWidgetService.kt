@@ -113,6 +113,9 @@ class FloatingWidgetService :
     // Master panel expand/collapse
     private val isPanelExpandedFlow = MutableStateFlow(false)
 
+    // Red dot badge — set when a route/walk completes, cleared when panel is opened
+    private val pendingCompletionFlow = MutableStateFlow(false)
+
     private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
 
     // Drag position — class-level so onConfigurationChanged can read them after rotation.
@@ -171,6 +174,11 @@ class FloatingWidgetService :
         lifecycleScope.launch {
             mapController.routingErrors.collect { msg ->
                 Toast.makeText(this@FloatingWidgetService, msg, Toast.LENGTH_SHORT).show()
+            }
+        }
+        lifecycleScope.launch {
+            mapController.completionMessages.collect {
+                pendingCompletionFlow.value = true
             }
         }
         lifecycleScope.launch {
@@ -246,6 +254,7 @@ class FloatingWidgetService :
             val routeExpanded by routeExpandedFlow.collectAsStateWithLifecycle()
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
             val elevationMode by elevationModeFlow.collectAsStateWithLifecycle()
+            val hasPendingCompletion by pendingCompletionFlow.collectAsStateWithLifecycle()
 
             LjTheme {
                 WidgetPanel(
@@ -259,7 +268,11 @@ class FloatingWidgetService :
                     routeExpanded = routeExpanded,
                     isPanelExpanded = isPanelExpanded,
                     elevationMode = elevationMode,
-                    onToggleMaster = { isPanelExpandedFlow.value = !isPanelExpandedFlow.value },
+                    hasPendingCompletion = hasPendingCompletion,
+                    onToggleMaster = {
+                        if (!isPanelExpandedFlow.value) pendingCompletionFlow.value = false
+                        isPanelExpandedFlow.value = !isPanelExpandedFlow.value
+                    },
                     onFeatureClicked = { feature -> onFeatureButtonClicked(feature) },
                     onElevationModeSelected = { mode -> setElevationMode(mode) },
                     onRouteClicked = { onRouteIconClicked() },
