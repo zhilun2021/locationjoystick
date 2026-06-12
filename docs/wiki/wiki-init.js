@@ -1,6 +1,6 @@
 (function () {
   var NAV_ITEMS = [
-    { href: 'index.html', label: 'Overview' },
+    { href: 'index.html', label: 'Quick Start' },
     { href: 'home.html', label: 'Home' },
     { href: 'map.html', label: 'Map' },
     { href: 'routes.html', label: 'Routes' },

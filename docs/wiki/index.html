@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>locationjoystick — Documentation</title>
+  <title>locationjoystick — Quick Start</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -58,11 +58,23 @@
 
     <h2>Quick start</h2>
     <ol class="quickstart">
-      <li><a href="https://github.com/shortcuts/locationjoystick/releases/latest" target="_blank" rel="noopener">Download the latest APK</a> and install it.</li>
+      <li><a href="https://github.com/shortcuts/locationjoystick/releases/latest" target="_blank" rel="noopener">Download the latest APK</a> from GitHub Releases.</li>
+      <li>Open the downloaded file. If prompted <em>"Allow installs from unknown sources"</em>, enable it in Settings for your browser or file manager, then return and retry.</li>
+      <li>You may see <em>"App scan recommended"</em> from Google Play Protect — this is a standard warning shown for any APK installed outside the Play Store. Tap <strong>Install without scanning</strong> or scan first; either works.</li>
       <li>Follow onboarding: grant location permission, overlay permission, then set locationjoystick as your mock location app in Developer Options.</li>
       <li>Tap <strong>Map</strong>, tap the start button, then long-press the map to walk or teleport anywhere.</li>
       <li>Use the floating widget or joystick overlay to control your location while other apps are in the foreground.</li>
     </ol>
+
+    <h3>Updating</h3>
+    <p>Open the new APK — Android will prompt <em>"Replace app?"</em> and preserve your data.</p>
+
+    <h3>Switching from the Play Store version</h3>
+    <p>
+      The Play Store and GitHub builds use different signing keys, so Android will block a direct update.
+      Export your data first via <strong>Settings → Export</strong>, then uninstall the Play Store version,
+      install the GitHub APK, and re-import.
+    </p>
 
     <h2>Source</h2>
     <p>
