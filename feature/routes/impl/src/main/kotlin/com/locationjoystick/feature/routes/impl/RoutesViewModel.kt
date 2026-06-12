@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
 import java.util.UUID
 import javax.inject.Inject
@@ -277,20 +279,32 @@ class RoutesViewModel
             }
 
         internal fun extractGpxName(gpxContent: String): String {
-            val nameRegex = Regex("<name>([^<]+)</name>")
-            val match = nameRegex.find(gpxContent)
-            return match?.groupValues?.get(1)?.takeIf { it.isNotEmpty() } ?: "Imported Route"
+            val parser = XmlPullParserFactory.newInstance().newPullParser()
+            parser.setInput(gpxContent.reader())
+            var event = parser.eventType
+            while (event != XmlPullParser.END_DOCUMENT) {
+                if (event == XmlPullParser.START_TAG && parser.name == "name") {
+                    val text = parser.nextText()
+                    if (text.isNotEmpty()) return text
+                }
+                event = parser.next()
+            }
+            return "Imported Route"
         }
 
         internal fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
-            val trkptRegex = Regex("""<trkpt\s+lat="([^"]+)"\s+lon="([^"]+)""")
-            return trkptRegex
-                .findAll(gpxContent)
-                .map { match ->
-                    val lat = match.groupValues[1].toDoubleOrNull() ?: return@map null
-                    val lon = match.groupValues[2].toDoubleOrNull() ?: return@map null
-                    LatLng(lat, lon)
-                }.filterNotNull()
-                .toList()
+            val result = mutableListOf<LatLng>()
+            val parser = XmlPullParserFactory.newInstance().newPullParser()
+            parser.setInput(gpxContent.reader())
+            var event = parser.eventType
+            while (event != XmlPullParser.END_DOCUMENT) {
+                if (event == XmlPullParser.START_TAG && parser.name == "trkpt") {
+                    val lat = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                    val lon = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                    if (lat != null && lon != null) result.add(LatLng(lat, lon))
+                }
+                event = parser.next()
+            }
+            return result
         }
     }

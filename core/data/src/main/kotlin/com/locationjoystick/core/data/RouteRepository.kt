@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -177,14 +179,19 @@ class RouteRepository
             ): String = HOT_ROUTE_ID_PREFIX + "$name $city".lowercase().replace(Regex("[^a-z0-9]"), "_")
 
             fun parseWptGpx(content: String): List<LatLng> {
-                val regex = Regex("""<wpt\s+lat="([^"]+)"\s+lon="([^"]+)"""")
-                return regex
-                    .findAll(content)
-                    .mapNotNull { match ->
-                        val lat = match.groupValues[1].toDoubleOrNull() ?: return@mapNotNull null
-                        val lon = match.groupValues[2].toDoubleOrNull() ?: return@mapNotNull null
-                        LatLng(lat, lon)
-                    }.toList()
+                val result = mutableListOf<LatLng>()
+                val parser = XmlPullParserFactory.newInstance().newPullParser()
+                parser.setInput(content.reader())
+                var event = parser.eventType
+                while (event != XmlPullParser.END_DOCUMENT) {
+                    if (event == XmlPullParser.START_TAG && parser.name == "wpt") {
+                        val lat = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
+                        val lon = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
+                        if (lat != null && lon != null) result.add(LatLng(lat, lon))
+                    }
+                    event = parser.next()
+                }
+                return result
             }
 
             val HOT_ROUTES =
