@@ -471,7 +471,7 @@ private fun SettingsHubScreen(
             var showDownloadMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { showDownloadMenu = true }) {
-                    Icon(LjIcons.FileDownload, contentDescription = "Export")
+                    Icon(LjIcons.FileUpload, contentDescription = "Export")
                 }
                 DropdownMenu(expanded = showDownloadMenu, onDismissRequest = { showDownloadMenu = false }) {
                     DropdownMenuItem(
@@ -493,7 +493,7 @@ private fun SettingsHubScreen(
             var showUploadMenu by remember { mutableStateOf(false) }
             Box {
                 IconButton(onClick = { showUploadMenu = true }) {
-                    Icon(LjIcons.FileUpload, contentDescription = "Import")
+                    Icon(LjIcons.FileDownload, contentDescription = "Import")
                 }
                 DropdownMenu(expanded = showUploadMenu, onDismissRequest = { showUploadMenu = false }) {
                     DropdownMenuItem(
