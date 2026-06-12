@@ -5,12 +5,14 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -86,6 +88,13 @@ class OsrmClient
             Retrofit
                 .Builder()
                 .baseUrl(baseUrl)
+                .client(
+                    OkHttpClient.Builder()
+                        .connectTimeout(15, TimeUnit.SECONDS)
+                        .readTimeout(30, TimeUnit.SECONDS)
+                        .callTimeout(30, TimeUnit.SECONDS)
+                        .build(),
+                )
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(OsrmApi::class.java)

@@ -296,4 +296,18 @@ class OsrmClientTest {
     fun `OsrmClient PROFILE_FOOT constant is defined`() {
         assertTrue(OsrmClient.PROFILE_FOOT.isNotEmpty())
     }
+
+    // Live integration test — requires network; validates real OSRM round-trip
+
+    @Test
+    fun `getRoute live - two Paris points return road-following polyline`() =
+        runTest {
+            val from = LatLng(48.8566, 2.3522) // Notre-Dame
+            val to = LatLng(48.8606, 2.3376)   // Louvre
+            val result = client.getRoute(profile = OsrmClient.PROFILE_FOOT, waypoints = listOf(from, to))
+
+            assertTrue("Live OSRM call failed: ${result.exceptionOrNull()}", result.isSuccess)
+            val points = result.getOrNull()!!
+            assertTrue("Expected road-following polyline (>2 points), got ${points.size}", points.size > 2)
+        }
 }

@@ -189,7 +189,8 @@
 -keep class com.google.gson.** { *; }
 -keep interface com.google.gson.** { *; }
 -dontwarn com.google.gson.**
-# Keep OSRM response models (Gson-mapped via retrofit-converter-gson)
+# Keep OSRM Retrofit interface and response models (Gson-mapped via retrofit-converter-gson)
+-keep interface com.locationjoystick.core.routing.OsrmApi { *; }
 -keep class com.locationjoystick.core.routing.OsrmRouteResponse { *; }
 -keep class com.locationjoystick.core.routing.OsrmRoute { *; }
 -keep class com.locationjoystick.core.routing.OsrmGeometry { *; }
