@@ -43,3 +43,24 @@ Audit completed. `CoroutineExceptionHandler` (for long-lived scopes where unhand
 ### ARCH-5: ~~Loading state boilerplate~~ — closed, no issue
 Audit completed. Loading state is managed via `stateIn(initialValue = UiState(isLoading = true))` — idiomatic Kotlin Flow, not boilerplate. The one-shot `isLoadingSegment` in `RouteCreatorViewModel` is a different pattern for a bounded async operation. No shared helper needed.
 
+---
+
+## ~~[Release Audit] Documentation gap — Floating Widget (two features)~~ — fixed
+
+**Changed source files:**
+- `feature/widget/impl/src/main/kotlin/.../FloatingWidgetService.kt` (eb671f9)
+- `feature/widget/impl/src/main/kotlin/.../WidgetPanelContent.kt` (eb671f9)
+- `feature/widget/impl/src/main/kotlin/.../MapFloatingView.kt` (6bcde30)
+- `feature/widget/impl/src/main/kotlin/.../WidgetPanelPresenter.kt` (6bcde30)
+- `core/location/src/main/kotlin/.../MapController.kt` (6bcde30)
+- `core/location/src/main/kotlin/.../MapSharedState.kt` (6bcde30)
+
+**Documentation gap:**
+Two user-visible features shipped since v0.8.0 are not documented in `docs/features/widget.md` or the wiki:
+
+1. **Red dot badge on FAB** (eb671f9): A red dot appears at the top-right of the widget FAB when a route, walk, or roaming session ends naturally. Tapping to open the panel clears the badge. Document under a "Completion Badge" or "FAB Badge" section — include: what triggers it, what clears it, which modes fire it (route replay, walk-to, roaming).
+
+2. **Route state in floating map** (6bcde30): A route icon appears in the `MapFloatingView` FAB column (gated on `MapFabFeature.ROUTES` setting or active replay). Turns green when replay is active; tapping expands stop and pause/resume buttons to the left. `enabledMapFabFeatures` now flows through `MapSharedState` so the widget respects the same settings toggle as the main map. Document under a "Floating Map" section — include: route icon appearance, green active state, stop/pause controls, settings gate.
+
+**Relevant doc file:** `docs/features/widget.md`
+

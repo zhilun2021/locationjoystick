@@ -16,6 +16,25 @@ Key files: `:feature:widget:impl/FloatingWidgetService.kt`, `:feature:settings:i
 - Binds to `MockLocationService` in `onStartCommand`.
 - Unbinds in `onDestroy`.
 
+## Completion Badge
+
+A red dot appears at the top-right of the widget FAB when a route, walk, or roaming session ends naturally (completion, not user-initiated stop). The badge is driven by `pendingCompletionFlow: MutableStateFlow<Boolean>` in `FloatingWidgetService`, set on `mapController.completionMessages` emission.
+
+- **Trigger**: any natural completion event (route replay end, walk-to arrival, roaming loop end).
+- **Cleared**: when the user taps the FAB to expand the panel (`isPanelExpandedFlow` becomes `true`).
+- **Does not appear**: when the user manually stops a session.
+
+## Floating Map — Route Controls
+
+When `WidgetFeature.MAP_FLOATING` is enabled, the floating map's FAB column includes a route button:
+
+- **Shown when**: `MapFabFeature.ROUTES` is enabled in Settings **or** a route replay is currently active.
+- **Active state**: route icon turns green (`LjSuccess`) during `ROUTE_REPLAY` mode.
+- **Expand controls**: tapping the route button expands two inline buttons to the left:
+  - **Stop** — ends the replay immediately.
+  - **Pause / Resume** — toggles replay pause state.
+- **Settings gate**: `enabledMapFabFeatures` flows through `MapSharedState` so the floating map respects the same visibility toggle as the main map screen.
+
 ## Edge Cases
 
 - No items configured → show placeholder.
