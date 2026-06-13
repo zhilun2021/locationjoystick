@@ -303,7 +303,7 @@ class OsrmClientTest {
     fun `getRoute live - two Paris points return road-following polyline`() =
         runTest {
             val from = LatLng(48.8566, 2.3522) // Notre-Dame
-            val to = LatLng(48.8606, 2.3376)   // Louvre
+            val to = LatLng(48.8606, 2.3376) // Louvre
             val result = client.getRoute(profile = OsrmClient.PROFILE_FOOT, waypoints = listOf(from, to))
 
             assertTrue("Live OSRM call failed: ${result.exceptionOrNull()}", result.isSuccess)

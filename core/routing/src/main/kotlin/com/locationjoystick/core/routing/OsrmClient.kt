@@ -89,13 +89,13 @@ class OsrmClient
                 .Builder()
                 .baseUrl(baseUrl)
                 .client(
-                    OkHttpClient.Builder()
+                    OkHttpClient
+                        .Builder()
                         .connectTimeout(15, TimeUnit.SECONDS)
                         .readTimeout(30, TimeUnit.SECONDS)
                         .callTimeout(30, TimeUnit.SECONDS)
                         .build(),
-                )
-                .addConverterFactory(GsonConverterFactory.create())
+                ).addConverterFactory(GsonConverterFactory.create())
                 .build()
                 .create(OsrmApi::class.java)
 
