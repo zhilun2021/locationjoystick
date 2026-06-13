@@ -22,7 +22,6 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var deepLinkRepository: DeepLinkRepository
 
     companion object {
-        const val EXTRA_NAVIGATE_TO_ROUTE_CREATOR = "navigate_to_route_creator"
         const val ACTION_MOVE_TO_BACK = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
     }
 
@@ -74,7 +73,7 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra(AppConstants.ServiceConstants.EXTRA_NAVIGATE_TO_MAP, false) == true) {
             navigateToMapMutableFlow.tryEmit(Unit)
         }
-        if (intent?.getBooleanExtra(EXTRA_NAVIGATE_TO_ROUTE_CREATOR, false) == true) {
+        if (intent?.getBooleanExtra(AppConstants.ServiceConstants.EXTRA_NAVIGATE_TO_ROUTE_CREATOR, false) == true) {
             navigateToRouteCreatorMutableFlow.tryEmit(Unit)
         }
         if (intent?.getBooleanExtra(AppConstants.ServiceConstants.EXTRA_NAVIGATE_TO_FAVORITES, false) == true) {

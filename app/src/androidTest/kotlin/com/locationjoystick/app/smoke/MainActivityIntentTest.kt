@@ -43,7 +43,7 @@ class MainActivityIntentTest {
         composeRule.activityRule.scenario.onActivity { activity ->
             activity.handleIntent(
                 Intent(activity, MainActivity::class.java)
-                    .putExtra(MainActivity.EXTRA_NAVIGATE_TO_ROUTE_CREATOR, true),
+                    .putExtra(AppConstants.ServiceConstants.EXTRA_NAVIGATE_TO_ROUTE_CREATOR, true),
             )
         }
         composeRule.waitForIdle()

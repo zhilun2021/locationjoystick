@@ -267,13 +267,7 @@ fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
     )
 }
 
-fun WidgetFeature.toKey(): String = name.lowercase()
-
-fun String.toWidgetFeature(): WidgetFeature? = WidgetFeature.entries.firstOrNull { it.name.lowercase() == this }
-
-fun MapFabFeature.toKey(): String = name.lowercase()
-
-fun String.toMapFabFeature(): MapFabFeature? = MapFabFeature.entries.firstOrNull { it.name.lowercase() == this }
+inline fun <reified T : Enum<T>> String.toEnumFeature(): T? = enumValues<T>().firstOrNull { it.name.lowercase() == this }
 
 @Singleton
 class AppPreferencesDataSource
@@ -649,7 +643,7 @@ class AppPreferencesDataSource
                 prefs[Keys.RUN_SPEED_MS] = snapshot.runSpeedMs.coerceIn(MIN_SPEED_MS, MAX_SPEED_MS)
                 prefs[Keys.BIKE_SPEED_MS] = snapshot.bikeSpeedMs.coerceIn(MIN_SPEED_MS, MAX_SPEED_MS)
                 prefs[Keys.SPEED_UNIT] = snapshot.speedUnit.name
-                prefs[Keys.WIDGET_ITEMS] = snapshot.widgetFeatures.map { it.toKey() }.toSet()
+                prefs[Keys.WIDGET_ITEMS] = snapshot.widgetFeatures.map { it.name.lowercase() }.toSet()
                 prefs[Keys.REMEMBER_LAST_LOCATION] = snapshot.rememberLastLocation
                 prefs[Keys.MAP_FOLLOWS_LOCATION] = snapshot.mapFollowsLocation
                 prefs[Keys.JITTER_IDLE_RADIUS_METERS] = snapshot.jitterIdleRadius.coerceIn(0.0, MAX_JITTER_RADIUS_METERS)
@@ -688,7 +682,7 @@ class AppPreferencesDataSource
                 prefs[Keys.HOT_LOCATION_SELECTED_IDS] = snapshot.selectedHotLocationIds
                 prefs[Keys.HOT_ROUTES_ENABLED] = snapshot.hotRoutesEnabled
                 prefs[Keys.HOT_ROUTE_SELECTED_IDS] = snapshot.selectedHotRouteIds
-                prefs[Keys.MAP_FAB_ITEMS] = snapshot.mapFabFeatures.map { it.toKey() }.toSet()
+                prefs[Keys.MAP_FAB_ITEMS] = snapshot.mapFabFeatures.map { it.name.lowercase() }.toSet()
                 prefs[Keys.ROAMING_RADIUS_METERS] = snapshot.roamingDefaults.radiusMeters
                 prefs[Keys.ROAMING_DISTANCE_METERS] = snapshot.roamingDefaults.distanceMeters
                 prefs[Keys.ROAMING_SPEED_PROFILE_ID] = snapshot.roamingDefaults.speedProfileId
@@ -720,7 +714,7 @@ class AppPreferencesDataSource
                         runSpeedMs = prefs[Keys.RUN_SPEED_MS] ?: DEFAULT_RUN_SPEED_MS,
                         bikeSpeedMs = prefs[Keys.BIKE_SPEED_MS] ?: DEFAULT_BIKE_SPEED_MS,
                         speedUnit = speedUnit,
-                        widgetFeatures = widgetItems.mapNotNull { it.toWidgetFeature() }.toSet(),
+                        widgetFeatures = widgetItems.mapNotNull { it.toEnumFeature<WidgetFeature>() }.toSet(),
                         rememberLastLocation =
                             prefs[Keys.REMEMBER_LAST_LOCATION]
                                 ?: AppConstants.DataStoreConstants.DEFAULT_REMEMBER_LAST_LOCATION,
@@ -753,7 +747,7 @@ class AppPreferencesDataSource
                         selectedHotRouteIds = prefs[Keys.HOT_ROUTE_SELECTED_IDS] ?: emptySet(),
                         mapFabFeatures =
                             (prefs[Keys.MAP_FAB_ITEMS] ?: DEFAULT_MAP_FAB_ITEMS)
-                                .mapNotNull { it.toMapFabFeature() }
+                                .mapNotNull { it.toEnumFeature<MapFabFeature>() }
                                 .toSet(),
                         roamingDefaults =
                             RoamingDefaults(
@@ -778,7 +772,7 @@ class AppPreferencesDataSource
             const val MAX_SPEED_MS = AppConstants.ProfileConstants.MAX_SPEED_MS
 
             val DEFAULT_MAP_FAB_ITEMS: Set<String> =
-                MapFabFeature.entries.map { it.toKey() }.toSet()
+                MapFabFeature.entries.map { it.name.lowercase() }.toSet()
 
             val DEFAULT_WIDGET_ITEMS: Set<String> =
                 setOf(

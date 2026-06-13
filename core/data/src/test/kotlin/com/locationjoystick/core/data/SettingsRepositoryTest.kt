@@ -6,8 +6,7 @@ import com.locationjoystick.core.datastore.AppPreferencesDataSource
 import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SettingsSnapshot
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
-import com.locationjoystick.core.datastore.toKey
-import com.locationjoystick.core.datastore.toWidgetFeature
+import com.locationjoystick.core.datastore.toEnumFeature
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
@@ -1159,7 +1158,7 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
                 runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
                 bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
                 speedUnit = SpeedUnit.KMH,
-                widgetFeatures = AppPreferencesDataSource.DEFAULT_WIDGET_ITEMS.mapNotNull { it.toWidgetFeature() }.toSet(),
+                widgetFeatures = AppPreferencesDataSource.DEFAULT_WIDGET_ITEMS.mapNotNull { it.toEnumFeature<WidgetFeature>() }.toSet(),
                 rememberLastLocation = false,
                 mapFollowsLocation = true,
                 jitterIdleRadius = AppPreferencesDataSource.DEFAULT_JITTER_IDLE_RADIUS_METERS,
@@ -1192,6 +1191,6 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
                 runSpeedMs = snapshot.runSpeedMs,
                 bikeSpeedMs = snapshot.bikeSpeedMs,
             )
-        widgetItemsFlow.value = snapshot.widgetFeatures.map { it.toKey() }.toSet()
+        widgetItemsFlow.value = snapshot.widgetFeatures.map { it.name.lowercase() }.toSet()
     }
 }

@@ -4,8 +4,7 @@ import com.locationjoystick.core.datastore.PreferencesDataSource
 import com.locationjoystick.core.datastore.SettingsSnapshot
 import com.locationjoystick.core.datastore.SpeedProfilePreferences
 import com.locationjoystick.core.datastore.toActiveSpeedProfile
-import com.locationjoystick.core.datastore.toKey
-import com.locationjoystick.core.datastore.toWidgetFeature
+import com.locationjoystick.core.datastore.toEnumFeature
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
@@ -75,7 +74,7 @@ class SettingsRepository
         fun getWidgetFeatures(): Flow<List<WidgetFeature>> =
             dataSource.getWidgetItems().map { keys ->
                 keys
-                    .mapNotNull { key -> key.toWidgetFeature() }
+                    .mapNotNull { key -> key.toEnumFeature<WidgetFeature>() }
                     .sortedBy { widgetDisplayOrder.indexOf(it) }
             }
 
@@ -94,7 +93,7 @@ class SettingsRepository
         suspend fun setActiveProfileId(profileId: String) = dataSource.setActiveProfileId(profileId)
 
         suspend fun setWidgetFeatures(features: List<WidgetFeature>) {
-            val keys = features.map { it.toKey() }.toSet()
+            val keys = features.map { it.name.lowercase() }.toSet()
             dataSource.setWidgetItems(keys)
         }
 
