@@ -16,6 +16,7 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.RoamingConfig
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.sortedByAge
 import com.locationjoystick.core.model.toConfig
@@ -318,33 +319,34 @@ class MapController
 
         fun walkViaRoads(position: LatLng) {
             cancelAnyActiveMovement()
-            pendingRoadWalkJob = appScope.launch {
-                val current = locationRepository.currentPosition.value
-                if (current == null) {
-                    Log.w(TAG, "walkViaRoads: no current position, straight walk")
-                    walkTo(position)
-                    return@launch
+            pendingRoadWalkJob =
+                appScope.launch {
+                    val current = locationRepository.currentPosition.value
+                    if (current == null) {
+                        Log.w(TAG, "walkViaRoads: no current position, straight walk")
+                        walkTo(position)
+                        return@launch
+                    }
+                    val waypoints =
+                        osrmClient
+                            .getRoute(OsrmClient.PROFILE_FOOT, listOf(current, position))
+                            .getOrNull()
+                    if (waypoints.isNullOrEmpty()) {
+                        Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
+                        _routingErrors.tryEmit("Road routing unavailable — using straight walk")
+                        walkTo(position)
+                        return@launch
+                    }
+                    locationRepository.setRouteWaypoints(waypoints)
+                    _state.update {
+                        it.copy(walkMode = WalkMode.Walking(target = position, start = it.currentPosition, isViaRoads = true))
+                    }
+                    walkCoordinator.startWalkAlongRoute(waypoints, appScope) { newPos, speedMs, bearing ->
+                        context.startService(
+                            MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
+                        )
+                    }
                 }
-                val waypoints =
-                    osrmClient
-                        .getRoute(OsrmClient.PROFILE_FOOT, listOf(current, position))
-                        .getOrNull()
-                if (waypoints.isNullOrEmpty()) {
-                    Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
-                    _routingErrors.tryEmit("Road routing unavailable — using straight walk")
-                    walkTo(position)
-                    return@launch
-                }
-                locationRepository.setRouteWaypoints(waypoints)
-                _state.update {
-                    it.copy(walkMode = WalkMode.Walking(target = position, start = it.currentPosition, isViaRoads = true))
-                }
-                walkCoordinator.startWalkAlongRoute(waypoints, appScope) { newPos, speedMs, bearing ->
-                    context.startService(
-                        MockLocationIntentBuilder.updatePosition(context, newPos.latitude, newPos.longitude, speedMs, bearing),
-                    )
-                }
-            }
         }
 
         fun pauseWalk() {
@@ -434,7 +436,7 @@ class MapController
         fun startRoaming(
             draft: RoamingDefaults,
             position: LatLng,
-            previewWaypoints: List<LatLng>? = null,
+            plannedWaypoints: List<LatLng>? = null,
         ) {
             appScope.launch {
                 val speedMs =
@@ -444,7 +446,7 @@ class MapController
                         .firstOrNull { it.id == draft.speedProfileId }
                         ?.speedMetersPerSecond
                         ?: settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                val config = draft.toConfig(position).copy(previewWaypoints = previewWaypoints)
+                val config = draft.toConfig(position).copy(plannedWaypoints = plannedWaypoints)
                 roamingRepository.startRoaming(config, speedMs)
             }
         }
@@ -495,11 +497,14 @@ class MapController
             followRoads: Boolean,
             speedProfileId: String,
         ): List<LatLng>? =
-            roamingRepository.generatePreviewRoute(
-                center = center,
-                radiusMeters = radiusMeters,
-                followRoads = followRoads,
-                speedProfileId = speedProfileId,
+            roamingRepository.planRoute(
+                RoamingConfig(
+                    centerPosition = center,
+                    radiusMeters = radiusMeters,
+                    distanceMeters = AppConstants.RoamingConstants.DEFAULT_DISTANCE_METERS,
+                    speedProfileId = speedProfileId,
+                    useRoadSnapping = followRoads,
+                ),
             )
 
         /** Per-position cooldown state flow, usable from any surface. */

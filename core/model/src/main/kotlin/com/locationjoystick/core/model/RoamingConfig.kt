@@ -7,7 +7,6 @@ data class RoamingConfig(
     val speedProfileId: String = "walk",
     val useRoadSnapping: Boolean = false,
     val returnToInitialLocation: Boolean = true,
-    /** Pre-computed first-leg waypoints from a preview. When non-null, the engine uses this route
-     * for the first segment instead of generating a new random destination. */
-    val previewWaypoints: List<LatLng>? = null,
+    /** Pre-planned full route waypoints. When non-null, the engine walks this route directly. */
+    val plannedWaypoints: List<LatLng>? = null,
 )

@@ -63,6 +63,12 @@ data class OsrmCoordinate(
     val longitude: Double,
 )
 
+/** Route result including waypoints and total road distance. */
+data class OsrmRouteResult(
+    val waypoints: List<LatLng>,
+    val distanceMeters: Double,
+)
+
 /**
  * HTTP client for OSRM routing API.
  *
@@ -132,6 +138,33 @@ class OsrmClient
                     }
                 }.onFailure { e ->
                     Log.e(TAG, "OSRM route request failed — will fall back to straight-line", e)
+                }
+            }
+
+        suspend fun getRouteWithDistance(
+            profile: String,
+            waypoints: List<LatLng>,
+        ): Result<OsrmRouteResult> =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    require(waypoints.size >= 2) { "At least 2 waypoints required" }
+                    val coordinates = waypoints.joinToString(";") { "${it.longitude},${it.latitude}" }
+                    val response = api.getRoute(profile = profile, coordinates = coordinates)
+                    if (!response.isSuccessful) {
+                        error("OSRM HTTP ${response.code()}: ${response.message()}")
+                    }
+                    val body = response.body() ?: error("OSRM response body is null")
+                    if (body.code != "Ok") {
+                        error("OSRM returned non-Ok code: ${body.code}")
+                    }
+                    val route = body.routes?.firstOrNull() ?: error("OSRM returned no routes")
+                    val routeWaypoints =
+                        route.geometry.coordinates.mapNotNull { coord ->
+                            if (coord.size < 2) null else LatLng(latitude = coord[1], longitude = coord[0])
+                        }
+                    OsrmRouteResult(waypoints = routeWaypoints, distanceMeters = route.distance)
+                }.onFailure { e ->
+                    Log.e(TAG, "OSRM route request failed", e)
                 }
             }
 

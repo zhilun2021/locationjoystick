@@ -97,6 +97,8 @@ object AppConstants {
         const val RADIUS_MAX_METERS = 100_000.0
         const val DISTANCE_MIN_METERS = 50.0
         const val DISTANCE_MAX_METERS = 50_000.0
+        const val WAYPOINTS_PER_1000M = 30
+        const val MAX_OSRM_PLANNING_CALLS = 50
     }
 
     object OsrmConstants {

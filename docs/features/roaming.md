@@ -11,11 +11,15 @@ Key files: `:core:routing/RoamingEngine.kt`, `:core:routing/OsrmClient.kt`, `:co
 
 ## Algorithm
 
-1. Pick a random destination within the radius using uniform disk distribution.
-2. Fetch OSRM route (or straight-line) to that destination.
-3. Walk the route via `walkRouteSegment()` (pause-check → interpolate → position callback → delay loop).
-4. Repeat until `remainingMeters <= 0` (controlled by `RoamingConfig.distanceMeters`).
-5. If `returnToInitialLocation` is enabled, walk back to the start position after the main loop.
+The entire route is pre-planned before walking begins. The map shows the complete wandering path upfront rather than updating per-segment.
+
+**Waypoint count**: `numPoints = max(2, round(distanceMeters * 30 / 1000))` — scales linearly (1000 m → 30 points).
+
+**Straight-line mode**: All waypoints generated upfront. With `returnToInitialLocation`, the second half mirrors back toward center with the center appended as the final point.
+
+**Road-following mode (OSRM)**: Picks random points iteratively, fetches OSRM segments, accumulates road distance until budget is met (safety cap: 50 OSRM calls). With `returnToInitialLocation`, a final OSRM segment from the last point back to center is fetched. Falls back to straight-line on any OSRM failure.
+
+**Preview = planning**: `generateRoamingPreview` runs the full planning algorithm. `startRoaming` walks the pre-planned route directly. If no preview exists at start time, planning runs inline.
 
 ## Configuration Fields (`RoamingConfig`)
 

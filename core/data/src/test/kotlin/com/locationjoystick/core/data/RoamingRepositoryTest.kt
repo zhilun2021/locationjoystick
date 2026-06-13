@@ -264,18 +264,18 @@ class RoamingRepositoryTest {
             assertEquals(MockMode.TELEPORT, fakeLocationRepository.currentMode.first())
         }
 
-    // generatePreviewRoute
+    // planRoute
 
     @Test
-    fun `generatePreviewRoute delegates to engine and returns result`() =
+    fun `planRoute delegates to engine and returns result`() =
         runTest {
             val center = LatLng(48.8566, 2.3522)
             val destination = LatLng(48.86, 2.36)
             val expected = listOf(center, destination)
-            every { fakeRoamingEngine.randomPointInRadius(center, 500.0) } returns destination
-            coEvery { fakeRoamingEngine.previewRoute(center, destination, false, "walk") } returns expected
+            val config = createDefaultConfig()
+            coEvery { fakeRoamingEngine.planRoute(config) } returns expected
 
-            val result = repository.generatePreviewRoute(center, 500.0, false, "walk")
+            val result = repository.planRoute(config)
 
             assertEquals(expected, result)
         }

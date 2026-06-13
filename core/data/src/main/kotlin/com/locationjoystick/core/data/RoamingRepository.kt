@@ -66,20 +66,8 @@ class RoamingRepository
             )
         }
 
-        /**
-         * Generates a preview route for display on the map without starting actual roaming.
-         * The destination is picked randomly within [radiusMeters] of [center] via
-         * [RoamingEngine.randomPointInRadius], so repeated calls produce varied routes naturally.
-         */
-        suspend fun generatePreviewRoute(
-            center: LatLng,
-            radiusMeters: Double,
-            followRoads: Boolean,
-            speedProfileId: String,
-        ): List<LatLng> {
-            val destination = roamingEngine.randomPointInRadius(center, radiusMeters)
-            return roamingEngine.previewRoute(center, destination, followRoads, speedProfileId)
-        }
+        /** Plans the full roaming route without starting any session. */
+        suspend fun planRoute(config: RoamingConfig): List<LatLng> = roamingEngine.planRoute(config)
 
         suspend fun stopRoaming() {
             roamingEngine.stopRoaming()

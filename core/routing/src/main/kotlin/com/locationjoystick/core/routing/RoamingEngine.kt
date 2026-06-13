@@ -18,6 +18,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.PI
 import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -26,24 +28,6 @@ private fun Double.toRadians(): Double = Math.toRadians(this)
 
 private const val TAG = "RoamingEngine"
 
-/**
- * Engine for simulating random walking within a circular area.
- *
- * Supports two modes:
- * - Straight-line walking (no network required)
- * - Road-following via OSRM routing (requires internet, falls back to straight-line on failure)
- *
- * Usage:
- * ```
- * val config = RoamingConfig(centerPosition = LatLng(48.8566, 2.3522), radiusMeters = 500.0, ...)
- * roamingEngine.startRoaming(config, speedMs = 1.5) { position ->
- *     // Called each tick with new position
- * }
- * ```
- *
- * The engine runs on [engineScope] and can be stopped via [stopRoaming].
- * Only one roaming session can be active at a time — starting a new one cancels any existing.
- */
 @Singleton
 class RoamingEngine
     @Inject
@@ -52,17 +36,10 @@ class RoamingEngine
         private val routeInterpolator: RouteInterpolator,
         dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     ) : AutoCloseable {
-        /**
-         * Coroutine scope for all roaming coroutines. Uses SupervisorJob so one failure doesn't cancel others.
-         * Ownership is process-scoped: call [close] only on process teardown — not on service stop/restart,
-         * since this singleton is reused across service restarts within the same process.
-         */
         private val engineScope = CoroutineScope(SupervisorJob() + dispatcher)
 
-        /** Current active roaming job. Null when not roaming. */
         @Volatile private var activeJob: Job? = null
 
-        /** When true, the roaming loop suspends position updates until resumed. */
         @Volatile private var isPaused = false
 
         fun pauseRoaming() {
@@ -73,15 +50,7 @@ class RoamingEngine
             isPaused = false
         }
 
-        /**
-         * Generates a uniformly random point within a circle of given radius.
-         * Uses polar coordinate transformation with square-root for uniform distribution.
-         *
-         * @param center Center of the circle
-         * @param radiusMeters Radius in meters
-         * @return Random LatLng within the circle
-         */
-        fun randomPointInRadius(
+        internal fun randomPointInRadius(
             center: LatLng,
             radiusMeters: Double,
         ): LatLng {
@@ -93,17 +62,95 @@ class RoamingEngine
         }
 
         /**
+         * Plans the full roaming route before walking begins.
+         *
+         * Straight-line mode generates all waypoints upfront. Road-following mode fetches OSRM
+         * segments iteratively until the distance budget is met. Falls back to straight-line on any
+         * OSRM failure.
+         *
+         * Returns a single-element list (just the center) when distanceMeters <= 0 so startRoaming
+         * completes immediately with no movement.
+         */
+        suspend fun planRoute(config: RoamingConfig): List<LatLng> =
+            if (config.useRoadSnapping) planRoadFollowingRoute(config) else planStraightLineRoute(config)
+
+        private fun planStraightLineRoute(config: RoamingConfig): List<LatLng> {
+            if (config.distanceMeters <= 0.0) return listOf(config.centerPosition)
+            val numPoints = max(2, (config.distanceMeters * AppConstants.RoamingConstants.WAYPOINTS_PER_1000M / 1000.0).roundToInt())
+            val center = config.centerPosition
+            val radius = config.radiusMeters
+            val points = mutableListOf(center)
+            if (config.returnToInitialLocation) {
+                val half = numPoints / 2
+                repeat(half) { points.add(randomPointInRadius(center, radius)) }
+                repeat(numPoints - half - 1) { points.add(randomPointInRadius(center, radius)) }
+                points.add(center)
+            } else {
+                repeat(numPoints) { points.add(randomPointInRadius(center, radius)) }
+            }
+            return points
+        }
+
+        private suspend fun planRoadFollowingRoute(config: RoamingConfig): List<LatLng> {
+            val profile = profileFor(config.speedProfileId)
+            val center = config.centerPosition
+            val radius = config.radiusMeters
+            val target = if (config.returnToInitialLocation) config.distanceMeters / 2.0 else config.distanceMeters
+            val allWaypoints = mutableListOf(center)
+            var coveredDistance = 0.0
+            var callCount = 0
+
+            while (coveredDistance < target && callCount < AppConstants.RoamingConstants.MAX_OSRM_PLANNING_CALLS) {
+                val dest = randomPointInRadius(center, radius)
+                val result =
+                    osrmClient
+                        .getRouteWithDistance(profile, listOf(allWaypoints.last(), dest))
+                        .getOrElse { e ->
+                            Log.w(TAG, "OSRM planning call failed, falling back to straight-line", e)
+                            return planStraightLineRoute(config)
+                        }
+                allWaypoints.addAll(result.waypoints.drop(1))
+                coveredDistance += result.distanceMeters
+                callCount++
+            }
+
+            if (config.returnToInitialLocation) {
+                var returnDistance = 0.0
+                while (returnDistance < target && callCount < AppConstants.RoamingConstants.MAX_OSRM_PLANNING_CALLS) {
+                    val dest = randomPointInRadius(center, radius)
+                    val result =
+                        osrmClient
+                            .getRouteWithDistance(profile, listOf(allWaypoints.last(), dest))
+                            .getOrElse { e ->
+                                Log.w(TAG, "OSRM planning call failed during return phase, falling back to straight-line", e)
+                                return planStraightLineRoute(config)
+                            }
+                    allWaypoints.addAll(result.waypoints.drop(1))
+                    returnDistance += result.distanceMeters
+                    callCount++
+                }
+                // Final leg: follow roads back to center
+                osrmClient
+                    .getRouteWithDistance(profile, listOf(allWaypoints.last(), center))
+                    .onSuccess { result -> allWaypoints.addAll(result.waypoints.drop(1)) }
+                    .onFailure { e ->
+                        Log.w(TAG, "OSRM final return leg failed, appending straight-line", e)
+                        allWaypoints.add(center)
+                    }
+            }
+
+            return allWaypoints
+        }
+
+        /**
          * Starts a roaming session.
          *
-         * Any previously active session is cancelled and awaited (via [cancelAndJoin]) inside the
-         * new coroutine before movement begins, so two sessions never overlap.
+         * Uses [config.plannedWaypoints] directly if non-null; otherwise calls [planRoute] inline.
+         * Any previously active session is cancelled and awaited before movement begins.
          *
-         * @param config Roaming configuration (center, radius, duration, etc.)
-         * @param speedMs Movement speed in meters per second
-         * @param onRouteUpdate Callback invoked when route changes (for UI display)
-         * @param onComplete Callback invoked when the session ends naturally (not on cancellation)
-         * @param onPositionUpdate Callback invoked each tick with new position
-         * @return Job that can be used to track/cancel the roaming session
+         * @param onRouteUpdate Called once upfront with the full route, once with emptyList on completion.
+         * @param onComplete Called when the session ends naturally (not on cancellation).
+         * @return Job that can be used to track/cancel the roaming session.
          */
         fun startRoaming(
             config: RoamingConfig,
@@ -112,8 +159,6 @@ class RoamingEngine
             onComplete: () -> Unit = {},
             onPositionUpdate: (LatLng) -> Unit,
         ): Job {
-            // Capture previous job before launching. The new coroutine awaits its cancellation
-            // via cancelAndJoin so the two sessions never overlap.
             val previous = activeJob
             activeJob = null
 
@@ -121,62 +166,21 @@ class RoamingEngine
                 engineScope.launch {
                     previous?.cancelAndJoin()
                     isPaused = false
-                    val initialLocation = config.centerPosition
-                    var currentPosition = config.centerPosition
-                    var remainingMeters = if (config.returnToInitialLocation) config.distanceMeters / 2.0 else config.distanceMeters
-                    val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
 
-                    val firstLegPreview = config.previewWaypoints?.takeIf { it.size >= 2 }
-                    var isFirstLeg = true
-                    while (isActive && remainingMeters > 0) {
-                        val route =
-                            if (isFirstLeg && firstLegPreview != null) {
-                                isFirstLeg = false
-                                firstLegPreview
-                            } else {
-                                isFirstLeg = false
-                                val destination = randomPointInRadius(config.centerPosition, config.radiusMeters)
-                                fetchRoute(config, currentPosition, destination)
-                            }
-                        onRouteUpdate(route)
-                        // Guard against empty route to avoid a tight busy-spin
-                        if (route.size < 2) {
-                            delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
-                            continue
-                        }
-                        var ticks = 0
-                        currentPosition =
-                            walkRouteSegment(route, currentPosition, speedMs, onPositionUpdate) {
-                                ticks++
-                            }
-                        remainingMeters -= ticks * distancePerTick
-                        onRouteUpdate(emptyList())
+                    val route = config.plannedWaypoints?.takeIf { it.size >= 2 } ?: planRoute(config)
+                    onRouteUpdate(route)
+
+                    if (route.size >= 2) {
+                        walkRouteSegment(route, route.first(), speedMs, onPositionUpdate)
                     }
 
-                    if (config.returnToInitialLocation && isActive) {
-                        val returnRoute = fetchReturnRoute(config, currentPosition, initialLocation)
-                        onRouteUpdate(returnRoute)
-                        if (returnRoute.size >= 2) {
-                            currentPosition =
-                                walkRouteSegment(returnRoute, currentPosition, speedMs, onPositionUpdate)
-                        }
-                        onRouteUpdate(emptyList())
-                    }
-
+                    onRouteUpdate(emptyList())
                     onComplete()
                 }
             activeJob = job
             return job
         }
 
-        /**
-         * Walks [route] from [startPosition] to completion or coroutine cancellation.
-         *
-         * On each tick: waits while paused, calls [routeInterpolator], invokes [onPositionUpdate],
-         * calls [onTick], delays one interval, and breaks when the end is reached.
-         *
-         * @return Final position reached (last position emitted to [onPositionUpdate]).
-         */
         private suspend fun walkRouteSegment(
             route: List<LatLng>,
             startPosition: LatLng,
@@ -209,10 +213,6 @@ class RoamingEngine
             return currentPosition
         }
 
-        /**
-         * Stops the current roaming session gracefully.
-         * Waits for the active coroutine to finish before returning.
-         */
         suspend fun stopRoaming() {
             isPaused = false
             val job = activeJob
@@ -220,73 +220,16 @@ class RoamingEngine
             job?.cancelAndJoin()
         }
 
-        /**
-         * Stops the current roaming session without tearing down the engine scope.
-         * The engine can be restarted via [startRoaming] after this call.
-         */
         fun stop() {
             val job = activeJob
             activeJob = null
             job?.cancel()
         }
 
-        /**
-         * Implements [AutoCloseable] to fully release the engine scope.
-         * Call only when the engine will never be reused (e.g. process teardown).
-         */
         override fun close() {
             activeJob?.cancel()
             engineScope.cancel()
         }
-
-        /**
-         * Fetches a preview route between two points for UI display purposes.
-         * Does not start any roaming session.
-         *
-         * @param from Starting position
-         * @param to Destination position
-         * @param useRoadSnapping If true, uses OSRM for road-following; falls back to straight-line on failure
-         * @param speedProfileId Used to select the OSRM profile (e.g. "bike" → cycling, else foot)
-         * @return List of waypoints forming the route
-         */
-        suspend fun previewRoute(
-            from: LatLng,
-            to: LatLng,
-            useRoadSnapping: Boolean,
-            speedProfileId: String,
-        ): List<LatLng> = osrmClient.resolveRoute(profileFor(speedProfileId), from, to, useRoadSnapping)
-
-        /**
-         * Fetches the return-to-start route, routing via a random intermediate point within the
-         * roaming area so the return leg looks like a loop rather than retracing the outward path.
-         * Falls back to a direct route, then to straight-line, on OSRM failure.
-         */
-        private suspend fun fetchReturnRoute(
-            config: RoamingConfig,
-            from: LatLng,
-            to: LatLng,
-        ): List<LatLng> {
-            if (!config.useRoadSnapping) return osrmClient.straightLineRoute(from, to)
-            val profile = profileFor(config.speedProfileId)
-            val mid = randomPointInRadius(config.centerPosition, config.radiusMeters * 0.4)
-            return osrmClient
-                .getRoute(profile, listOf(from, mid, to))
-                .getOrElse { e ->
-                    Log.w(TAG, "OSRM loop return via midpoint failed, trying direct return", e)
-                    osrmClient
-                        .getRoute(profile, listOf(from, to))
-                        .getOrElse {
-                            Log.w(TAG, "OSRM direct return failed, using straight-line", it)
-                            osrmClient.straightLineRoute(from, to)
-                        }
-                }
-        }
-
-        private suspend fun fetchRoute(
-            config: RoamingConfig,
-            from: LatLng,
-            to: LatLng,
-        ): List<LatLng> = osrmClient.resolveRoute(profileFor(config.speedProfileId), from, to, config.useRoadSnapping)
 
         private fun profileFor(speedProfileId: String): String =
             if (speedProfileId == "bike") {
