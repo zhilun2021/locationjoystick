@@ -12,7 +12,7 @@
 <div class="layout">
 
   <main>
-    <h2>Settings</h2>
+    <h2 id="settings">Settings</h2>
     <p>Configure speed profiles, GPS realism, widget controls, and data export/import.</p>
 
     <div class="feature-section" id="settings-main">
@@ -24,7 +24,7 @@
       </ul>
     </div>
 
-    <h2>Speed Profiles</h2>
+    <h2 id="speed-profiles">Speed Profiles</h2>
     <p>Sets the movement speed for joystick, route replay, and roaming. Changes apply immediately.</p>
 
     <table class="option-table">
@@ -51,7 +51,7 @@
 
     <p><strong>Limits:</strong> Each profile accepts values between <strong>0.36 km/h</strong> and <strong>54 km/h</strong>. Values outside this range are adjusted to the nearest limit when saved.</p>
 
-    <h2>Anti-cheat warning</h2>
+    <h2 id="anti-cheat-warning">Anti-cheat warning</h2>
     <p>
       If any speed profile is set above <strong>28.8 km/h (17.9 mph)</strong>, a warning banner appears inline below that field in Settings. The warning reads:
     </p>
@@ -63,7 +63,7 @@
       The warning applies independently to each of the three profiles. You can dismiss it by lowering the speed below 29 km/h, or ignore it if speed detection is not a concern. The app does not impose any speed limit — 54 km/h is the maximum the input field accepts.
     </p>
 
-    <h2>GPS Jitter</h2>
+    <h2 id="gps-jitter">GPS Jitter</h2>
     <p>Adds small random variations to each location update to simulate natural GPS drift. Set any value to 0 to disable that dimension of variation.</p>
 
     <table class="option-table">
@@ -96,7 +96,7 @@
       </tbody>
     </table>
 
-    <h2>Elevation Jitter</h2>
+    <h2 id="elevation-jitter">Elevation Jitter</h2>
     <p>Fine-tunes the natural variation applied by Elevation Controls. Only active when Elevation Controls is enabled in the Floating Widget section. Requires root.</p>
 
     <table class="option-table">
@@ -113,7 +113,7 @@
       </tbody>
     </table>
 
-    <h2>GPS Realism</h2>
+    <h2 id="gps-realism">GPS Realism</h2>
     <p>Independent toggles that make the spoofed GPS signal behave more like a real hardware chip. Some apps and games inspect these fields to detect mock providers — enabling all options reduces the chance of detection.</p>
 
     <table class="option-table">
@@ -142,7 +142,7 @@
       </tbody>
     </table>
 
-    <h2>Background service</h2>
+    <h2 id="background-service">Background service</h2>
     <p>
       Once spoofing is started, the app keeps running in the background while you use other apps or the screen is off.
       A persistent notification shows that spoofing is active — tap "Stop" in the notification to end it without opening the app.
@@ -155,7 +155,7 @@
       Routes, roaming, and walk-to all continue uninterrupted while the screen is off or another app is in the foreground.
     </p>
 
-    <h2>Map</h2>
+    <h2 id="map">Map</h2>
     <p>Controls how the in-app map behaves while spoofing is active.</p>
 
     <table class="option-table">
@@ -172,7 +172,7 @@
       </tbody>
     </table>
 
-    <h2>Favorites</h2>
+    <h2 id="favorites">Favorites</h2>
     <p>Options for the favorites list.</p>
 
     <table class="option-table">
@@ -185,7 +185,7 @@
       </tbody>
     </table>
 
-    <h2>Floating Widget</h2>
+    <h2 id="floating-widget">Floating Widget</h2>
     <p>Selects which quick-access buttons appear in the floating widget overlay when it is expanded. Each item can be toggled independently.</p>
 
     <table class="option-table">
@@ -229,7 +229,7 @@
       </tbody>
     </table>
 
-    <h2>Roaming defaults</h2>
+    <h2 id="roaming-defaults">Roaming defaults</h2>
     <p>Default values pre-filled in the roaming setup sheet when starting a roaming session from the map.</p>
 
     <table class="option-table">
@@ -258,7 +258,7 @@
       </tbody>
     </table>
 
-    <h2>External services</h2>
+    <h2 id="external-services">External services</h2>
     <p>locationjoystick is offline-first. It does not require an account and sends no analytics or telemetry. However, two optional network features make outbound requests:</p>
 
     <table class="option-table">
@@ -283,7 +283,7 @@
       All three services are used only as needed by the feature you are actively using and can be avoided entirely by not using road-following, place search, or the map (e.g. by entering coordinates directly in Favorites).
     </p>
 
-    <h2>QR transfer</h2>
+    <h2 id="qr-transfer">QR transfer</h2>
     <p>
       Share your entire configuration between devices by scanning a sequence of QR codes —
       no cables, no accounts, no cloud.
@@ -298,7 +298,7 @@
       </ul>
     </div>
 
-    <h2>Export / Import</h2>
+    <h2 id="export-import">Export / Import</h2>
     <p>Back up or restore all app data — routes, favorites, speed profiles, widget config, jitter settings, and roaming defaults.</p>
 
     <table class="option-table">

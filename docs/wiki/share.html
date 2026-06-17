@@ -12,13 +12,13 @@
 <div class="layout">
 
   <main>
-    <h2>Share &amp; Deep Links</h2>
+    <h2 id="share-deep-links">Share &amp; Deep Links</h2>
     <p>
       Share any coordinate or saved favorite as a link. Tapping the link on Android opens the app
       directly, centers the map on the location, and asks what you want to do with it.
     </p>
 
-    <h2>Sharing a location</h2>
+    <h2 id="sharing-a-location">Sharing a location</h2>
     <p>Two places in the app generate shareable links:</p>
     <ul class="section-bullets">
       <li><strong>Favorites</strong> — tap ⋮ on any saved favorite → <strong>Share</strong>.</li>
@@ -29,7 +29,7 @@
       app, copy it to clipboard, or generate a QR code with a third-party tool.
     </p>
 
-    <h2>What happens when the link is opened</h2>
+    <h2 id="what-happens-when-the-link-is-opened">What happens when the link is opened</h2>
     <ol class="section-bullets">
       <li>The app opens (or comes to the foreground if already running).</li>
       <li>The map screen activates and pans to the linked coordinate.</li>
@@ -44,7 +44,7 @@
     </ol>
     <p>Nothing happens automatically — you always confirm the action.</p>
 
-    <h2>URL format</h2>
+    <h2 id="url-format">URL format</h2>
     <p>The canonical link format is:</p>
     <pre><code>https://locationjoystick.shrtcts.fr/?lat=LAT&amp;lon=LON</code></pre>
 
@@ -61,7 +61,7 @@
     <p>Example:</p>
     <pre><code>https://locationjoystick.shrtcts.fr/?lat=35.6762&amp;lon=139.6503</code></pre>
 
-    <h2>For third-party tools</h2>
+    <h2 id="for-third-party-tools">For third-party tools</h2>
     <p>
       If you build automation, scripts, or integrations that open coordinates in locationjoystick,
       construct the URL directly — no API key or authentication required.

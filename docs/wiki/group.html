@@ -12,7 +12,7 @@
 <div class="layout">
 
   <main>
-    <h2>Group Sync</h2>
+    <h2 id="group-sync">Group Sync</h2>
     <p>
       Sync your spoofed location across multiple devices on the same Wi-Fi network.
       One device acts as the leader and broadcasts its position; the others follow automatically.
@@ -29,7 +29,7 @@
       </ul>
     </div>
 
-    <h2>How it works</h2>
+    <h2 id="how-it-works">How it works</h2>
     <ol class="section-bullets">
       <li>The leader opens <strong>Group Sync</strong> from the navigation drawer and taps <strong>Create group — I'm the leader</strong>.</li>
       <li>A QR code appears on the leader's screen containing the local IP address, port, and group ID.</li>
@@ -37,7 +37,7 @@
       <li>The follower is joined automatically. Enable <strong>Follow leader</strong> to start mirroring the leader's location.</li>
     </ol>
 
-    <h2>Leader</h2>
+    <h2 id="leader">Leader</h2>
     <p>
       The leader device shares its current spoofed position with all connected followers once per second, over the local Wi-Fi network.
     </p>
@@ -60,7 +60,7 @@
       </tbody>
     </table>
 
-    <h2>Follower</h2>
+    <h2 id="follower">Follower</h2>
     <p>
       Each follower connects to the leader's server and receives position updates. The follower's
       spoofed location is updated to match the leader's position on every tick.
@@ -80,7 +80,7 @@
       </tbody>
     </table>
 
-    <h2>Persistence</h2>
+    <h2 id="persistence">Persistence</h2>
     <p>
       Follower credentials (leader host, port, group ID) are saved to disk. If <strong>Follow leader</strong>
       was enabled when the app was last closed, it resumes automatically on the next app launch — including after a device reboot.
@@ -90,14 +90,14 @@
       and share a new QR code with followers.
     </p>
 
-    <h2>Requirements</h2>
+    <h2 id="requirements">Requirements</h2>
     <ul class="section-bullets">
       <li>All devices must be on the <strong>same Wi-Fi network</strong>.</li>
       <li>Mock location must be active on each device independently — the follower spoofs its own GPS using the received coordinates.</li>
       <li>No special permissions beyond what the app already requires.</li>
     </ul>
 
-    <h2>Limitations</h2>
+    <h2 id="limitations">Limitations</h2>
     <ul class="section-bullets">
       <li>Mobile data or VPN routing may prevent devices from reaching the leader's local IP address.</li>
       <li>If the leader's Wi-Fi address changes (for example after a router restart), followers must rejoin by scanning a new QR code.</li>
