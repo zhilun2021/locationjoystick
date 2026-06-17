@@ -39,8 +39,7 @@
 
     <h2>Leader</h2>
     <p>
-      The leader device runs a lightweight HTTP server on a random port (local network only).
-      It broadcasts its current spoofed position to all connected followers once per second.
+      The leader device shares its current spoofed position with all connected followers once per second, over the local Wi-Fi network.
     </p>
 
     <table class="option-table">
@@ -101,7 +100,7 @@
     <h2>Limitations</h2>
     <ul class="section-bullets">
       <li>Mobile data or VPN routing may prevent devices from reaching the leader's local IP address.</li>
-      <li>The leader's server binds to the device's local Wi-Fi IP. If that IP changes (e.g. DHCP reassignment), followers must rejoin by scanning a new QR code.</li>
+      <li>If the leader's Wi-Fi address changes (for example after a router restart), followers must rejoin by scanning a new QR code.</li>
       <li>The leader can only have one active group at a time.</li>
     </ul>
   </main>

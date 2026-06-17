@@ -25,7 +25,7 @@
       <tbody>
         <tr>
           <td><strong><a href="https://maplibre.org/maplibre-gl-js/docs/" target="_blank" rel="noopener">MapLibre Android SDK</a></strong></td>
-          <td>GPU-accelerated map rendering throughout the app. Powers all interactive map screens and the floating map overlay.</td>
+          <td>Renders the interactive map throughout the app, including the floating map overlay.</td>
           <td><a href="https://github.com/maplibre/maplibre-native/blob/main/LICENSE.md" target="_blank" rel="noopener">BSD 2-Clause</a></td>
         </tr>
         <tr>
@@ -40,7 +40,7 @@
         </tr>
         <tr>
           <td><strong><a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">Nominatim</a></strong> (OpenStreetMap Foundation)</td>
-          <td>Place-name geocoding used in the route creator search and the favorites map picker. The public OSMF instance is used; only the search string is sent.</td>
+          <td>Place-name search used in the route creator and the favorites map picker. Only the text you type is sent — no coordinates or identifiers.</td>
           <td>Data: ODbL · Software: <a href="https://github.com/osm-search/Nominatim/blob/master/COPYING" target="_blank" rel="noopener">GPL-2.0</a></td>
         </tr>
       </tbody>
@@ -52,17 +52,17 @@
       <tbody>
         <tr>
           <td><strong><a href="https://kotlinlang.org" target="_blank" rel="noopener">Kotlin</a></strong> (JetBrains)</td>
-          <td>Primary language for the entire codebase.</td>
+          <td>The programming language the entire app is written in.</td>
           <td><a href="https://github.com/JetBrains/kotlin/blob/master/license/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://github.com/Kotlin/kotlinx.coroutines" target="_blank" rel="noopener">Kotlin Coroutines</a></strong> (JetBrains)</td>
-          <td>All asynchronous operations, background service coordination, and StateFlow/SharedFlow reactive streams.</td>
+          <td>Handles all background tasks and real-time location updates inside the app.</td>
           <td><a href="https://github.com/Kotlin/kotlinx.coroutines/blob/master/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://github.com/Kotlin/kotlinx.serialization" target="_blank" rel="noopener">Kotlin Serialization</a></strong> (JetBrains)</td>
-          <td>JSON serialization for import/export, QR transfer payloads, and OSRM API responses.</td>
+          <td>Reads and writes data for export, import, and QR transfer.</td>
           <td><a href="https://github.com/Kotlin/kotlinx.serialization/blob/master/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
       </tbody>
@@ -74,12 +74,12 @@
       <tbody>
         <tr>
           <td><strong><a href="https://developer.android.com/compose" target="_blank" rel="noopener">Jetpack Compose</a></strong> (Google)</td>
-          <td>Entire UI layer. Every screen, dialog, and bottom sheet is written in Compose.</td>
+          <td>The toolkit used to build every screen and interface element in the app.</td>
           <td><a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://m3.material.io" target="_blank" rel="noopener">Material 3</a></strong> (Google)</td>
-          <td>Design system tokens, components (cards, bottom sheets, FABs, dialogs), and theming.</td>
+          <td>Provides the visual design system — buttons, cards, dialogs, and colors used throughout the app.</td>
           <td><a href="https://github.com/material-components/material-components-android/blob/master/LICENSE" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
@@ -89,7 +89,7 @@
         </tr>
         <tr>
           <td><strong><a href="https://developer.android.com/training/camerax" target="_blank" rel="noopener">AndroidX CameraX</a></strong> (Google)</td>
-          <td>Camera preview and frame capture used by the QR code scanner during config import.</td>
+          <td>Provides camera access for the QR code scanner when importing a configuration.</td>
           <td><a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
       </tbody>
@@ -101,22 +101,22 @@
       <tbody>
         <tr>
           <td><strong><a href="https://dagger.dev/hilt/" target="_blank" rel="noopener">Hilt (Dagger)</a></strong> (Google)</td>
-          <td>Dependency injection throughout all modules. Provides ViewModels, repositories, and services.</td>
+          <td>Internal framework that connects the app's components together.</td>
           <td><a href="https://github.com/google/dagger/blob/master/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://developer.android.com/training/data-storage/room" target="_blank" rel="noopener">AndroidX Room</a></strong> (Google)</td>
-          <td>On-device SQL database (v2) storing routes, waypoints, and favorites.</td>
+          <td>The on-device database that stores your routes, favorites, and settings.</td>
           <td><a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://developer.android.com/topic/libraries/architecture/datastore" target="_blank" rel="noopener">AndroidX DataStore</a></strong> (Google)</td>
-          <td>Persistent key-value preferences for settings, speed profiles, GPS realism toggles, and widget configuration.</td>
+          <td>Saves your settings and preferences on the device.</td>
           <td><a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://developer.android.com/topic/libraries/architecture/lifecycle" target="_blank" rel="noopener">AndroidX Lifecycle</a></strong> (Google)</td>
-          <td>ViewModel lifecycle management and <code>collectAsStateWithLifecycle()</code> for safe Compose state collection.</td>
+          <td>Manages how the app responds to screen rotation, backgrounding, and other Android lifecycle events.</td>
           <td><a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
       </tbody>
@@ -128,12 +128,12 @@
       <tbody>
         <tr>
           <td><strong><a href="https://square.github.io/retrofit/" target="_blank" rel="noopener">Retrofit</a></strong> (Square)</td>
-          <td>HTTP client for OSRM routing requests and Nominatim geocoding queries.</td>
+          <td>Handles network requests for place search and road-following routes.</td>
           <td><a href="https://github.com/square/retrofit/blob/trunk/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
         <tr>
           <td><strong><a href="https://square.github.io/okhttp/" target="_blank" rel="noopener">OkHttp</a></strong> (Square)</td>
-          <td>HTTP engine underlying Retrofit. Handles connection pooling, timeouts, and TLS.</td>
+          <td>The networking layer that powers all outbound requests from the app.</td>
           <td><a href="https://github.com/square/okhttp/blob/master/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
         </tr>
       </tbody>
@@ -151,43 +151,6 @@
       </tbody>
     </table>
 
-    <h2>Build &amp; tooling</h2>
-    <p>These tools are used at build time and are not bundled in the released APK.</p>
-    <table class="option-table">
-      <thead><tr><th>Project</th><th>Used for</th><th>License</th></tr></thead>
-      <tbody>
-        <tr>
-          <td><strong><a href="https://github.com/google/ksp" target="_blank" rel="noopener">KSP — Kotlin Symbol Processing</a></strong> (Google)</td>
-          <td>Annotation processing for Hilt and Room code generation.</td>
-          <td><a href="https://github.com/google/ksp/blob/main/LICENSE" target="_blank" rel="noopener">Apache 2.0</a></td>
-        </tr>
-        <tr>
-          <td><strong><a href="https://github.com/Kotlin/kotlinx-kover" target="_blank" rel="noopener">Kover</a></strong> (JetBrains)</td>
-          <td>Test coverage reporting. Aggregates coverage across all modules into a single HTML/XML report.</td>
-          <td><a href="https://github.com/Kotlin/kotlinx-kover/blob/main/LICENSE" target="_blank" rel="noopener">Apache 2.0</a></td>
-        </tr>
-        <tr>
-          <td><strong><a href="https://junit.org/junit5/" target="_blank" rel="noopener">JUnit 5</a></strong></td>
-          <td>Unit test runner for all <code>:core:*</code> and <code>:feature:*</code> module tests.</td>
-          <td><a href="https://github.com/junit-team/junit5/blob/main/LICENSE.md" target="_blank" rel="noopener">EPL 2.0</a></td>
-        </tr>
-        <tr>
-          <td><strong><a href="https://mockk.io" target="_blank" rel="noopener">MockK</a></strong></td>
-          <td>Kotlin-native mocking library used in unit tests for repositories, services, and ViewModels.</td>
-          <td><a href="https://github.com/mockk/mockk/blob/master/LICENSE" target="_blank" rel="noopener">Apache 2.0</a></td>
-        </tr>
-        <tr>
-          <td><strong><a href="https://github.com/cashapp/turbine" target="_blank" rel="noopener">Turbine</a></strong> (Cash App)</td>
-          <td>Testing utility for Kotlin Flows. Used to assert emission sequences in ViewModel and repository tests.</td>
-          <td><a href="https://github.com/cashapp/turbine/blob/trunk/LICENSE.txt" target="_blank" rel="noopener">Apache 2.0</a></td>
-        </tr>
-        <tr>
-          <td><strong><a href="https://robolectric.org" target="_blank" rel="noopener">Robolectric</a></strong></td>
-          <td>Android JVM test environment for tests that depend on Android framework classes without a device.</td>
-          <td><a href="https://github.com/robolectric/robolectric/blob/master/LICENSE" target="_blank" rel="noopener">MIT</a></td>
-        </tr>
-      </tbody>
-    </table>
 
   </main>
 

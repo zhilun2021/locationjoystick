@@ -14,7 +14,7 @@
   <main>
     <h2>Map</h2>
     <p>
-      OpenStreetMap rendered via MapLibre (GPU-accelerated, offline-capable after tiles are cached). Your spoofed location appears as a live marker that updates in real time.
+      OpenStreetMap displayed on an interactive map. Your spoofed location appears as a live marker that updates in real time.
       Use the map to set your position directly or launch routes, favorites, and roaming from the floating action buttons.
     </p>
     <p>
@@ -55,7 +55,7 @@
         </tr>
         <tr>
           <td><strong>Walk here</strong></td>
-          <td>The simulated device moves from the current position to the tapped point at the active speed profile, interpolated along a straight line. GPS updates continue at ~1 Hz during the walk.</td>
+          <td>The simulated device moves from the current position to the tapped point at the active speed profile, along a straight line.</td>
         </tr>
         <tr>
           <td><strong>Walk here via roads</strong></td>
@@ -63,7 +63,7 @@
         </tr>
         <tr>
           <td><strong>Add next point</strong></td>
-          <td>Visible only while a walk-to is active. Chains a new destination onto the current walk without saving a route. The first tap converts the active walk into an ephemeral replay (current position → walk target → new point); subsequent taps append to the live route. If the current walk was "via roads", the new leg is also resolved via OSRM.</td>
+          <td>Visible only while a walk-to is active. Chains a new destination onto the current walk without saving a route. The first tap turns the active walk into a multi-point sequence (current position → current target → new point); subsequent taps add more points to the end. If the current walk was "via roads", the new leg also follows roads.</td>
         </tr>
         <tr>
           <td><strong>Share this location</strong></td>
@@ -71,7 +71,7 @@
         </tr>
       </tbody>
     </table>
-    <p>When a route replay is in progress, the sheet shows different actions instead: <strong>Stop route and teleport</strong>, <strong>Stop route and walk here</strong>, and <strong>Finish route and walk here</strong> (appends the point to the live ephemeral replay rather than stopping it).</p>
+    <p>When a route replay is in progress, the sheet shows different actions instead: <strong>Stop route and teleport</strong>, <strong>Stop route and walk here</strong>, and <strong>Finish route and walk here</strong> (adds the point to the end of the active route rather than stopping it).</p>
 
     <h2>Routes sheet</h2>
     <p>Open your saved routes and start replaying one directly from the map.</p>
@@ -93,7 +93,7 @@
       <ul class="section-bullets">
         <li>Tap a favorite to expand its detail panel with three movement options: <strong>Set location</strong> (teleport), <strong>Walk to location</strong> (straight line), and <strong>Walk via roads</strong> (OSRM road-following).</li>
         <li>Saved favorites appear with their name and distance from the current spoofed position.</li>
-        <li>Distance is calculated as straight-line (great-circle) distance, not road distance.</li>
+        <li>Distance is calculated as straight-line distance, not road distance.</li>
         <li>Tap <strong>Save current location</strong> to add your current spoofed position as a new favorite directly from this sheet.</li>
       </ul>
     </div>

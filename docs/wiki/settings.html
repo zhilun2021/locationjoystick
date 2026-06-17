@@ -25,46 +25,46 @@
     </div>
 
     <h2>Speed Profiles</h2>
-    <p>Sets the movement speed for joystick, route replay, and roaming. Changes apply to the next tick. All speeds are stored internally in m/s regardless of the display unit you choose.</p>
+    <p>Sets the movement speed for joystick, route replay, and roaming. Changes apply immediately.</p>
 
     <table class="option-table">
       <thead><tr><th>Option</th><th>Description</th></tr></thead>
       <tbody>
         <tr>
           <td><strong>Unit</strong></td>
-          <td>Display unit for speed inputs: m/s, km/h, or mph. Switching units converts all speed fields in the UI — the underlying value in m/s is unchanged.</td>
+          <td>Display unit for speed inputs: km/h or mph. Switching units converts all speed fields in the app.</td>
         </tr>
         <tr>
           <td><strong>Walk</strong></td>
-          <td>Default <strong>2.0 km/h (0.5556 m/s)</strong>. Typical slow walking pace. Used when the joystick or route replay has the Walk profile active. Walk is also the default profile for route replay when no profile is specified.</td>
+          <td>Default <strong>2.0 km/h</strong>. Typical slow walking pace.</td>
         </tr>
         <tr>
           <td><strong>Run</strong></td>
-          <td>Default <strong>8.0 km/h (2.2222 m/s)</strong>. Typical jogging pace. Selects the foot-routing profile in OSRM when road-following is enabled.</td>
+          <td>Default <strong>8.0 km/h</strong>. Typical jogging pace. When road-following is enabled, this profile routes along footpaths.</td>
         </tr>
         <tr>
           <td><strong>Bike</strong></td>
-          <td>Default <strong>15.0 km/h (4.1667 m/s)</strong>. Cycling pace. Selects the cycling profile in OSRM road routing, which prefers bike lanes and avoids motorways.</td>
+          <td>Default <strong>15.0 km/h</strong>. Cycling pace. When road-following is enabled, this profile routes along bike lanes and avoids motorways.</td>
         </tr>
       </tbody>
     </table>
 
-    <p><strong>Limits:</strong> Each profile is clamped to a minimum of <strong>0.1 m/s</strong> (~0.36 km/h) and a maximum of <strong>15.0 m/s</strong> (~54 km/h). Values outside this range are silently coerced on save.</p>
+    <p><strong>Limits:</strong> Each profile accepts values between <strong>0.36 km/h</strong> and <strong>54 km/h</strong>. Values outside this range are adjusted to the nearest limit when saved.</p>
 
     <h2>Anti-cheat warning</h2>
     <p>
-      If any speed profile is set above <strong>8 m/s (~28.8 km/h / ~17.9 mph)</strong>, a warning banner appears inline below that field in Settings. The warning reads:
+      If any speed profile is set above <strong>28.8 km/h (17.9 mph)</strong>, a warning banner appears inline below that field in Settings. The warning reads:
     </p>
     <blockquote><em>"Speed exceeds 8 m/s — may trigger anti-cheat in some games"</em></blockquote>
     <p>
-      This is a passive advisory only — it does not block saving, cap your speed, or communicate with any external service. The threshold of 8 m/s was chosen because it is well above any realistic human movement speed. Many location-aware games flag sustained GPS movement faster than a sprint (roughly 7–10 m/s) as suspicious, since no pedestrian legitimately moves that fast for extended periods.
+      This is a passive advisory only — it does not block saving, cap your speed, or communicate with any external service. The threshold was chosen because it is well above any realistic human movement speed (~29 km/h). Many location-aware games flag sustained GPS movement faster than a sprint as suspicious, since no person legitimately moves that fast on foot for extended periods.
     </p>
     <p>
-      The warning applies independently to each of the three profiles. You can dismiss it by lowering the speed below 8 m/s, or ignore it if you are using the app for a purpose where speed detection is not a concern. The app does not impose any speed limit — 15 m/s (~54 km/h) is the maximum the input field accepts.
+      The warning applies independently to each of the three profiles. You can dismiss it by lowering the speed below 29 km/h, or ignore it if speed detection is not a concern. The app does not impose any speed limit — 54 km/h is the maximum the input field accepts.
     </p>
 
     <h2>GPS Jitter</h2>
-    <p>Adds per-tick noise to each location update to simulate natural GPS drift. Set any value to 0 to disable that dimension of noise.</p>
+    <p>Adds small random variations to each location update to simulate natural GPS drift. Set any value to 0 to disable that dimension of variation.</p>
 
     <table class="option-table">
       <thead><tr><th>Option</th><th>Description</th></tr></thead>
@@ -97,18 +97,18 @@
     </table>
 
     <h2>Elevation Jitter</h2>
-    <p>Controls the noise injected into the accelerometer and rotation-vector sensors used by Elevation Controls. Only active when Elevation Controls is enabled in the Floating Widget section. Requires root.</p>
+    <p>Fine-tunes the natural variation applied by Elevation Controls. Only active when Elevation Controls is enabled in the Floating Widget section. Requires root.</p>
 
     <table class="option-table">
       <thead><tr><th>Option</th><th>Description</th></tr></thead>
       <tbody>
         <tr>
-          <td><strong>Tilt jitter (°)</strong></td>
-          <td>Random variation added to the tilt angle each tick. Default ±2.25° (5% of the 45° base angle). Simulates natural hand tremor so the sensor output does not look synthetic.</td>
+          <td><strong>Tilt variation (°)</strong></td>
+          <td>Random variation added to the tilt angle with each update. A small value (default ±2.25°) makes the tilt look like a naturally held device rather than a perfectly fixed angle.</td>
         </tr>
         <tr>
-          <td><strong>Accel noise (m/s²)</strong></td>
-          <td>Per-axis Gaussian noise added to the accelerometer values each tick. Default ±0.35 m/s². Mimics real sensor noise seen on physical hardware.</td>
+          <td><strong>Sensor noise</strong></td>
+          <td>Small random variation added to sensor readings with each update. Mimics the natural noise seen on a real device. Default is a barely perceptible amount.</td>
         </tr>
       </tbody>
     </table>
@@ -125,7 +125,7 @@
         </tr>
         <tr>
           <td><strong>Vary altitude</strong></td>
-          <td>Applies a small Gaussian random walk to the reported altitude instead of always reporting 0 m. A flat zero altitude is an obvious signal that the location is synthetic. <em>Default: on.</em></td>
+          <td>Adds a small random variation to the reported altitude instead of always reporting the same height. A constant altitude is a common sign that a location is being spoofed. <em>Default: on.</em></td>
         </tr>
         <tr>
           <td><strong>GPS warm-up simulation</strong></td>
@@ -293,7 +293,7 @@
       <tbody>
         <tr>
           <td><strong>Export via QR code</strong></td>
-          <td>Serialises the current configuration into a sequence of QR codes for scanning on another device.</td>
+          <td>Packages your current configuration into a sequence of QR codes for scanning on another device.</td>
         </tr>
         <tr>
           <td><strong>Export settings</strong></td>

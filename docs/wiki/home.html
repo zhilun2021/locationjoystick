@@ -32,18 +32,15 @@
 
     <h2>Background service</h2>
     <p>
-      Once spoofing is started, a foreground service (<code>MockLocationService</code>) keeps it running
-      while you use other apps or the screen is off. A persistent low-priority notification indicates
-      the service is active — tapping "Stop" in the notification ends spoofing cleanly without opening the app.
+      Once spoofing is started, the app keeps running in the background while you use other apps or the screen is off.
+      A persistent notification shows that spoofing is active — tap "Stop" in the notification to end it without opening the app.
     </p>
     <p>
-      The service holds the mock location provider registration for the duration of the session.
-      If the service is killed by the OS (e.g. aggressive battery management on some devices), spoofing stops
-      and the location reverts to the device's real GPS. Re-open the app to restart.
+      If Android stops the app in the background (common on devices with aggressive battery management), spoofing stops
+      and your location reverts to real GPS. Re-open the app to restart.
     </p>
     <p>
-      Routes, roaming, and walk-to all run inside this service — they continue uninterrupted
-      while the screen is off or another app is in the foreground.
+      Routes, roaming, and walk-to all continue uninterrupted while the screen is off or another app is in the foreground.
     </p>
   </main>
 

@@ -16,7 +16,7 @@
     <p>
       A circular directional pad that floats over any app. Drag to move your spoofed
       location in real time while something else is in the foreground.
-      The joystick is its own independent Android service — it can be shown or hidden via
+      The joystick runs independently — it can be shown or hidden via
       the floating widget without stopping spoofing.
     </p>
 
@@ -35,7 +35,7 @@
     <p>
       A compact panel with quick-access controls. Tap the FAB to expand it, then use
       whichever controls you've configured in Settings — without opening the app.
-      The widget persists as a foreground service notification and remains on screen across app switches.
+      The widget remains on screen across app switches.
     </p>
 
     <div class="feature-section" id="widget-overlay">
@@ -54,7 +54,7 @@
       <tbody>
         <tr>
           <td><strong>Map shortcut</strong></td>
-          <td>Opens a compact full-screen map overlay (TYPE_APPLICATION_OVERLAY window). Supports walk-to, teleport, and roaming configuration without switching back to the main app.</td>
+          <td>Opens a compact full-screen map overlay that floats above other apps. Supports walk-to, teleport, and roaming controls without switching back to the main app.</td>
         </tr>
         <tr>
           <td><strong>Show / hide joystick</strong></td>
@@ -85,8 +85,8 @@
 
     <h2>Requirements</h2>
     <p>
-      Both overlays require the <strong>Display over other apps</strong> permission
-      (<code>SYSTEM_ALERT_WINDOW</code>). The onboarding flow guides you through granting it.
+      Both overlays require the <strong>Display over other apps</strong> permission.
+      The onboarding flow guides you through granting it.
       On some custom Android skins (MIUI, ColorOS), the overlay permission may need to be re-granted after each reboot — check your device's autostart or battery settings if the overlay disappears.
     </p>
   </main>
