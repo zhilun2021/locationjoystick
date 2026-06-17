@@ -35,6 +35,7 @@ Here's everything included:
 | **Background Service** | Spoofs while minimized or screen off via foreground service. Low-priority notification. |
 | **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
 | **Elevation Controls** | *(Experimental, root required)* Injects synthetic accelerometer + rotation-vector sensor events so apps see the phone as tilted. Three modes: tilt up / neutral / tilt down. Controlled from the floating widget. Disabled automatically for non-root devices. |
+| **Group Sync** | Sync spoofed location across multiple devices on the same Wi-Fi network. No account needed. One device is the leader (shares position via QR-joined session); others are followers (mirror leader's location). |
 
 ---
 
@@ -176,6 +177,7 @@ Each feature split into `:api` (public contract) + `:impl` (implementation).
 | `:core:routing` | OSRM client, route interpolation, roaming engine, replay engine |
 | `:core:testing` | Shared test utilities, fakes |
 | `:feature:favorites:api` / `:impl` | Favorites list, MapPicker, teleport |
+| `:feature:group:api` / `:impl` | Group Sync screen — leader/follower Wi-Fi location sync |
 | `:feature:joystick:api` / `:impl` | Floating joystick overlay service |
 | `:feature:map:api` / `:impl` | MapLibre screen, map interactions, roaming bottom sheet |
 | `:feature:onboarding:api` / `:impl` | Multi-step onboarding flow |

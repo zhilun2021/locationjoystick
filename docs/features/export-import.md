@@ -6,7 +6,7 @@ Key files: `:feature:settings:impl/SettingsScreen.kt`, `:core:data/SettingsRepos
 
 ## Scope
 
-Covers: routes, favorites, speed profiles, widget config, roaming defaults, jitter settings.
+Covers: routes, favorites, speed profiles, widget config, roaming defaults, jitter settings, hot locations state, hot routes state, sort preferences.
 
 Schema version: `AppConstants.ExportConstants.SCHEMA_VERSION`.
 

@@ -31,6 +31,7 @@ core/model       — Pure Kotlin data classes, no Android deps
 | `:core:routing` | OSRM client, route interpolation, roaming engine, replay engine |
 | `:core:testing` | Shared test utils, fakes |
 | `:feature:favorites:api` / `:impl` | Favorites list, MapPicker, teleport |
+| `:feature:group:api` / `:impl` | Group Sync screen — leader/follower Wi-Fi location sync |
 | `:feature:joystick:api` / `:impl` | Floating joystick overlay service |
 | `:feature:map:api` / `:impl` | MapLibre screen, map interactions, roaming bottom sheet |
 | `:feature:onboarding:api` / `:impl` | Multi-step onboarding flow |

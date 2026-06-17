@@ -27,6 +27,35 @@ Constraints:
 
 ---
 
+## Documentation Maintenance Policy
+
+Work is NOT complete until affected docs are updated. These files must stay in sync with the code:
+
+| File | Update when |
+|------|-------------|
+| `AGENTS.md` (this file) — feature table | Adding or removing a feature |
+| `AGENTS.md` — module table in `docs/architecture.md` | Adding or removing a Gradle module |
+| `AGENTS.md` — Key Services table | Adding, removing, or renaming a service or singleton |
+| `docs/architecture.md` | Module added/removed or architecture pattern changes |
+| `docs/domain-models.md` | Any change to `core/model/` data classes or enums |
+| `docs/features/<feature>.md` | Behaviour change in the corresponding feature |
+| `docs/features/export-import.md` | Any change to `ExportData` fields or import/export scope |
+| `README.md` — feature table | Adding or removing a user-visible feature |
+| `README.md` — module table | Adding or removing a Gradle module |
+| `docs/wiki/<feature>.html` | Adding or changing any user-visible feature |
+| `docs/wiki/changelog.html` | Any release with user-visible changes |
+
+Rules:
+- New feature → create `docs/features/<feature>.md` AND add row to AGENTS.md feature table AND README.md feature table.
+- New Gradle module → add row to `docs/architecture.md` module table AND README.md module table.
+- New domain model or field → update `docs/domain-models.md`.
+- Deleted feature/module → remove from all tables above.
+- Doc changes go in the same commit as the code change, not a follow-up.
+- New user-visible feature → create `docs/wiki/<feature>.html` AND add it to `NAV_ITEMS` in `docs/wiki/wiki-init.js`. Follow `docs/wiki/CONTRIBUTING.md` for page structure, nav ordering, and writing style. Wiki pages are for **app users, not developers** — no code symbols, class names, Android internals, or library names.
+- Wiki prose must pass the audience test in `docs/wiki/CONTRIBUTING.md`: could a non-technical user understand every sentence? If not, rewrite.
+
+---
+
 ## Pre-Commit Validation Policy
 
 Work is NOT complete until lint and test passes.
@@ -85,6 +114,7 @@ Rules:
 | Last Remembered Location | @docs/features/last-location.md |
 | Onboarding | @docs/features/onboarding.md |
 | Elevation Controls (Experimental) | @docs/features/elevation-controls.md |
+| Group Sync | @docs/features/group-sync.md |
 
 ---
 
