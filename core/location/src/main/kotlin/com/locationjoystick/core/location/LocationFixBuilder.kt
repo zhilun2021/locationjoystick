@@ -293,8 +293,10 @@ internal fun buildLocation(
     // falls into the moving branch below and applies lateral jitter using the leader's bearing.
     val (outLat, outLon) =
         when {
-            (state.mode == MockMode.TELEPORT ||
-                (state.mode == MockMode.FOLLOWER && state.speedMs == 0f)) &&
+            (
+                state.mode == MockMode.TELEPORT ||
+                    (state.mode == MockMode.FOLLOWER && state.speedMs == 0f)
+            ) &&
                 state.shouldApplyIdleJitter &&
                 state.jitterIdleRadiusMeters > 0.0 -> {
                 gaussianLatLonOffset(state.latitude, state.longitude, state.jitterIdleRadiusMeters, random)

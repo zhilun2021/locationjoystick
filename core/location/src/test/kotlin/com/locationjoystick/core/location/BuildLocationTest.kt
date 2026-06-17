@@ -358,43 +358,49 @@ class BuildLocationTest {
     @Test
     fun `follower stationary uses idle jitter radius not moving radius`() {
         // speedMs == 0 + FOLLOWER → idle jitter branch, governed by jitterIdleRadiusMeters
-        val snap = baseSnapshot(
-            mode = MockMode.FOLLOWER,
-            speedMs = 0f,
-            jitterIdleRadiusMeters = 3.0,
-            jitterMovingRadiusMeters = 0.0, // moving jitter disabled — ensures idle branch fires
-            shouldApplyIdleJitter = true,
-            shouldApplyMovingJitter = false,
-        )
-        val deviations = (0 until 60).map { tick ->
-            val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick * 31 + 7))!!
-            val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
-            val dlon = (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
-                kotlin.math.cos(Math.toRadians(snap.latitude))
-            kotlin.math.sqrt(dlat * dlat + dlon * dlon)
-        }
+        val snap =
+            baseSnapshot(
+                mode = MockMode.FOLLOWER,
+                speedMs = 0f,
+                jitterIdleRadiusMeters = 3.0,
+                jitterMovingRadiusMeters = 0.0, // moving jitter disabled — ensures idle branch fires
+                shouldApplyIdleJitter = true,
+                shouldApplyMovingJitter = false,
+            )
+        val deviations =
+            (0 until 60).map { tick ->
+                val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick * 31 + 7))!!
+                val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
+                val dlon =
+                    (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
+                        kotlin.math.cos(Math.toRadians(snap.latitude))
+                kotlin.math.sqrt(dlat * dlat + dlon * dlon)
+            }
         assertTrue("Stationary follower should deviate via idle jitter", deviations.average() > 0.0)
     }
 
     @Test
     fun `follower moving uses moving jitter`() {
         // speedMs > 0 + FOLLOWER → moving jitter branch
-        val snap = baseSnapshot(
-            mode = MockMode.FOLLOWER,
-            speedMs = 1.4f,
-            bearing = 90f,
-            jitterIdleRadiusMeters = 0.0,
-            jitterMovingRadiusMeters = 3.0,
-            shouldApplyIdleJitter = false,
-            shouldApplyMovingJitter = true,
-        )
-        val deviations = (0 until 60).map { tick ->
-            val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick * 13 + 5))!!
-            val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
-            val dlon = (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
-                kotlin.math.cos(Math.toRadians(snap.latitude))
-            kotlin.math.sqrt(dlat * dlat + dlon * dlon)
-        }
+        val snap =
+            baseSnapshot(
+                mode = MockMode.FOLLOWER,
+                speedMs = 1.4f,
+                bearing = 90f,
+                jitterIdleRadiusMeters = 0.0,
+                jitterMovingRadiusMeters = 3.0,
+                shouldApplyIdleJitter = false,
+                shouldApplyMovingJitter = true,
+            )
+        val deviations =
+            (0 until 60).map { tick ->
+                val fix = buildLocation(snap, tick.toLong() * 1000, Random(tick * 13 + 5))!!
+                val dlat = (fix.latitude - snap.latitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE
+                val dlon =
+                    (fix.longitude - snap.longitude) * AppConstants.LocationConstants.METERS_PER_LATITUDE_DEGREE *
+                        kotlin.math.cos(Math.toRadians(snap.latitude))
+                kotlin.math.sqrt(dlat * dlat + dlon * dlon)
+            }
         assertTrue("Moving follower should deviate via moving jitter", deviations.average() > 0.0)
     }
 }

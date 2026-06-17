@@ -56,14 +56,15 @@ class FollowerSyncClientTest {
 
     @Test
     fun `stale update is not delivered to callback`() {
-        val staleUpdate = SyncPositionUpdate(
-            timestamp = System.currentTimeMillis() - 10_000L,
-            latitude = 9.0,
-            longitude = 9.0,
-            speedMs = 0f,
-            bearing = 0f,
-            seq = 0,
-        )
+        val staleUpdate =
+            SyncPositionUpdate(
+                timestamp = System.currentTimeMillis() - 10_000L,
+                latitude = 9.0,
+                longitude = 9.0,
+                speedMs = 0f,
+                bearing = 0f,
+                seq = 0,
+            )
         server.push(staleUpdate)
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
