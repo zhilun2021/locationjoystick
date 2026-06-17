@@ -176,30 +176,7 @@ class RoutesViewModelUiStateTest {
     )
 }
 
-/**
- * Unit tests for RoutesViewModel GPX import functionality.
- * Best-effort coverage for parseGpxWaypoints, extractGpxName, and Route creation.
- * Tests use the internal parsing methods directly (no ViewModel instantiation needed).
- */
 class RoutesViewModelTest {
-    private fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
-        val trkptRegex = Regex("""<(?:trkpt|rtept)\s+lat="([^"]+)"\s+lon="([^"]+)""")
-        return trkptRegex
-            .findAll(gpxContent)
-            .map { match ->
-                val lat = match.groupValues[1].toDoubleOrNull() ?: return@map null
-                val lon = match.groupValues[2].toDoubleOrNull() ?: return@map null
-                LatLng(lat, lon)
-            }.filterNotNull()
-            .toList()
-    }
-
-    private fun extractGpxName(gpxContent: String): String {
-        val nameRegex = Regex("<name>([^<]+)</name>")
-        val match = nameRegex.find(gpxContent)
-        return match?.groupValues?.get(1)?.takeIf { it.isNotEmpty() } ?: "Imported Route"
-    }
-
     @Test
     fun testParseGpxWaypoints_validGpx() {
         val gpxContent =
@@ -460,5 +437,33 @@ class RoutesViewModelTest {
         val name = extractGpxName(gpx)
 
         assertEquals("2", name)
+    }
+
+    @Test
+    fun `mixed trkpt and rtept in same file parses both`() {
+        val gpxContent =
+            """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <gpx version="1.1">
+              <trk>
+                <trkseg>
+                  <trkpt lat="1.0" lon="2.0"/>
+                  <trkpt lat="3.0" lon="4.0"/>
+                </trkseg>
+              </trk>
+              <rte>
+                <rtept lat="5.0" lon="6.0"/>
+                <rtept lat="7.0" lon="8.0"/>
+              </rte>
+            </gpx>
+            """.trimIndent()
+
+        val waypoints = parseGpxWaypoints(gpxContent)
+
+        assertEquals(4, waypoints.size)
+        assertEquals(LatLng(1.0, 2.0), waypoints[0])
+        assertEquals(LatLng(3.0, 4.0), waypoints[1])
+        assertEquals(LatLng(5.0, 6.0), waypoints[2])
+        assertEquals(LatLng(7.0, 8.0), waypoints[3])
     }
 }

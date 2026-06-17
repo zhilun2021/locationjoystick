@@ -28,9 +28,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.xmlpull.v1.XmlPullParser
-import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
+import javax.xml.parsers.DocumentBuilderFactory
 import java.util.UUID
 import javax.inject.Inject
 
@@ -278,33 +277,28 @@ class RoutesViewModel
                 } ?: throw IllegalArgumentException("Cannot read GPX file")
             }
 
-        internal fun extractGpxName(gpxContent: String): String {
-            val parser = XmlPullParserFactory.newInstance().newPullParser()
-            parser.setInput(gpxContent.reader())
-            var event = parser.eventType
-            while (event != XmlPullParser.END_DOCUMENT) {
-                if (event == XmlPullParser.START_TAG && parser.name == "name") {
-                    val text = parser.nextText()
-                    if (text.isNotEmpty()) return text
-                }
-                event = parser.next()
-            }
-            return "Imported Route"
-        }
 
-        internal fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
-            val result = mutableListOf<LatLng>()
-            val parser = XmlPullParserFactory.newInstance().newPullParser()
-            parser.setInput(gpxContent.reader())
-            var event = parser.eventType
-            while (event != XmlPullParser.END_DOCUMENT) {
-                if (event == XmlPullParser.START_TAG && (parser.name == "trkpt" || parser.name == "rtept")) {
-                    val lat = parser.getAttributeValue(null, "lat")?.toDoubleOrNull()
-                    val lon = parser.getAttributeValue(null, "lon")?.toDoubleOrNull()
-                    if (lat != null && lon != null) result.add(LatLng(lat, lon))
-                }
-                event = parser.next()
-            }
-            return result
+    }
+
+internal fun extractGpxName(gpxContent: String): String {
+    val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        .parse(gpxContent.byteInputStream())
+    val names = doc.getElementsByTagName("name")
+    return names.item(0)?.textContent?.takeIf { it.isNotEmpty() } ?: "Imported Route"
+}
+
+internal fun parseGpxWaypoints(gpxContent: String): List<LatLng> {
+    val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+        .parse(gpxContent.byteInputStream())
+    val result = mutableListOf<LatLng>()
+    val allNodes = doc.getElementsByTagName("*")
+    for (i in 0 until allNodes.length) {
+        val node = allNodes.item(i)
+        if (node.nodeName == "trkpt" || node.nodeName == "rtept") {
+            val lat = node.attributes?.getNamedItem("lat")?.nodeValue?.toDoubleOrNull() ?: continue
+            val lon = node.attributes?.getNamedItem("lon")?.nodeValue?.toDoubleOrNull() ?: continue
+            result.add(LatLng(lat, lon))
         }
     }
+    return result
+}
