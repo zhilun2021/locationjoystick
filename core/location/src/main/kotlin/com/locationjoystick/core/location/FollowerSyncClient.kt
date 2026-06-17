@@ -40,7 +40,7 @@ class FollowerSyncClient
             port: Int,
             groupId: String,
             pollIntervalMs: Long = AppConstants.SyncConstants.POLL_INTERVAL_MS,
-            onPosition: (lat: Double, lon: Double) -> Unit,
+            onPosition: (lat: Double, lon: Double, speedMs: Float, bearing: Float) -> Unit,
         ) {
             stopPolling()
             lastSeq = -1L
@@ -54,7 +54,7 @@ class FollowerSyncClient
                                 val stale = nowMs - update.timestamp > AppConstants.SyncConstants.POSITION_STALE_THRESHOLD_MS
                                 if (!stale && update.seq > lastSeq) {
                                     lastSeq = update.seq
-                                    onPosition(update.latitude, update.longitude)
+                                    onPosition(update.latitude, update.longitude, update.speedMs, update.bearing)
                                 }
                             }
                         } catch (e: Exception) {

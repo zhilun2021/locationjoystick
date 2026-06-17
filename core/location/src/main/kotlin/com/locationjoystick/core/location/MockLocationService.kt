@@ -609,8 +609,10 @@ class MockLocationService : Service() {
                 startSpoofing(currentPos.latitude, currentPos.longitude)
             }
             locationRepository.setMockMode(MockMode.FOLLOWER)
-            followerSyncClient.startPolling(host, port, groupId) { lat, lon ->
+            followerSyncClient.startPolling(host, port, groupId) { lat, lon, speedMs, bearing ->
                 writeCurrentPosition(lat, lon)
+                currentSpeedMs = speedMs
+                currentBearing = bearing
                 locationRepository.setPositionInternal(LatLng(lat, lon))
             }
             Log.i(TAG, "Entered FOLLOWER mode for group $groupId at $host:$port")

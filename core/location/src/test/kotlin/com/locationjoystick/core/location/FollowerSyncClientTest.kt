@@ -44,7 +44,7 @@ class FollowerSyncClientTest {
         server.push(freshUpdate(lat = 1.0, lon = 2.0))
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
-        client.startPolling("127.0.0.1", serverPort, "test-group") { lat, lon ->
+        client.startPolling("127.0.0.1", serverPort, "test-group") { lat, lon, _, _ ->
             results.offer(Pair(lat, lon))
         }
 
@@ -67,7 +67,7 @@ class FollowerSyncClientTest {
         server.push(staleUpdate)
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
-        client.startPolling("127.0.0.1", serverPort, "test-group") { lat, lon ->
+        client.startPolling("127.0.0.1", serverPort, "test-group") { lat, lon, _, _ ->
             results.offer(Pair(lat, lon))
         }
 
@@ -81,7 +81,7 @@ class FollowerSyncClientTest {
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
         // Intentionally wrong groupId — server returns 403, client skips
-        client.startPolling("127.0.0.1", serverPort, "wrong-group") { lat, lon ->
+        client.startPolling("127.0.0.1", serverPort, "wrong-group") { lat, lon, _, _ ->
             results.offer(Pair(lat, lon))
         }
 
@@ -94,7 +94,7 @@ class FollowerSyncClientTest {
         server.push(freshUpdate(lat = 3.0, lon = 4.0))
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
-        client.startPolling("127.0.0.1", serverPort, "test-group", pollIntervalMs = 50) { lat, lon ->
+        client.startPolling("127.0.0.1", serverPort, "test-group", pollIntervalMs = 50) { lat, lon, _, _ ->
             results.offer(Pair(lat, lon))
         }
 
@@ -110,7 +110,7 @@ class FollowerSyncClientTest {
         server.push(freshUpdate(lat = 1.0, lon = 2.0))
         val results = LinkedBlockingQueue<Pair<Double, Double>>()
 
-        client.startPolling("127.0.0.1", serverPort, "test-group", pollIntervalMs = 50) { lat, lon ->
+        client.startPolling("127.0.0.1", serverPort, "test-group", pollIntervalMs = 50) { lat, lon, _, _ ->
             results.offer(Pair(lat, lon))
         }
 
