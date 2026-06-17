@@ -43,6 +43,8 @@ dependencies {
     implementation(project(":feature:settings:impl"))
     implementation(project(":feature:widget:api"))
     implementation(project(":feature:widget:impl"))
+    implementation(project(":feature:group:api"))
+    implementation(project(":feature:group:impl"))
 
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.activity.compose)

@@ -1,6 +1,17 @@
 package com.locationjoystick.app
 
 import android.content.Intent
+import com.locationjoystick.core.model.GroupInvite
+
+internal fun parseGroupInvite(intent: Intent): GroupInvite? {
+    val uri = intent.data ?: return null
+    if (uri.scheme != "locationjoystick" || uri.host != "group") return null
+    val host = uri.getQueryParameter("host") ?: return null
+    val portStr = uri.getQueryParameter("port") ?: return null
+    val port = portStr.toIntOrNull() ?: return null
+    val id = uri.getQueryParameter("id") ?: return null
+    return GroupInvite(host = host, port = port, groupId = id)
+}
 
 /**
  * Canonical deep link format: https://locationjoystick.shrtcts.fr/?lat=LAT&lon=LON

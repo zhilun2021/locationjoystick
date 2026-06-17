@@ -20,15 +20,19 @@ import com.locationjoystick.core.common.constants.AppConstants.ServiceConstants
 import com.locationjoystick.core.common.util.advancePosition
 import com.locationjoystick.core.common.util.calculateBearing
 import com.locationjoystick.core.common.util.haversineDistance
+import com.locationjoystick.core.data.GroupRepository
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.location.BuildConfig
 import com.locationjoystick.core.model.ElevationMode
+import com.locationjoystick.core.model.GroupRole
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
+import com.locationjoystick.core.model.SyncPositionUpdate
+import com.locationjoystick.core.routing.FollowerSyncClient
 import com.locationjoystick.core.routing.RouteReplayEngine
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -72,6 +76,8 @@ class MockLocationService : Service() {
         const val ACTION_ROUTE_REPLAY_STOP = AppConstants.ServiceConstants.ACTION_ROUTE_REPLAY_STOP
         const val ACTION_ROUTE_REPLAY_CANCEL = AppConstants.ServiceConstants.ACTION_ROUTE_REPLAY_CANCEL
         const val ACTION_ROUTE_APPEND_WAYPOINT = AppConstants.ServiceConstants.ACTION_ROUTE_APPEND_WAYPOINT
+        const val ACTION_ENTER_FOLLOWER = AppConstants.ServiceConstants.ACTION_ENTER_FOLLOWER
+        const val ACTION_EXIT_FOLLOWER = AppConstants.ServiceConstants.ACTION_EXIT_FOLLOWER
 
         const val EXTRA_ROUTE_ID = AppConstants.ServiceConstants.EXTRA_ROUTE_ID
         const val EXTRA_IS_BACKWARD = AppConstants.ServiceConstants.EXTRA_IS_BACKWARD
@@ -107,6 +113,12 @@ class MockLocationService : Service() {
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
     @Inject lateinit var sensorInjector: SensorInjector
+
+    @Inject lateinit var leaderSyncServer: LeaderSyncServer
+
+    @Inject lateinit var followerSyncClient: FollowerSyncClient
+
+    @Inject lateinit var groupRepository: GroupRepository
 
     private val notificationManager: android.app.NotificationManager by lazy {
         getSystemService(android.app.NotificationManager::class.java)
@@ -338,10 +350,30 @@ class MockLocationService : Service() {
                 startSpoofing(lat, lon)
             }
 
+            ACTION_ENTER_FOLLOWER -> {
+                val host = intent.getStringExtra(AppConstants.ServiceConstants.EXTRA_FOLLOWER_HOST) ?: return START_STICKY
+                val port = intent.getIntExtra(AppConstants.ServiceConstants.EXTRA_FOLLOWER_PORT, 0)
+                val groupId = intent.getStringExtra(AppConstants.ServiceConstants.EXTRA_FOLLOWER_GROUP_ID) ?: return START_STICKY
+                enterFollowerMode(host, port, groupId)
+            }
+
+            ACTION_EXIT_FOLLOWER -> {
+                exitFollowerMode()
+            }
+
             null -> {
-                // Service restarted by OS (START_STICKY). Attempt to resume spoofing from the last
-                // remembered position if the feature is enabled.
+                // Service restarted by OS (START_STICKY). Resume follower mode first if active,
+                // else fall through to remembered-location logic.
                 serviceScope.launch {
+                    val groupState = groupRepository.groupState.first()
+                    if (groupState.role == GroupRole.FOLLOWER && groupState.followerModeEnabled) {
+                        val host = groupState.leaderHost ?: return@launch
+                        val port = groupState.leaderPort ?: return@launch
+                        val id = groupState.groupId ?: return@launch
+                        Log.i(TAG, "OS restart: resuming follower mode for group $id at $host:$port")
+                        enterFollowerMode(host, port, id)
+                        return@launch
+                    }
                     val remember = settingsRepository.getRememberLastLocation().first()
                     val lastLoc = if (remember) settingsRepository.getLastLocation().first() else null
                     if (lastLoc != null) {
@@ -442,6 +474,8 @@ class MockLocationService : Service() {
             val pos = positionRef.get()
             CoroutineScope(NonCancellable + Dispatchers.IO).launch { settingsRepository.setLastLocation(pos) }
         }
+        leaderSyncServer.stop()
+        followerSyncClient.stopPolling()
         locationRepository.stopSpoofing()
         locationRepository.setActiveRouteId(null)
         routeReplayEngine.cancelActiveReplay()
@@ -503,6 +537,7 @@ class MockLocationService : Service() {
         lat: Double,
         lon: Double,
     ) {
+        if (locationRepository.currentMode.value == MockMode.FOLLOWER) return
         writeCurrentPosition(lat, lon)
         locationRepository.setPositionInternal(LatLng(lat, lon))
     }
@@ -515,6 +550,7 @@ class MockLocationService : Service() {
         speedMs: Float,
         bearing: Float,
     ) {
+        if (locationRepository.currentMode.value == MockMode.FOLLOWER) return
         writeCurrentPosition(lat, lon)
         currentSpeedMs = speedMs
         currentBearing = bearing
@@ -541,6 +577,31 @@ class MockLocationService : Service() {
     }
 
     fun getCurrentPosition(): LatLng = positionRef.get()
+
+    private fun enterFollowerMode(
+        host: String,
+        port: Int,
+        groupId: String,
+    ) {
+        serviceScope.launch { handleReplayCancel() }
+        serviceScope.launch { roamingRepository.stopRoaming() }
+        val currentPos = positionRef.get()
+        if (_state.value != MockLocationState.RUNNING) {
+            startSpoofing(currentPos.latitude, currentPos.longitude)
+        }
+        locationRepository.setMockMode(MockMode.FOLLOWER)
+        followerSyncClient.startPolling(host, port, groupId) { lat, lon ->
+            writeCurrentPosition(lat, lon)
+            locationRepository.setPositionInternal(LatLng(lat, lon))
+        }
+        Log.i(TAG, "Entered FOLLOWER mode for group $groupId at $host:$port")
+    }
+
+    private fun exitFollowerMode() {
+        followerSyncClient.stopPolling()
+        locationRepository.setMockMode(MockMode.TELEPORT)
+        Log.i(TAG, "Exited FOLLOWER mode")
+    }
 
     private fun handleReplayStart(
         routeId: String,
@@ -755,6 +816,16 @@ class MockLocationService : Service() {
                 lastIdleJitterTimestampMs = nowMs
             }
             applyToProvider(fix, nowNanos)
+            leaderSyncServer.push(
+                SyncPositionUpdate(
+                    timestamp = System.currentTimeMillis(),
+                    latitude = fix.latitude,
+                    longitude = fix.longitude,
+                    speedMs = fix.speedMs,
+                    bearing = fix.bearing,
+                    seq = 0,
+                ),
+            )
             val elevMode = currentElevationMode
             if (elevMode != null) {
                 sensorInjector.inject(

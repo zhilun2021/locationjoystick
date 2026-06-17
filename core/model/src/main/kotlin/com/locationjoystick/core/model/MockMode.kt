@@ -6,4 +6,5 @@ enum class MockMode {
     ROAMING,
     WALK_TO,
     TELEPORT,
+    FOLLOWER,
 }

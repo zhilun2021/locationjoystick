@@ -11,6 +11,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.DeepLinkRepository
+import com.locationjoystick.core.data.GroupRepository
 import com.locationjoystick.core.designsystem.LjTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,6 +21,8 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var deepLinkRepository: DeepLinkRepository
+
+    @Inject lateinit var groupRepository: GroupRepository
 
     companion object {
         const val ACTION_MOVE_TO_BACK = "com.locationjoystick.app.ACTION_MOVE_TO_BACK"
@@ -86,9 +89,14 @@ class MainActivity : ComponentActivity() {
             moveTaskToBack(true)
         }
         if (intent?.action == Intent.ACTION_VIEW) {
-            parseDeepLinkCoords(intent)?.let { (lat, lon) ->
-                deepLinkRepository.setPendingCoords(lat, lon)
-                navigateToMapMutableFlow.tryEmit(Unit)
+            val groupInvite = parseGroupInvite(intent)
+            if (groupInvite != null) {
+                groupRepository.setPendingGroupInvite(groupInvite)
+            } else {
+                parseDeepLinkCoords(intent)?.let { (lat, lon) ->
+                    deepLinkRepository.setPendingCoords(lat, lon)
+                    navigateToMapMutableFlow.tryEmit(Unit)
+                }
             }
         }
     }

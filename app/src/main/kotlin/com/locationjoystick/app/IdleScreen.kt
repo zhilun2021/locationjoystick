@@ -47,6 +47,7 @@ internal fun IdleScreen(
     onNavigateToRoutes: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToGroup: () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
 ) {
     val isWide = LocalConfiguration.current.screenWidthDp >= 600
@@ -107,6 +108,14 @@ internal fun IdleScreen(
                         "Settings",
                         "Configure locationjoystick and spoof preferences.",
                         onNavigateToSettings,
+                    )
+                }
+                item {
+                    IdleDestinationCard(
+                        LjIcons.Share,
+                        "Group Sync",
+                        "Mirror your location to other devices on the same Wi-Fi.",
+                        onNavigateToGroup,
                     )
                 }
             }
@@ -170,6 +179,13 @@ internal fun IdleScreen(
                     title = "Settings",
                     description = "Configure locationjoystick and spoof preferences.",
                     onClick = onNavigateToSettings,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                IdleDestinationCard(
+                    icon = LjIcons.Share,
+                    title = "Group Sync",
+                    description = "Mirror your location to other devices on the same Wi-Fi.",
+                    onClick = onNavigateToGroup,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }

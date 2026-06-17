@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":core:datastore"))
     implementation(project(":core:routing"))
 
+    implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)

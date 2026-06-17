@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permits cleartext HTTP for local LAN sync (Group Sync feature). No PII or auth tokens in transit. -->
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

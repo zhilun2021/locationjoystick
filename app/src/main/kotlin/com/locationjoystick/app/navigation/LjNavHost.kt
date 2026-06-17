@@ -32,6 +32,8 @@ import com.locationjoystick.feature.favorites.api.MAP_PICKER_ROUTE
 import com.locationjoystick.feature.favorites.impl.FavoritesRoute
 import com.locationjoystick.feature.favorites.impl.FavoritesViewModel
 import com.locationjoystick.feature.favorites.impl.MapPickerRoute
+import com.locationjoystick.feature.group.api.GROUP_ROUTE
+import com.locationjoystick.feature.group.impl.GroupSyncRoute
 import com.locationjoystick.feature.map.api.MAP_ROUTE
 import com.locationjoystick.feature.map.impl.mapScreen
 import com.locationjoystick.feature.onboarding.api.ONBOARDING_ROUTE
@@ -122,6 +124,9 @@ fun LjNavHost(
                 },
                 onNavigateToSettings = {
                     navController.navigate(SETTINGS_ROUTE) { launchSingleTop = true }
+                },
+                onNavigateToGroup = {
+                    navController.navigate(GROUP_ROUTE) { launchSingleTop = true }
                 },
             )
         }
@@ -249,6 +254,18 @@ fun LjNavHost(
             SettingsRoute(
                 onOpenDrawer = onOpenDrawer,
                 viewModel = hiltViewModel(),
+            )
+        }
+
+        composable(
+            route = GROUP_ROUTE,
+            enterTransition = { fadeInScale() },
+            exitTransition = { fadeOutScale() },
+            popEnterTransition = { fadeInScale() },
+            popExitTransition = { fadeOutScale() },
+        ) {
+            GroupSyncRoute(
+                onOpenDrawer = onOpenDrawer,
             )
         }
     }

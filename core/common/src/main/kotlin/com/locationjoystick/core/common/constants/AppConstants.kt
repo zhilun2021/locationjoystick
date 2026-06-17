@@ -203,6 +203,11 @@ object AppConstants {
         const val EXTRA_NAVIGATE_TO_FAVORITES = "navigate_to_favorites"
         const val EXTRA_NAVIGATE_TO_ROUTES = "navigate_to_routes"
         const val EXTRA_NAVIGATE_TO_ROUTE_CREATOR = "navigate_to_route_creator"
+        const val ACTION_ENTER_FOLLOWER = "com.locationjoystick.core.location.ACTION_ENTER_FOLLOWER"
+        const val ACTION_EXIT_FOLLOWER = "com.locationjoystick.core.location.ACTION_EXIT_FOLLOWER"
+        const val EXTRA_FOLLOWER_HOST = "extra_follower_host"
+        const val EXTRA_FOLLOWER_PORT = "extra_follower_port"
+        const val EXTRA_FOLLOWER_GROUP_ID = "extra_follower_group_id"
         const val ACTION_OVERLAY_SHOW = "com.locationjoystick.action.OVERLAY_SHOW"
         const val ACTION_OVERLAY_HIDE = "com.locationjoystick.action.OVERLAY_HIDE"
         const val EXTRA_SHOW_OVERLAY = "extra_show_overlay"
@@ -294,6 +299,15 @@ object AppConstants {
     object TimeConstants {
         const val SECONDS_PER_HOUR = 3600
         const val SECONDS_PER_MINUTE = 60
+    }
+
+    object SyncConstants {
+        const val PORT_RANGE_START = 4000
+        const val PORT_RANGE_END = 9999
+        const val POLL_INTERVAL_MS = 1000L
+        const val POLL_TIMEOUT_MS = 800L
+        const val SERVER_BACKLOG = 5
+        const val POSITION_STALE_THRESHOLD_MS = 5000L
     }
 
     object ElevationConstants {
