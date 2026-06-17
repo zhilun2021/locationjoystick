@@ -104,18 +104,18 @@ internal fun IdleScreen(
                 item { IdleDestinationCard(LjIcons.Favorite, "Favorites", "Teleport or walk to saved locations.", onNavigateToFavorites) }
                 item {
                     IdleDestinationCard(
-                        LjIcons.Settings,
-                        "Settings",
-                        "Configure locationjoystick and spoof preferences.",
-                        onNavigateToSettings,
-                    )
-                }
-                item {
-                    IdleDestinationCard(
                         LjIcons.Share,
                         "Group Sync",
                         "Mirror your location to other devices on the same Wi-Fi.",
                         onNavigateToGroup,
+                    )
+                }
+                item {
+                    IdleDestinationCard(
+                        LjIcons.Settings,
+                        "Settings",
+                        "Configure locationjoystick and spoof preferences.",
+                        onNavigateToSettings,
                     )
                 }
             }
@@ -175,17 +175,17 @@ internal fun IdleScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 IdleDestinationCard(
-                    icon = LjIcons.Settings,
-                    title = "Settings",
-                    description = "Configure locationjoystick and spoof preferences.",
-                    onClick = onNavigateToSettings,
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                IdleDestinationCard(
                     icon = LjIcons.Share,
                     title = "Group Sync",
                     description = "Mirror your location to other devices on the same Wi-Fi.",
                     onClick = onNavigateToGroup,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                IdleDestinationCard(
+                    icon = LjIcons.Settings,
+                    title = "Settings",
+                    description = "Configure locationjoystick and spoof preferences.",
+                    onClick = onNavigateToSettings,
                 )
                 Spacer(modifier = Modifier.height(24.dp))
             }
