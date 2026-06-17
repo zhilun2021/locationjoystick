@@ -8,6 +8,7 @@ import com.locationjoystick.core.common.constants.AppConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import java.net.Inet4Address
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -97,12 +98,14 @@ class GroupNsdManager
                             }
 
                             override fun onServiceResolved(info: NsdServiceInfo) {
-                                val host = info.host?.hostAddress
+                                val inetAddr = info.host
+                                val host = (inetAddr as? Inet4Address)?.hostAddress
                                 val port = info.port
-                                Log.i(TAG, "NSD resolved: $host:$port")
+                                Log.i(TAG, "NSD resolved: $host:$port (raw: ${inetAddr?.hostAddress})")
                                 if (host != null && port > 0) {
                                     cont.resume(host to port)
                                 } else {
+                                    Log.w(TAG, "NSD resolved non-IPv4 or no host — cannot connect")
                                     cont.resume(null)
                                 }
                             }
