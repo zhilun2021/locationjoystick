@@ -378,14 +378,26 @@ class MockLocationService : Service() {
             }
 
             null -> {
-                // Service restarted by OS (START_STICKY). Resume follower mode first if active,
+                // Service restarted by OS (START_STICKY). Resume leader/follower mode first if active,
                 // else fall through to remembered-location logic.
                 serviceScope.launch {
                     val groupState = groupRepository.groupState.first()
-                    if (groupState.role == GroupRole.FOLLOWER && groupState.followerModeEnabled) {
-                        val host = groupState.leaderHost ?: return@launch
-                        val port = groupState.leaderPort ?: return@launch
+                    if (groupState.role == GroupRole.LEADER) {
                         val id = groupState.groupId ?: return@launch
+                        Log.i(TAG, "OS restart: resuming leader mode for group $id")
+                        enterLeaderMode(id)
+                        return@launch
+                    }
+                    if (groupState.role == GroupRole.FOLLOWER && groupState.followerModeEnabled) {
+                        val id = groupState.groupId ?: return@launch
+                        // Leader may have restarted with a new OS-assigned port — re-resolve via NSD
+                        // rather than trusting the stale host:port persisted in DataStore.
+                        val resolved = groupNsdManager.discoverByCode(id)
+                        if (resolved == null) {
+                            Log.w(TAG, "OS restart: NSD re-discovery failed for group $id — staying idle")
+                            return@launch
+                        }
+                        val (host, port) = resolved
                         Log.i(TAG, "OS restart: resuming follower mode for group $id at $host:$port")
                         enterFollowerMode(host, port, id)
                         return@launch
