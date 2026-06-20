@@ -77,6 +77,7 @@ Rules:
 - Run after every set of edits, not just end of session.
 - If check fails, fix root cause. Don't suppress unless genuine false positive + inline comment explaining why.
 - Never suppress `Errors` category rules. Never batch-suppress with `@file:Suppress`.
+- Never add co-authoring or "Claude-Sessions" to the commit
 
 ---
 
