@@ -4,6 +4,10 @@ plugins {
 
 android {
     namespace = "com.locationjoystick.feature.group.impl"
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -24,4 +28,7 @@ dependencies {
     implementation(libs.camerax.view)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.turbine)
 }

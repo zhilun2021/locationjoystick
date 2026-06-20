@@ -14,6 +14,7 @@ import com.locationjoystick.core.data.GroupRepository
 import com.locationjoystick.core.location.FollowerSyncClient
 import com.locationjoystick.core.location.GroupNsdManager
 import com.locationjoystick.core.location.LeaderSyncServer
+import com.locationjoystick.core.location.MockLocationService
 import com.locationjoystick.core.model.GroupInvite
 import com.locationjoystick.core.model.GroupRole
 import com.locationjoystick.core.model.GroupState
@@ -238,11 +239,7 @@ class GroupSyncViewModel
             action: String,
             configure: ((Intent) -> Unit)? = null,
         ) {
-            val intent =
-                Intent(action).setClassName(
-                    context,
-                    AppConstants.ServiceConstants.MOCK_LOCATION_SERVICE_CLASS,
-                )
+            val intent = Intent(context, MockLocationService::class.java).apply { this.action = action }
             configure?.invoke(intent)
             context.startService(intent)
         }
