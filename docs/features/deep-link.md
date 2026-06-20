@@ -58,6 +58,23 @@ Rules:
 
 `locationjoystick.shrtcts.fr` uses `android:autoVerify="true"`. For HTTPS links to open the app directly (no disambiguation dialog), `/.well-known/assetlinks.json` must be served at that domain with the release signing fingerprint. Without it, Android shows a chooser — links still work but require user selection.
 
+## Intercepting Third-Party Map Links
+
+The app also registers itself as a candidate handler for location links coming from other apps (e.g. a "view on map" button for a point of interest). This lets a user pick locationjoystick from Android's chooser, or set it as the default handler for these link types, to redirect a third-party app's "open in Maps" action straight into a teleport/walk confirmation instead of opening Google Maps.
+
+Supported formats (all parsed by `parseDeepLinkCoords`):
+
+| Format | Example |
+|---|---|
+| `geo:` URI | `geo:35.62,139.77` |
+| `geo:` URI with placeholder base + `q` param | `geo:0,0?q=35.62,139.77(Landmark)` — `q` takes priority over the `0,0` base, since many apps emit a placeholder base coordinate |
+| `google.navigation:` scheme | `google.navigation:q=35.62,139.77` |
+| `maps.google.com` (any path) | `https://maps.google.com/maps?q=35.62,139.77` |
+| `www.google.com/maps*` | `https://www.google.com/maps/search/?api=1&query=35.62,139.77` |
+| `www.google.com/maps/@LAT,LON,Zoomz` path form | `https://www.google.com/maps/@35.62,139.77,15z` |
+
+These intent filters are **not** `autoVerify` — we don't control those domains, so Android shows a disambiguation chooser rather than auto-opening. `www.google.com` is scoped to `pathPrefix="/maps"` so other Google links (search, etc.) aren't intercepted.
+
 ## Implementation
 
 | Layer | Detail |
@@ -66,4 +83,4 @@ Rules:
 | Channel | `DeepLinkRepository` — `SharedFlow(replay=1)`; `consume()` calls `resetReplayCache()` to clear after delivery |
 | Consumer | `MapViewModel.observeDeepLinkCoords` — sets `pendingTapPosition` + `pendingCameraTarget` |
 | URL builder | `AppConstants.AppInfo.buildDeepLink(lat, lon)` |
-| Manifest | Two intent filters on `MainActivity`: HTTPS (`autoVerify`) + custom scheme |
+| Manifest | Intent filters on `MainActivity`: HTTPS own domain (`autoVerify`) + custom scheme + `geo:` + Google Maps hosts + `google.navigation:` |

@@ -15,6 +15,7 @@ class DeepLinkParserTest {
     ): Intent {
         val uri = mockk<Uri>()
         every { uri.scheme } returns "https"
+        every { uri.host } returns null
         every { uri.getQueryParameter("lat") } returns lat
         every { uri.getQueryParameter("lon") } returns lon
         val intent = mockk<Intent>()
@@ -26,6 +27,32 @@ class DeepLinkParserTest {
         val uri = mockk<Uri>()
         every { uri.scheme } returns "geo"
         every { uri.schemeSpecificPart } returns schemeSpecificPart
+        val intent = mockk<Intent>()
+        every { intent.data } returns uri
+        return intent
+    }
+
+    private fun navigationUri(schemeSpecificPart: String): Intent {
+        val uri = mockk<Uri>()
+        every { uri.scheme } returns "google.navigation"
+        every { uri.schemeSpecificPart } returns schemeSpecificPart
+        val intent = mockk<Intent>()
+        every { intent.data } returns uri
+        return intent
+    }
+
+    private fun googleMapsUri(
+        host: String,
+        path: String? = null,
+        pathSegments: List<String> = emptyList(),
+        queryParams: Map<String, String?> = emptyMap(),
+    ): Intent {
+        val uri = mockk<Uri>()
+        every { uri.scheme } returns "https"
+        every { uri.host } returns host
+        every { uri.path } returns path
+        every { uri.pathSegments } returns pathSegments
+        every { uri.getQueryParameter(any()) } answers { queryParams[it.invocation.args[0]] }
         val intent = mockk<Intent>()
         every { intent.data } returns uri
         return intent
@@ -118,5 +145,63 @@ class DeepLinkParserTest {
     fun `geo uri with invalid format returns null`() {
         assertNull(parseDeepLinkCoords(geoUri("35.62")))
         assertNull(parseDeepLinkCoords(geoUri("abc,def")))
+    }
+
+    @Test
+    fun `geo uri with placeholder base and q param prefers q coords`() {
+        val result = parseDeepLinkCoords(geoUri("0,0?q=35.62,139.77(Landmark)"))
+        assertEquals(35.62 to 139.77, result)
+    }
+
+    @Test
+    fun `geo uri with q param missing label still parses`() {
+        val result = parseDeepLinkCoords(geoUri("0,0?q=-33.87,151.21"))
+        assertEquals(-33.87 to 151.21, result)
+    }
+
+    @Test
+    fun `google navigation scheme returns pair`() {
+        val result = parseDeepLinkCoords(navigationUri("q=35.62,139.77"))
+        assertEquals(35.62 to 139.77, result)
+    }
+
+    @Test
+    fun `maps google com with q param returns pair`() {
+        val intent = googleMapsUri(
+            host = "maps.google.com",
+            path = "/maps",
+            queryParams = mapOf("q" to "35.62,139.77"),
+        )
+        assertEquals(35.62 to 139.77, parseDeepLinkCoords(intent))
+    }
+
+    @Test
+    fun `www google com maps with query param returns pair`() {
+        val intent = googleMapsUri(
+            host = "www.google.com",
+            path = "/maps/search/",
+            queryParams = mapOf("query" to "35.62,139.77"),
+        )
+        assertEquals(35.62 to 139.77, parseDeepLinkCoords(intent))
+    }
+
+    @Test
+    fun `www google com non-maps path is not treated as maps link`() {
+        val intent = googleMapsUri(
+            host = "www.google.com",
+            path = "/search",
+            queryParams = mapOf("q" to "35.62,139.77"),
+        )
+        assertNull(parseDeepLinkCoords(intent))
+    }
+
+    @Test
+    fun `google maps at-segment path returns pair`() {
+        val intent = googleMapsUri(
+            host = "www.google.com",
+            path = "/maps/@35.62,139.77,15z",
+            pathSegments = listOf("maps", "@35.62,139.77,15z"),
+        )
+        assertEquals(35.62 to 139.77, parseDeepLinkCoords(intent))
     }
 }

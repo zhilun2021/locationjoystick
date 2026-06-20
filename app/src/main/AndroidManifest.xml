@@ -49,6 +49,20 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="geo" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="maps.google.com" />
+                <data android:scheme="http" android:host="maps.google.com" />
+                <data android:scheme="https" android:host="www.google.com" android:pathPrefix="/maps" />
+                <data android:scheme="http" android:host="www.google.com" android:pathPrefix="/maps" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="google.navigation" />
+            </intent-filter>
         </activity>
 
         <provider

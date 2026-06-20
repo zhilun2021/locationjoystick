@@ -17,17 +17,57 @@ internal fun parseGroupInvite(intent: Intent): GroupInvite? {
  * Canonical deep link format: https://locationjoystick.shrtcts.fr/?lat=LAT&lon=LON
  * Custom scheme equivalent:   locationjoystick://open?lat=LAT&lon=LON
  * Android geo URI:            geo:LAT,LON
+ * Google Maps web/app links:  https://maps.google.com/maps?q=LAT,LON
+ *                             https://www.google.com/maps/search/?api=1&query=LAT,LON
+ *                             https://www.google.com/maps/@LAT,LON,Zoomz
+ *                             google.navigation:q=LAT,LON
  *
- * Query parameter format (?lat and ?lon) is used for HTTPS and custom schemes.
- * Geo URI format (geo:LAT,LON) is parsed from the scheme-specific part.
+ * These are caught so links from other apps (e.g. "view on map" buttons in games) can be
+ * intercepted by this app when the user picks it from the share/open chooser.
  */
 internal fun parseDeepLinkCoords(intent: Intent): Pair<Double, Double>? {
     val uri = intent.data ?: return null
 
-    return when (uri.scheme) {
-        "geo" -> parseGeoUri(uri.schemeSpecificPart)
+    return when {
+        uri.scheme == "geo" -> parseGeoUri(uri.schemeSpecificPart)
+        uri.scheme == "google.navigation" -> parseLatLonString(uri.schemeSpecificPart.removePrefix("q="))
+        isGoogleMapsUri(uri) -> parseGoogleMapsUri(uri)
         else -> parseQueryParameterCoords(uri)
     }
+}
+
+private fun isGoogleMapsUri(uri: android.net.Uri): Boolean {
+    val host = uri.host ?: return false
+    return host == "maps.google.com" ||
+        (host == "www.google.com" && uri.path?.startsWith("/maps") == true)
+}
+
+/**
+ * Handles the various Google Maps URL shapes: `?q=`, `?daddr=`, `?destination=`,
+ * `?query=` (api=1 search/dir links), and the `/maps/@LAT,LON,Zoomz` path form.
+ */
+private fun parseGoogleMapsUri(uri: android.net.Uri): Pair<Double, Double>? {
+    val queryParam = uri.getQueryParameter("q")
+        ?: uri.getQueryParameter("daddr")
+        ?: uri.getQueryParameter("destination")
+        ?: uri.getQueryParameter("query")
+    queryParam?.let { parseLatLonString(it) }?.let { return it }
+
+    val atSegment = uri.pathSegments.firstOrNull { it.startsWith("@") } ?: return null
+    return parseLatLonString(atSegment.removePrefix("@"))
+}
+
+/**
+ * Parse a "LAT,LON" prefix out of a string, ignoring any trailing label/params
+ * (e.g. "LAT,LON(Label)" or "LAT,LON,15z").
+ */
+private fun parseLatLonString(value: String): Pair<Double, Double>? {
+    val parts = value.substringBefore("(").split(",")
+    if (parts.size < 2) return null
+    val lat = parts[0].toDoubleOrNull() ?: return null
+    val lon = parts[1].toDoubleOrNull() ?: return null
+    if (lat !in -90.0..90.0 || lon !in -180.0..180.0) return null
+    return lat to lon
 }
 
 /**
@@ -41,16 +81,15 @@ private fun parseQueryParameterCoords(uri: android.net.Uri): Pair<Double, Double
 }
 
 /**
- * Parse geo URI: LAT,LON or LAT,LON?param=value
- * Extracts the LAT,LON portion, ignoring optional parameters.
+ * Parse geo URI: LAT,LON or LAT,LON?q=LAT,LON(Label)
+ *
+ * Some apps emit `geo:0,0?q=LAT,LON(Label)` for "view on map"-style buttons — the base
+ * coordinate is a placeholder, and the real target is in the `q` param. Prefer `q` when present.
  */
 private fun parseGeoUri(schemeSpecificPart: String): Pair<Double, Double>? {
-    // Remove optional parameters (e.g., "lat,lon?z=10" -> "lat,lon")
-    val coords = schemeSpecificPart.substringBefore("?")
-    val parts = coords.split(",")
-    if (parts.size < 2) return null
-    val lat = parts[0].toDoubleOrNull() ?: return null
-    val lon = parts[1].toDoubleOrNull() ?: return null
-    if (lat !in -90.0..90.0 || lon !in -180.0..180.0) return null
-    return lat to lon
+    val qIndex = schemeSpecificPart.indexOf("?q=")
+    if (qIndex != -1) {
+        parseLatLonString(schemeSpecificPart.substring(qIndex + "?q=".length))?.let { return it }
+    }
+    return parseLatLonString(schemeSpecificPart.substringBefore("?"))
 }
