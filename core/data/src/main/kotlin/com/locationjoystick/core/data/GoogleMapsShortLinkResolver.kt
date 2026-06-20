@@ -17,7 +17,7 @@ import javax.inject.Singleton
 class GoogleMapsShortLinkResolver
     @Inject
     constructor() {
-        private val client =
+        internal var client: OkHttpClient =
             OkHttpClient
                 .Builder()
                 .followRedirects(true)
