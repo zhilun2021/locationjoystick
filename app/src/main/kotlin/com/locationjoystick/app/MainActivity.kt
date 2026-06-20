@@ -41,6 +41,8 @@ class MainActivity : ComponentActivity() {
     internal val navigateToFavoritesFlow = navigateToFavoritesMutableFlow.asSharedFlow()
     private val navigateToRoutesMutableFlow = MutableSharedFlow<Unit>(replay = 1)
     internal val navigateToRoutesFlow = navigateToRoutesMutableFlow.asSharedFlow()
+    private val deepLinkFailedMutableFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    internal val deepLinkFailedFlow = deepLinkFailedMutableFlow.asSharedFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +66,7 @@ class MainActivity : ComponentActivity() {
                     navigateToRouteCreatorFlow = navigateToRouteCreatorFlow,
                     navigateToFavoritesFlow = navigateToFavoritesFlow,
                     navigateToRoutesFlow = navigateToRoutesFlow,
+                    deepLinkFailedFlow = deepLinkFailedFlow,
                 )
             }
         }
@@ -98,24 +101,35 @@ class MainActivity : ComponentActivity() {
             if (groupInvite != null) {
                 groupRepository.setPendingGroupInvite(groupInvite)
             } else {
-                parseDeepLinkCoords(intent)?.let { (lat, lon) ->
-                    deepLinkRepository.setPendingCoords(lat, lon)
+                val coords = parseDeepLinkCoords(intent)
+                if (coords != null) {
+                    deepLinkRepository.setPendingCoords(coords.first, coords.second)
                     navigateToMapMutableFlow.tryEmit(Unit)
+                } else {
+                    deepLinkFailedMutableFlow.tryEmit(Unit)
                 }
             }
         }
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
             val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-            sharedText?.let(::extractUrlFromText)?.let(::handleSharedUrl)
+            val url = sharedText?.let(::extractUrlFromText)
+            if (url != null) {
+                handleSharedUrl(url)
+            } else if (sharedText != null) {
+                deepLinkFailedMutableFlow.tryEmit(Unit)
+            }
         }
     }
 
     private fun handleSharedUrl(url: String) {
         lifecycleScope.launch {
             val resolvedUrl = if (shortLinkResolver.isShortLink(url)) shortLinkResolver.resolve(url) ?: url else url
-            parseUrlCoords(resolvedUrl)?.let { (lat, lon) ->
-                deepLinkRepository.setPendingCoords(lat, lon)
+            val coords = parseUrlCoords(resolvedUrl)
+            if (coords != null) {
+                deepLinkRepository.setPendingCoords(coords.first, coords.second)
                 navigateToMapMutableFlow.tryEmit(Unit)
+            } else {
+                deepLinkFailedMutableFlow.tryEmit(Unit)
             }
         }
     }

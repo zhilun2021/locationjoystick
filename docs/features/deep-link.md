@@ -41,6 +41,8 @@ When the link is opened:
 
 The coordinate is never acted on automatically — the user must confirm.
 
+If the link's coordinates can't be parsed (`ACTION_VIEW`) or no URL/coordinates can be extracted from the shared text (`ACTION_SEND`, including failed short-link resolution), a snackbar reading "Couldn't open that link" is shown instead of silently doing nothing.
+
 ## 3rd Party Integration
 
 Any tool can construct a link without an API key or authentication:
