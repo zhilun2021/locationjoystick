@@ -239,4 +239,15 @@ class DeepLinkParserTest {
             )
         assertEquals(50.305571 to 2.792041, parseDeepLinkCoords(intent))
     }
+
+    @Test
+    fun `extractUrlFromText finds first http url in free-form text`() {
+        val text = "Check out this place! https://maps.google.com/maps?q=35.62,139.77 see you there"
+        assertEquals("https://maps.google.com/maps?q=35.62,139.77", extractUrlFromText(text))
+    }
+
+    @Test
+    fun `extractUrlFromText returns null when no url present`() {
+        assertNull(extractUrlFromText("just some text, no link here"))
+    }
 }

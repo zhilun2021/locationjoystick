@@ -101,13 +101,7 @@ class MainActivity : ComponentActivity() {
             if (groupInvite != null) {
                 groupRepository.setPendingGroupInvite(groupInvite)
             } else {
-                val coords = parseDeepLinkCoords(intent)
-                if (coords != null) {
-                    deepLinkRepository.setPendingCoords(coords.first, coords.second)
-                    navigateToMapMutableFlow.tryEmit(Unit)
-                } else {
-                    deepLinkFailedMutableFlow.tryEmit(Unit)
-                }
+                deliverCoords(parseDeepLinkCoords(intent))
             }
         }
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
@@ -124,13 +118,16 @@ class MainActivity : ComponentActivity() {
     private fun handleSharedUrl(url: String) {
         lifecycleScope.launch {
             val resolvedUrl = if (shortLinkResolver.isShortLink(url)) shortLinkResolver.resolve(url) ?: url else url
-            val coords = parseUrlCoords(resolvedUrl)
-            if (coords != null) {
-                deepLinkRepository.setPendingCoords(coords.first, coords.second)
-                navigateToMapMutableFlow.tryEmit(Unit)
-            } else {
-                deepLinkFailedMutableFlow.tryEmit(Unit)
-            }
+            deliverCoords(parseUrlCoords(resolvedUrl))
+        }
+    }
+
+    private fun deliverCoords(coords: Pair<Double, Double>?) {
+        if (coords != null) {
+            deepLinkRepository.setPendingCoords(coords.first, coords.second)
+            navigateToMapMutableFlow.tryEmit(Unit)
+        } else {
+            deepLinkFailedMutableFlow.tryEmit(Unit)
         }
     }
 }
