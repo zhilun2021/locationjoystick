@@ -144,7 +144,9 @@ object AppConstants {
         const val GPX_MIME_TYPE = "application/gpx+xml"
         const val GPX_VERSION = "1.1"
         const val GPX_CREATOR = "locationjoystick"
-        const val QR_CHUNK_SIZE_LIMIT = 2400
+        // Kept low so each chunk stays at a low QR version (large modules, easy to scan)
+        // instead of maxing out into a dense version 30-40 code that a phone camera can't resolve.
+        const val QR_CHUNK_SIZE_LIMIT = 800
 
         /** Maximum GPX file size accepted for import (10 MB). Larger files are rejected to prevent OOM. */
         const val MAX_GPX_IMPORT_SIZE_BYTES = 10 * 1024 * 1024L

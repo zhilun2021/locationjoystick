@@ -9,9 +9,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,7 +100,7 @@ fun QrShareDialog(
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "QR chunk ${page + 1}",
-                            modifier = Modifier.size(300.dp),
+                            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
                         )
                     } else {
                         Text("Failed to encode QR")

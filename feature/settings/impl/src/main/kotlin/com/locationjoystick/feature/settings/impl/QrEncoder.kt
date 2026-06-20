@@ -19,7 +19,7 @@ import org.json.JSONObject
  * - total: total number of chunks
  * - d: compressed data payload (base64)
  *
- * Output is a 512x512 RGB-565 bitmap suitable for display in Compose.
+ * Output is a 1024x1024 RGB-565 bitmap suitable for display in Compose.
  *
  * @see QrChunker for chunk generation
  * @see ChunkEnvelope for input format
@@ -45,7 +45,7 @@ object QrEncoder {
                     }.toString()
 
             val writer = MultiFormatWriter()
-            val bitMatrix = writer.encode(json, BarcodeFormat.QR_CODE, 512, 512)
+            val bitMatrix = writer.encode(json, BarcodeFormat.QR_CODE, BITMAP_SIZE_PX, BITMAP_SIZE_PX)
             createBitmapFromBitMatrix(bitMatrix)
         } catch (e: Exception) {
             Log.e(TAG, "QR encode failed", e)
@@ -69,4 +69,7 @@ object QrEncoder {
     }
 
     private const val TAG = "QrEncoder"
+
+    // Larger canvas = more pixels per module at any QR version, easier for a phone camera to resolve.
+    private const val BITMAP_SIZE_PX = 1024
 }
