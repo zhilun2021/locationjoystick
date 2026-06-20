@@ -25,6 +25,7 @@ import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
 import com.locationjoystick.core.data.SettingsRepository
+import com.locationjoystick.core.data.WalkToEngine
 import com.locationjoystick.core.location.BuildConfig
 import com.locationjoystick.core.model.ElevationMode
 import com.locationjoystick.core.model.GroupRole
@@ -114,6 +115,8 @@ class MockLocationService : Service() {
 
     @Inject lateinit var routeReplayEngine: RouteReplayEngine
 
+    @Inject lateinit var walkToEngine: WalkToEngine
+
     @Inject lateinit var sensorInjector: SensorInjector
 
     @Inject lateinit var leaderSyncServer: LeaderSyncServer
@@ -198,6 +201,7 @@ class MockLocationService : Service() {
                 routeRepository = routeRepository,
                 roamingRepository = roamingRepository,
                 routeReplayEngine = routeReplayEngine,
+                walkToEngine = walkToEngine,
                 scope = serviceScope,
                 onStateChange = { _state.value = it },
                 onPositionChange = { lat, lon ->

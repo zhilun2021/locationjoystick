@@ -1,13 +1,10 @@
 package com.locationjoystick.core.location
 
 import android.util.Log
-import com.locationjoystick.core.common.constants.AppConstants
-import com.locationjoystick.core.common.util.advancePosition
-import com.locationjoystick.core.common.util.calculateBearing
-import com.locationjoystick.core.common.util.haversineDistance
 import com.locationjoystick.core.data.LocationRepository
 import com.locationjoystick.core.data.RoamingRepository
 import com.locationjoystick.core.data.RouteRepository
+import com.locationjoystick.core.data.WalkToEngine
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockLocationState
 import com.locationjoystick.core.model.MockMode
@@ -15,10 +12,7 @@ import com.locationjoystick.core.routing.RouteReplayEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private const val TAG = "ReplayOrchestrator"
@@ -38,6 +32,7 @@ internal class ReplayOrchestrator(
     private val routeRepository: RouteRepository,
     private val roamingRepository: RoamingRepository,
     private val routeReplayEngine: RouteReplayEngine,
+    private val walkToEngine: WalkToEngine,
     private val scope: CoroutineScope,
     private val onStateChange: (MockLocationState) -> Unit,
     private val onPositionChange: (lat: Double, lon: Double) -> Unit,
@@ -45,19 +40,6 @@ internal class ReplayOrchestrator(
     private val pushLocationUpdate: () -> Unit,
     private val startUpdateLoop: () -> Unit,
 ) {
-    /** Current lat cached locally so walkToPosition doesn't need to re-read the volatile field. */
-    private var lat: Double
-        get() = locationRepository.currentPosition.value?.latitude ?: 0.0
-        set(_) {} // writes go through onPositionChange
-
-    private var lon: Double
-        get() = locationRepository.currentPosition.value?.longitude ?: 0.0
-        set(_) {}
-
-    // Mutable local position used during walk-to (updated in tight loop before repo flush).
-    private var walkLat: Double = 0.0
-    private var walkLon: Double = 0.0
-
     /** Tracks the active scope.launch job so new starts can cancel it before launching. */
     private var activeReplayJob: Job? = null
 
@@ -237,21 +219,10 @@ internal class ReplayOrchestrator(
         speedMs: Double,
     ) {
         val startPos = locationRepository.currentPosition.value ?: return
-        walkLat = startPos.latitude
-        walkLon = startPos.longitude
-        val distancePerTick = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
-        while (currentCoroutineContext().isActive) {
-            val dist = haversineDistance(walkLat, walkLon, target.latitude, target.longitude)
-            if (dist < AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) break
-            val bearing = calculateBearing(walkLat, walkLon, target.latitude, target.longitude)
-            val step = minOf(distancePerTick, dist)
-            val (newLat, newLon) = advancePosition(walkLat, walkLon, bearing, step)
-            walkLat = newLat
-            walkLon = newLon
-            onPositionChange(newLat, newLon)
-            locationRepository.setPositionInternal(LatLng(newLat, newLon))
+        walkToEngine.walkToOnce(startPos, target, speedMs) { pos ->
+            onPositionChange(pos.latitude, pos.longitude)
+            locationRepository.setPositionInternal(pos)
             pushLocationUpdate()
-            delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
         }
     }
 }

@@ -75,27 +75,8 @@ class WalkToEngine
 
                             val speedMs =
                                 settingsRepository.getActiveSpeedProfile().first().speedMetersPerSecond
-                            val bearing =
-                                calculateBearing(
-                                    current.latitude,
-                                    current.longitude,
-                                    waypoint.latitude,
-                                    waypoint.longitude,
-                                )
-                            val advanceDistance =
-                                minOf(
-                                    speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0),
-                                    distanceM,
-                                )
-                            val actualSpeedMs = (advanceDistance / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
-                            val (newLat, newLon) =
-                                advancePosition(
-                                    current.latitude,
-                                    current.longitude,
-                                    bearing,
-                                    advanceDistance,
-                                )
-                            onPositionUpdate(LatLng(newLat, newLon), actualSpeedMs, bearing.toFloat())
+                            val tick = computeWalkTick(current, waypoint, speedMs)
+                            onPositionUpdate(tick.position, tick.speedMs, tick.bearingDeg)
 
                             delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
                         }
@@ -113,4 +94,48 @@ class WalkToEngine
                 }
             }
         }
+
+        /**
+         * Walks from [from] straight toward [target] at a fixed [speedMs], suspending until
+         * arrival within [AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS].
+         *
+         * Unlike [launchWalkAlongRoute], this has no dependency on
+         * [LocationRepository.walkTarget] / [LocationRepository.isWalkPaused] — for callers
+         * (e.g. route replay's walk-to-start-of-route phase) that own their own start/stop
+         * lifecycle and just need a one-shot walk with no pause support.
+         */
+        suspend fun walkToOnce(
+            from: LatLng,
+            target: LatLng,
+            speedMs: Double,
+            onPositionUpdate: suspend (LatLng) -> Unit,
+        ) {
+            var current = from
+            while (haversineDistance(current, target) >= AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) {
+                val tick = computeWalkTick(current, target, speedMs)
+                current = tick.position
+                onPositionUpdate(current)
+                delay(AppConstants.LocationConstants.UPDATE_INTERVAL_MS)
+            }
+        }
+
+        /** One tick of "advance toward target at speedMs, capped at one update interval's distance". */
+        private fun computeWalkTick(
+            current: LatLng,
+            target: LatLng,
+            speedMs: Double,
+        ): WalkTick {
+            val distanceM = haversineDistance(current, target)
+            val bearing = calculateBearing(current.latitude, current.longitude, target.latitude, target.longitude)
+            val advanceDistance = minOf(speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0), distanceM)
+            val actualSpeedMs = (advanceDistance / (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)).toFloat()
+            val (newLat, newLon) = advancePosition(current.latitude, current.longitude, bearing, advanceDistance)
+            return WalkTick(LatLng(newLat, newLon), actualSpeedMs, bearing.toFloat())
+        }
+
+        private data class WalkTick(
+            val position: LatLng,
+            val speedMs: Float,
+            val bearingDeg: Float,
+        )
     }
