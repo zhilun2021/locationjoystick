@@ -75,6 +75,22 @@ Supported formats (all parsed by `parseDeepLinkCoords`):
 
 These intent filters are **not** `autoVerify` — we don't control those domains, so Android shows a disambiguation chooser rather than auto-opening. `www.google.com` is scoped to `pathPrefix="/maps"` so other Google links (search, etc.) aren't intercepted.
 
+Apps that launch Maps via an **explicit intent** (`setPackage`/`setClassName` targeting `com.google.android.apps.maps` directly, e.g. Pokémon Go's "Get Directions") bypass intent-filter resolution entirely — there is no fix for this case, since Android never runs the resolver for explicit intents.
+
+### Google Maps "Share" Button
+
+The Maps app's **Share** button uses Android's `ACTION_SEND` share sheet (text/plain), not `ACTION_VIEW` resolution — a separate mechanism with its own intent filter:
+
+```xml
+<intent-filter>
+    <action android:name="android.intent.action.SEND" />
+    <category android:name="android.intent.category.DEFAULT" />
+    <data android:mimeType="text/plain" />
+</intent-filter>
+```
+
+`MainActivity.handleIntent` checks for `ACTION_SEND` + `text/plain`, reads `EXTRA_TEXT`, and extracts the first `http(s)://` URL via `parseSharedTextCoords` (in `DeepLinkParser.kt`), then runs it through the same coordinate parsing as a normal deep link.
+
 ## Implementation
 
 | Layer | Detail |
@@ -83,4 +99,4 @@ These intent filters are **not** `autoVerify` — we don't control those domains
 | Channel | `DeepLinkRepository` — `SharedFlow(replay=1)`; `consume()` calls `resetReplayCache()` to clear after delivery |
 | Consumer | `MapViewModel.observeDeepLinkCoords` — sets `pendingTapPosition` + `pendingCameraTarget` |
 | URL builder | `AppConstants.AppInfo.buildDeepLink(lat, lon)` |
-| Manifest | Intent filters on `MainActivity`: HTTPS own domain (`autoVerify`) + custom scheme + `geo:` + Google Maps hosts + `google.navigation:` |
+| Manifest | Intent filters on `MainActivity`: HTTPS own domain (`autoVerify`) + custom scheme + `geo:` + Google Maps hosts + `google.navigation:` + `ACTION_SEND` text/plain |

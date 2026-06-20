@@ -27,13 +27,27 @@ internal fun parseGroupInvite(intent: Intent): GroupInvite? {
  */
 internal fun parseDeepLinkCoords(intent: Intent): Pair<Double, Double>? {
     val uri = intent.data ?: return null
+    return parseCoordsFromUri(uri)
+}
 
-    return when {
+private fun parseCoordsFromUri(uri: android.net.Uri): Pair<Double, Double>? =
+    when {
         uri.scheme == "geo" -> parseGeoUri(uri.schemeSpecificPart)
         uri.scheme == "google.navigation" -> parseLatLonString(uri.schemeSpecificPart.removePrefix("q="))
         isGoogleMapsUri(uri) -> parseGoogleMapsUri(uri)
         else -> parseQueryParameterCoords(uri)
     }
+
+private val URL_REGEX = Regex("""https?://\S+""")
+
+/**
+ * Parses coords out of free-form shared text (e.g. Google Maps "Share" button, which sends
+ * `ACTION_SEND` text/plain containing a place name plus a maps.google.com/www.google.com URL).
+ */
+internal fun parseSharedTextCoords(text: String): Pair<Double, Double>? {
+    val url = URL_REGEX.find(text)?.value ?: return null
+    val uri = android.net.Uri.parse(url)
+    return parseCoordsFromUri(uri)
 }
 
 private fun isGoogleMapsUri(uri: android.net.Uri): Boolean {

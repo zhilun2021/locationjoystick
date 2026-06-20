@@ -99,5 +99,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            sharedText?.let(::parseSharedTextCoords)?.let { (lat, lon) ->
+                deepLinkRepository.setPendingCoords(lat, lon)
+                navigateToMapMutableFlow.tryEmit(Unit)
+            }
+        }
     }
 }
