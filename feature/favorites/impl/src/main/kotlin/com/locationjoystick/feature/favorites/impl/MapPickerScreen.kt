@@ -28,18 +28,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.UiConstants
 import com.locationjoystick.core.designsystem.component.LjMapIconButton
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
-import com.locationjoystick.core.location.SpoofToggleViewModel
+import com.locationjoystick.core.location.rememberSpoofToggleState
 import com.locationjoystick.core.map.geojson.buildMarkerGeoJson
 import com.locationjoystick.core.map.maplibre.addPickerLayers
 import com.locationjoystick.core.model.RecentSearch
@@ -111,8 +109,7 @@ internal fun MapPickerScreen(
     var showNameDialog by remember { mutableStateOf(false) }
     var showSearchBar by remember { mutableStateOf(false) }
     var suggestedName by remember { mutableStateOf("") }
-    val spoofToggleViewModel: SpoofToggleViewModel = hiltViewModel()
-    val isSpoofing by spoofToggleViewModel.isSpoofing.collectAsStateWithLifecycle()
+    val spoofToggle = rememberSpoofToggleState()
 
     val effectivePosition = { selectedPosition.value ?: initialPosition?.let { it.latitude to it.longitude } }
 
@@ -181,8 +178,8 @@ internal fun MapPickerScreen(
 
     LjScaffold(
         title = "Pick Location",
-        isSpoofing = isSpoofing,
-        onToggleSpoofing = spoofToggleViewModel::toggle,
+        isSpoofing = spoofToggle.isSpoofing,
+        onToggleSpoofing = spoofToggle.onToggle,
         onNavigationClick = onBack,
         navigationIcon = LjIcons.ArrowBack,
         contentWindowInsets = WindowInsets.safeDrawing,

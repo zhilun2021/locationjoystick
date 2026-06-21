@@ -54,7 +54,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
@@ -62,7 +61,7 @@ import com.locationjoystick.core.designsystem.component.AppIcon
 import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.LjSegmentedControl
-import com.locationjoystick.core.location.SpoofToggleViewModel
+import com.locationjoystick.core.location.rememberSpoofToggleState
 import com.locationjoystick.core.model.MapFabFeature
 import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
@@ -93,12 +92,11 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenDrawer: () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
-    spoofToggleViewModel: SpoofToggleViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val roamingDefaults by viewModel.roamingDefaults.collectAsStateWithLifecycle()
     val isRooted by viewModel.isRooted.collectAsStateWithLifecycle()
-    val isSpoofing by spoofToggleViewModel.isSpoofing.collectAsStateWithLifecycle()
+    val spoofToggle = rememberSpoofToggleState()
     val context = LocalContext.current
     var pendingImport by remember { mutableStateOf<PendingImport?>(null) }
     var showQrShare by remember { mutableStateOf(false) }
@@ -242,8 +240,8 @@ fun SettingsRoute(
         hotLocationTree = viewModel.hotLocationTree,
         hotRouteTree = viewModel.hotRouteTree,
         onOpenDrawer = onOpenDrawer,
-        isSpoofing = isSpoofing,
-        onToggleSpoofing = spoofToggleViewModel::toggle,
+        isSpoofing = spoofToggle.isSpoofing,
+        onToggleSpoofing = spoofToggle.onToggle,
         onAction = { action ->
             when (action) {
                 is SettingsAction.SetWalkSpeed -> {

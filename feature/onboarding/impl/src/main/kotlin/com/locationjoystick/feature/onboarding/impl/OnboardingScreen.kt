@@ -58,7 +58,7 @@ import com.locationjoystick.core.designsystem.LjWarningContainer
 import com.locationjoystick.core.designsystem.component.AppIcon
 import com.locationjoystick.core.designsystem.component.LjPrimaryButton
 import com.locationjoystick.core.designsystem.component.LjScaffold
-import com.locationjoystick.core.location.SpoofToggleViewModel
+import com.locationjoystick.core.location.rememberSpoofToggleState
 import com.locationjoystick.feature.onboarding.api.ONBOARDING_ROUTE
 
 fun NavGraphBuilder.onboardingScreen(onSetupComplete: () -> Unit) {
@@ -72,10 +72,9 @@ fun OnboardingRoute(
     onSetupComplete: () -> Unit,
     bottomBar: @Composable () -> Unit = {},
     viewModel: OnboardingViewModel = hiltViewModel(),
-    spoofToggleViewModel: SpoofToggleViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val isSpoofing by spoofToggleViewModel.isSpoofing.collectAsStateWithLifecycle()
+    val spoofToggle = rememberSpoofToggleState()
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -96,8 +95,8 @@ fun OnboardingRoute(
             viewModel.onSetupComplete()
             onSetupComplete()
         },
-        isSpoofing = isSpoofing,
-        onToggleSpoofing = spoofToggleViewModel::toggle,
+        isSpoofing = spoofToggle.isSpoofing,
+        onToggleSpoofing = spoofToggle.onToggle,
         bottomBar = bottomBar,
     )
 }

@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.locationjoystick.core.designsystem.component.LjScaffold
-import com.locationjoystick.core.location.SpoofToggleViewModel
+import com.locationjoystick.core.location.rememberSpoofToggleState
 import com.locationjoystick.core.model.GroupRole
 import com.locationjoystick.core.model.GroupState
 
@@ -63,14 +63,13 @@ import com.locationjoystick.core.model.GroupState
 fun GroupSyncRoute(
     onOpenDrawer: () -> Unit,
     viewModel: GroupSyncViewModel = hiltViewModel(),
-    spoofToggleViewModel: SpoofToggleViewModel = hiltViewModel(),
 ) {
     val groupState by viewModel.groupState.collectAsStateWithLifecycle()
     val qrBitmap by viewModel.qrBitmap.collectAsStateWithLifecycle()
     val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
     val isDiscovering by viewModel.isDiscovering.collectAsStateWithLifecycle()
     val followerCount by viewModel.followerCount.collectAsStateWithLifecycle()
-    val isSpoofing by spoofToggleViewModel.isSpoofing.collectAsStateWithLifecycle()
+    val spoofToggle = rememberSpoofToggleState()
 
     var showQrScanner by remember { mutableStateOf(false) }
 
@@ -101,8 +100,8 @@ fun GroupSyncRoute(
             snackbarHostState = snackbarHostState,
             isDiscovering = isDiscovering,
             followerCount = followerCount,
-            isSpoofing = isSpoofing,
-            onToggleSpoofing = spoofToggleViewModel::toggle,
+            isSpoofing = spoofToggle.isSpoofing,
+            onToggleSpoofing = spoofToggle.onToggle,
             onOpenDrawer = onOpenDrawer,
             onCreateGroup = viewModel::createGroup,
             onJoinViaQr = { showQrScanner = true },

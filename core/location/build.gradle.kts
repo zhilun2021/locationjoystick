@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.locationjoystick.android.library)
+    alias(libs.plugins.locationjoystick.android.library.compose)
     alias(libs.plugins.locationjoystick.hilt)
 }
 
@@ -25,7 +26,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.bundles.lifecycle)
+    implementation(libs.hilt.navigation.compose)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

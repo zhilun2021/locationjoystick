@@ -46,7 +46,7 @@ import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.NominatimSearchBar
-import com.locationjoystick.core.location.SpoofToggleViewModel
+import com.locationjoystick.core.location.rememberSpoofToggleState
 import com.locationjoystick.core.map.geojson.buildLineGeoJson
 import com.locationjoystick.core.map.geojson.buildMarkerGeoJson
 import com.locationjoystick.core.map.geojson.buildPointsGeoJson
@@ -180,8 +180,7 @@ internal fun MapScreen(
     val pendingTapMarkerSource = remember { mutableStateOf<GeoJsonSource?>(null) }
     val showSearch = remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
-    val spoofToggleViewModel: SpoofToggleViewModel = hiltViewModel()
-    val isSpoofing by spoofToggleViewModel.isSpoofing.collectAsStateWithLifecycle()
+    val spoofToggle = rememberSpoofToggleState()
 
     LaunchedEffect(uiState.isUserPanning) {
         if (!uiState.isUserPanning) isFollowingCamera.value = true
@@ -220,8 +219,8 @@ internal fun MapScreen(
 
     LjScaffold(
         title = "Map",
-        isSpoofing = isSpoofing,
-        onToggleSpoofing = spoofToggleViewModel::toggle,
+        isSpoofing = spoofToggle.isSpoofing,
+        onToggleSpoofing = spoofToggle.onToggle,
         onNavigationClick = onOpenDrawer,
         contentWindowInsets = WindowInsets.safeDrawing,
         containerColor = MaterialTheme.colorScheme.background,
