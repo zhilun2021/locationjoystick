@@ -540,22 +540,17 @@ class SettingsViewModel
                     )
                     return@launch
                 }
-                _qrImportFetching.value = true
-                try {
-                    val resolved = nsdCodeManager.discoverByCode(normalized)
-                    if (resolved == null) {
-                        userFeedback.emit(UserFeedback("No sender found for code $normalized", isError = true))
-                        return@launch
-                    }
-                    val (host, port) = resolved
-                    fetchAndImportExport(host, port, normalized)
-                } finally {
-                    _qrImportFetching.value = false
+                val resolved = nsdCodeManager.discoverByCode(normalized)
+                if (resolved == null) {
+                    userFeedback.emit(UserFeedback("No sender found for code $normalized", isError = true))
+                    return@launch
                 }
+                val (host, port) = resolved
+                fetchAndImportExport(host, port, normalized)
             }
         }
 
-        /** Caller owns [_qrImportFetching] for the duration of its own launch; this only does the fetch. */
+        /** Sole owner of [_qrImportFetching] for the duration of the fetch. */
         private suspend fun fetchAndImportExport(
             host: String,
             port: Int,
