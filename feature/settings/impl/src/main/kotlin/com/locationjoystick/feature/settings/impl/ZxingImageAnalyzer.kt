@@ -145,7 +145,9 @@ class ZxingImageAnalyzer(
                 RotatedFrame(out, height, height, width)
             }
 
-            else -> RotatedFrame(tight, width, width, height)
+            else -> {
+                RotatedFrame(tight, width, width, height)
+            }
         }
     }
 

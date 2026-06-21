@@ -144,6 +144,7 @@ object AppConstants {
         const val GPX_MIME_TYPE = "application/gpx+xml"
         const val GPX_VERSION = "1.1"
         const val GPX_CREATOR = "locationjoystick"
+
         // Kept low so each chunk stays at a low QR version (large modules, easy to scan)
         // instead of maxing out into a dense version 30-40 code that a phone camera can't resolve.
         const val QR_CHUNK_SIZE_LIMIT = 800
