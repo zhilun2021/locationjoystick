@@ -88,9 +88,9 @@ class OsrmClientTest {
     @Test
     fun `getRoute returns failure on HTTP error`() =
         runTest {
-            // Foot profile failure triggers a driving-profile retry; enqueue a second failure for it.
-            server.enqueue(MockResponse().setResponseCode(400).setBody("Bad Request"))
-            server.enqueue(MockResponse().setResponseCode(400).setBody("Bad Request"))
+            // HTTP errors are classified ServerError and retried (RETRY_COUNT=2) on both the foot
+            // profile and its driving-profile fallback: 3 attempts each = 6 requests total.
+            repeat(6) { server.enqueue(MockResponse().setResponseCode(400).setBody("Bad Request")) }
 
             val result =
                 testClient.getRoute(
@@ -99,6 +99,7 @@ class OsrmClientTest {
                 )
 
             assertTrue("Expected failure on HTTP 400", result.isFailure)
+            assertEquals("Expected 3 retried foot attempts + 3 retried driving attempts", 6, server.requestCount)
         }
 
     @Test
@@ -142,7 +143,9 @@ class OsrmClientTest {
                   }]
                 }
                 """.trimIndent()
-            server.enqueue(MockResponse().setResponseCode(500).setBody("error"))
+            // NoRoute (not a retryable reason) so the foot profile fails in a single attempt
+            // and falls straight through to the driving-profile fallback.
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"code": "NoRoute", "routes": []}"""))
             server.enqueue(MockResponse().setResponseCode(200).setBody(okBody))
 
             val result =
@@ -193,6 +196,191 @@ class OsrmClientTest {
             assertTrue("Expected nearest lookup", nearest1.path!!.contains("/nearest/"))
             assertTrue("Expected nearest lookup", nearest2.path!!.contains("/nearest/"))
             assertTrue("Retry should use route endpoint", retry.path!!.contains("/route/"))
+        }
+
+    // Generic retry
+
+    @Test
+    fun `getRoute retries on server error and succeeds on third attempt`() =
+        runTest {
+            val okBody =
+                """
+                {
+                  "code": "Ok",
+                  "routes": [{
+                    "geometry": {"type": "LineString", "coordinates": [[2.3522, 48.8566], [2.356, 48.86]]},
+                    "distance": 100.0,
+                    "duration": 60.0
+                  }]
+                }
+                """.trimIndent()
+            server.enqueue(MockResponse().setResponseCode(500).setBody("error"))
+            server.enqueue(MockResponse().setResponseCode(500).setBody("error"))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody))
+
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.8600, 2.3560)),
+                )
+
+            assertTrue("Expected success on third (final retry) attempt", result.isSuccess)
+            assertEquals("Expected exactly 2 retries (3 attempts total)", 3, server.requestCount)
+        }
+
+    @Test
+    fun `getRoute does not retry NoRouteFound failures`() =
+        runTest {
+            val body = """{"code": "NoRoute", "routes": []}"""
+            server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.8600, 2.3560)),
+                )
+
+            assertTrue("Expected failure", result.isFailure)
+            assertEquals(
+                "NoRouteFound must not be retried — exactly 1 foot + 1 driving attempt",
+                2,
+                server.requestCount,
+            )
+        }
+
+    // Bisection
+
+    @Test
+    fun `bisection is not triggered below the distance threshold`() =
+        runTest {
+            val body = """{"code": "NoRoute", "routes": []}"""
+            server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(body))
+
+            // ~600m apart, well under BISECTION_MIN_DISTANCE_METERS (2500m).
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.8600, 2.3560)),
+                )
+
+            assertTrue("Expected failure (no bisection below threshold)", result.isFailure)
+            assertEquals("Expected only the direct foot + driving attempts", 2, server.requestCount)
+        }
+
+    @Test
+    fun `bisection splits a long failing leg and recombines successful halves`() =
+        runTest {
+            val noRoute = """{"code": "NoRoute", "routes": []}"""
+
+            fun okBody(
+                lon: Double,
+                lat: Double,
+                distance: Double,
+            ) = """
+                {
+                  "code": "Ok",
+                  "routes": [{
+                    "geometry": {"type": "LineString", "coordinates": [[$lon, $lat], [${lon + 0.001}, ${lat + 0.001}]]},
+                    "distance": $distance,
+                    "duration": 10.0
+                  }]
+                }
+                """.trimIndent()
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct foot
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct driving
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody(2.3522, 48.8566, 300.0))) // left half
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody(2.3522, 48.8566, 300.0))) // right half
+
+            // ~4.8km apart, beyond BISECTION_MIN_DISTANCE_METERS (2500m).
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.9000, 2.3522)),
+                )
+
+            assertTrue("Expected bisection to recover a route", result.isSuccess)
+            assertEquals("Expected 2 direct attempts + 2 bisected halves", 4, server.requestCount)
+        }
+
+    @Test
+    fun `bisection recurses deeper when one half keeps failing`() =
+        runTest {
+            val noRoute = """{"code": "NoRoute", "routes": []}"""
+            val okBody =
+                """
+                {
+                  "code": "Ok",
+                  "routes": [{
+                    "geometry": {"type": "LineString", "coordinates": [[2.3522, 48.8566], [2.353, 48.857]]},
+                    "distance": 150.0,
+                    "duration": 10.0
+                  }]
+                }
+                """.trimIndent()
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct foot
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct driving
+            // depth-1 split: one half succeeds, the other fails and must recurse to depth-2
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute))
+            // depth-2 split of the failed half: both sub-halves succeed
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(okBody))
+
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.9000, 2.3522)),
+                )
+
+            assertTrue("Expected recursive bisection to recover a route", result.isSuccess)
+            assertEquals("Expected 2 direct + 2 depth-1 + 2 depth-2 attempts", 6, server.requestCount)
+        }
+
+    @Test
+    fun `bisection falls back to straight-line past max depth without exceeding bounded request volume`() =
+        runTest {
+            val noRoute = """{"code": "NoRoute", "routes": []}"""
+            // 2 direct + 2 (depth1) + 4 (depth2) + 8 (depth3) + 16 (depth4) + 32 (depth5) = 64.
+            // NoRouteFound is never retried, so this is also the exact total request count —
+            // well under the ~96 unbounded worst-case the leaf-retry cutoff is meant to avoid.
+            repeat(64) { server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) }
+
+            val result =
+                testClient.getRoute(
+                    profile = "foot",
+                    waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.9000, 2.3522)),
+                )
+
+            assertTrue("Max-depth leaves fall back to straight-line, so the overall route still succeeds", result.isSuccess)
+            assertEquals("Recursion must stop at depth 5, bounding total request volume", 64, server.requestCount)
+        }
+
+    @Test
+    fun `bisection time budget is enforced preemptively, not by the underlying call timeout`() =
+        runTest {
+            val noRoute = """{"code": "NoRoute", "routes": []}"""
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct foot
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute)) // direct driving
+            // Both depth-1 halves hang past the 2s bisection budget (but well under the 30s callTimeout).
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute).setBodyDelay(4, java.util.concurrent.TimeUnit.SECONDS))
+            server.enqueue(MockResponse().setResponseCode(200).setBody(noRoute).setBodyDelay(4, java.util.concurrent.TimeUnit.SECONDS))
+
+            val elapsedMs =
+                kotlin.system.measureTimeMillis {
+                    val result =
+                        testClient.getRoute(
+                            profile = "foot",
+                            waypoints = listOf(LatLng(48.8566, 2.3522), LatLng(48.9000, 2.3522)),
+                        )
+                    assertTrue("Expected failure once the bisection budget is exceeded", result.isFailure)
+                }
+
+            assertTrue(
+                "Expected the call to return near the 2s budget, not the 30s call timeout (took ${elapsedMs}ms)",
+                elapsedMs < 10_000,
+            )
         }
 
     // straightLineRoute
@@ -306,17 +494,21 @@ class OsrmClientTest {
     @Test
     fun `resolveRoute with followRoads true falls back to straight line on OSRM failure`() =
         runTest {
-            // Foot profile failure triggers a driving-profile retry; enqueue a second failure for it.
-            server.enqueue(MockResponse().setResponseCode(500).setBody("error"))
-            server.enqueue(MockResponse().setResponseCode(500).setBody("error"))
+            // NoRoute (not retryable) on both foot and driving profile attempts.
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"code": "NoRoute", "routes": []}"""))
+            server.enqueue(MockResponse().setResponseCode(200).setBody("""{"code": "NoRoute", "routes": []}"""))
 
+            // Kept under the bisection distance threshold — this test is about the simple
+            // fallback path, not bisection (covered separately below).
             val from = LatLng(48.8566, 2.3522)
-            val to = LatLng(51.5074, -0.1278)
-            val route = testClient.resolveRoute("foot", from, to, followRoads = true)
+            val to = LatLng(48.8600, 2.3560)
+            var reportedReason: OsrmFailureReason? = null
+            val route = testClient.resolveRoute("foot", from, to, followRoads = true, onFallback = { reportedReason = it })
 
             assertEquals(2, route.size)
             assertEquals(from, route[0])
             assertEquals(to, route[1])
+            assertEquals(OsrmFailureReason.NoRouteFound, reportedReason)
         }
 
     @Test

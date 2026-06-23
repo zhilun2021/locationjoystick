@@ -21,16 +21,17 @@ import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.sortedByAge
 import com.locationjoystick.core.model.toConfig
 import com.locationjoystick.core.routing.OsrmClient
+import com.locationjoystick.core.routing.RoutingErrorReporter
+import com.locationjoystick.core.routing.classifyOsrmFailure
+import com.locationjoystick.core.routing.osrmFailureMessage
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -73,6 +74,7 @@ class MapController
         private val startRouteReplayUseCase: StartRouteReplayUseCase,
         private val ephemeralReplayController: EphemeralReplayController,
         private val osrmClient: OsrmClient,
+        private val routingErrorReporter: RoutingErrorReporter,
         @param:ApplicationScope private val appScope: CoroutineScope,
     ) {
         @Suppress("ktlint:standard:backing-property-naming")
@@ -86,8 +88,7 @@ class MapController
                 .map { it != MockLocationState.IDLE }
                 .stateIn(appScope, SharingStarted.Eagerly, false)
 
-        private val _routingErrors = MutableSharedFlow<String>(extraBufferCapacity = 1)
-        val routingErrors: SharedFlow<String> = _routingErrors.asSharedFlow()
+        val routingErrors: SharedFlow<String> = routingErrorReporter.errors
 
         private var pendingRoadWalkJob: Job? = null
 
@@ -338,13 +339,13 @@ class MapController
                         walkTo(position)
                         return@launch
                     }
-                    val waypoints =
-                        osrmClient
-                            .getRoute(OsrmClient.PROFILE_FOOT, listOf(current, position))
-                            .getOrNull()
+                    val routeResult = osrmClient.getRoute(OsrmClient.PROFILE_FOOT, listOf(current, position))
+                    val waypoints = routeResult.getOrNull()
                     if (waypoints.isNullOrEmpty()) {
-                        Log.w(TAG, "OSRM road-following failed; falling back to straight walk")
-                        _routingErrors.tryEmit("Road routing unavailable — using straight walk")
+                        val reason = routeResult.exceptionOrNull()?.let(::classifyOsrmFailure)
+                        Log.w(TAG, "OSRM road-following failed ($reason); falling back to straight walk")
+                        val prefix = reason?.let(::osrmFailureMessage) ?: "Road routing unavailable"
+                        routingErrorReporter.report("$prefix — using straight walk")
                         walkTo(position)
                         return@launch
                     }

@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class RoamingEngineTest {
-    private val engine = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+    private val engine = RoamingEngine(OsrmClient(), RouteInterpolator(), RoutingErrorReporter(), kotlinx.coroutines.Dispatchers.Unconfined)
 
     @Test
     fun `randomPointInRadius stays within radius`() {
@@ -87,7 +87,7 @@ class RoamingEngineTest {
         val distanceMeters = 50.0
         val speedMs = 2.0
 
-        val e = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+        val e = RoamingEngine(OsrmClient(), RouteInterpolator(), RoutingErrorReporter(), kotlinx.coroutines.Dispatchers.Unconfined)
         val config =
             RoamingConfig(
                 centerPosition = center,
@@ -114,7 +114,7 @@ class RoamingEngineTest {
         val distanceMeters = 50.0
         val speedMs = 2.0
 
-        val e = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+        val e = RoamingEngine(OsrmClient(), RouteInterpolator(), RoutingErrorReporter(), kotlinx.coroutines.Dispatchers.Unconfined)
         val config =
             RoamingConfig(
                 centerPosition = center,

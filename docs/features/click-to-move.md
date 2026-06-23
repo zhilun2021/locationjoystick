@@ -19,7 +19,7 @@ Key files: `:feature:map:impl/MapViewModel.kt`, `:core:location/EphemeralReplayC
 
 - Long-press map → bottom sheet → "Walk via roads".
 - Fetches OSRM route from current position to target; walks it segment by segment.
-- On OSRM failure, falls back to straight-line walk silently.
+- On OSRM failure (after retry/bisection — see @docs/features/roaming.md), falls back to a straight-line walk and reports a reason-specific message via `RoutingErrorReporter` (`:core:routing`), e.g. "Routing server unavailable — using straight walk".
 
 ## Add Next Point (Ephemeral Replay)
 
@@ -33,6 +33,8 @@ Managed by `EphemeralReplayController` (`@Singleton`, `:core:location`), injecte
 - **No active walk**: no-op.
 
 This eliminates duplicated state-machine logic that previously existed in both `MapViewModel` and `FloatingWidgetService`.
+
+If a road-following leg falls back to a straight line (OSRM retry/bisection exhausted), `EphemeralReplayController` reports a reason-specific message via the shared `RoutingErrorReporter` (`:core:routing`), e.g. "No road route found — using straight line for part of the route".
 
 ## Edge Cases
 

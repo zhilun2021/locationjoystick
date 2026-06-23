@@ -105,6 +105,18 @@ object AppConstants {
         const val BASE_URL = "https://router.project-osrm.org/"
         const val OVERVIEW = "full"
         const val GEOMETRIES = "geojson"
+
+        /** Max retry attempts for transient failures (timeout/5xx/network). Matches [RETRY_BACKOFF_MS] size. */
+        const val RETRY_COUNT = 2
+        val RETRY_BACKOFF_MS: List<Long> = listOf(400L, 1_000L)
+
+        /** Only legs longer than this are eligible for bisection on failure. */
+        const val BISECTION_MIN_DISTANCE_METERS = 2_500.0
+        const val BISECTION_MAX_DEPTH = 5
+        const val BISECTION_TIME_BUDGET_MS = 2_000L
+
+        /** Bisection leaves at or below this depth get [RETRY_COUNT] retries; deeper leaves are one-shot. */
+        const val BISECTION_RETRY_DEPTH_CUTOFF = 1
     }
 
     object MapConstants {

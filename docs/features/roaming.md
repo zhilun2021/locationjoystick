@@ -40,6 +40,18 @@ Base URL, overview, geometries, and profile constants in `AppConstants.OsrmConst
 
 All road-following OSRM requests (roaming, walk-via-roads, route creator, ephemeral replay) always use the foot profile. If OSRM returns `NoSegment` (a waypoint too far from any road, e.g. tapped on water or an unmapped area), `OsrmClient` snaps every waypoint to its nearest road node via the OSRM `/nearest` endpoint and retries once before any further fallback. If a foot-profile request still fails, it retries once with the driving profile before the caller falls back to a straight line — this only changes behavior on an OSRM backend with separate profile graphs; the public `router.project-osrm.org` demo serves a single graph regardless of profile name.
 
+### Reliability: Retry, Bisection, and Failure Reporting
+
+The public `router.project-osrm.org` demo server has no SLA and can throttle, error, or time out unpredictably — worse in high-traffic areas. `OsrmClient` mitigates this in three ways:
+
+- **Classified failures**: every OSRM failure is classified into `OsrmFailureReason` (`Timeout`, `ServerError`, `NoRouteFound`, `NetworkUnavailable`, `Unknown`) by exception type, never by parsing message strings.
+- **Generic retry**: `Timeout`, `ServerError`, and `NetworkUnavailable` are retried up to `AppConstants.OsrmConstants.RETRY_COUNT` times with a short fixed backoff (`RETRY_BACKOFF_MS`) before any fallback chain runs. `NoRouteFound` is never retried — a genuinely-no-route response won't change on retry.
+- **Bisection for long legs**: a single A→B request beyond `AppConstants.OsrmConstants.BISECTION_MIN_DISTANCE_METERS` that still fails is split at the midpoint and each half resolved independently (recursively, up to `BISECTION_MAX_DEPTH`), in parallel, bounded by `BISECTION_TIME_BUDGET_MS` via coroutine cancellation (not polling). Sub-legs that fail even after exhausting depth fall back to a straight line. To keep total request volume bounded against the shared demo server, only shallow bisection leaves (`BISECTION_RETRY_DEPTH_CUTOFF`) get retries — deeper leaves are one-shot.
+
+`RoamingEngine`'s legs are short enough to stay below the bisection threshold by construction, so roaming continues to rely on its own per-segment straight-line fallback (`fetchSegmentOrFallback`) rather than bisection.
+
+**User-visible errors**: `RoutingErrorReporter` (`:core:routing`, `@Singleton`) is a shared channel for routing failures, replacing the previous per-`MapController` flow. `MapController.walkViaRoads` reports a reason-specific message (e.g. "Routing server unavailable — using straight walk") instead of a generic one. `RoamingEngine.planRoadFollowingRoute` tracks how many planned segments fell back to straight-line and, if any did, emits one summary message after planning completes (e.g. "Road-following partially unavailable — 3 of 9 legs used straight-line paths") instead of staying silent.
+
 ## State Management
 
 - `RoamingRepository` owns `isRoaming` and `isRoamingPaused` `StateFlow`s.

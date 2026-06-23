@@ -8,6 +8,9 @@ import com.locationjoystick.core.data.WalkCoordinator
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.routing.OsrmClient
+import com.locationjoystick.core.routing.OsrmFailureReason
+import com.locationjoystick.core.routing.RoutingErrorReporter
+import com.locationjoystick.core.routing.osrmFailureMessage
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +38,7 @@ class EphemeralReplayController
         private val settingsRepository: SettingsRepository,
         private val walkCoordinator: WalkCoordinator,
         private val osrmClient: OsrmClient,
+        private val routingErrorReporter: RoutingErrorReporter,
     ) {
         private val _pendingWaypoints = MutableStateFlow<List<LatLng>>(emptyList())
 
@@ -88,9 +92,25 @@ class EphemeralReplayController
                             val (toTarget, toNewPoint) =
                                 coroutineScope {
                                     val a =
-                                        async { osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, startPos, walkTarget, followRoads = true) }
+                                        async {
+                                            osrmClient.resolveRoute(
+                                                OsrmClient.PROFILE_FOOT,
+                                                startPos,
+                                                walkTarget,
+                                                followRoads = true,
+                                                onFallback = ::reportFallback,
+                                            )
+                                        }
                                     val b =
-                                        async { osrmClient.resolveRoute(OsrmClient.PROFILE_FOOT, walkTarget, newPoint, followRoads = true) }
+                                        async {
+                                            osrmClient.resolveRoute(
+                                                OsrmClient.PROFILE_FOOT,
+                                                walkTarget,
+                                                newPoint,
+                                                followRoads = true,
+                                                onFallback = ::reportFallback,
+                                            )
+                                        }
                                     a.await() to b.await()
                                 }
                             toTarget + toNewPoint.drop(1) // walkTarget is last of toTarget, first of toNewPoint
@@ -108,7 +128,7 @@ class EphemeralReplayController
                         if (followRoads && currentWaypoints.isNotEmpty()) {
                             val from = currentWaypoints.last()
                             osrmClient
-                                .resolveRoute(OsrmClient.PROFILE_FOOT, from, newPoint, followRoads = true)
+                                .resolveRoute(OsrmClient.PROFILE_FOOT, from, newPoint, followRoads = true, onFallback = ::reportFallback)
                                 .drop(1) // first point is `from`, already in the route
                         } else {
                             listOf(newPoint)
@@ -120,5 +140,9 @@ class EphemeralReplayController
                 }
             if (result != null) _pendingWaypoints.value = result
             return result
+        }
+
+        private fun reportFallback(reason: OsrmFailureReason) {
+            routingErrorReporter.report("${osrmFailureMessage(reason)} — using straight line for part of the route")
         }
     }

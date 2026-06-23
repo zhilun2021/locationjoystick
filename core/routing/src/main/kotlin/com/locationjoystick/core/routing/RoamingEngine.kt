@@ -29,6 +29,7 @@ class RoamingEngine
     constructor(
         private val osrmClient: OsrmClient,
         private val routeInterpolator: RouteInterpolator,
+        private val routingErrorReporter: RoutingErrorReporter,
         dispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
     ) : AutoCloseable {
         private val engineScope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -88,27 +89,41 @@ class RoamingEngine
             val allWaypoints = mutableListOf(center)
             var coveredDistance = 0.0
             var callCount = 0
+            var totalSegments = 0
+            var fallbackCount = 0
 
             while (coveredDistance < target && callCount < AppConstants.RoamingConstants.MAX_OSRM_PLANNING_CALLS) {
                 val dest = randomPointInRadius(center, radius)
-                val result = fetchSegmentOrFallback(profile, allWaypoints.last(), dest)
+                val (result, fellBack) = fetchSegmentOrFallback(profile, allWaypoints.last(), dest)
                 allWaypoints.addAll(result.waypoints.drop(1))
                 coveredDistance += result.distanceMeters
                 callCount++
+                totalSegments++
+                if (fellBack) fallbackCount++
             }
 
             if (config.returnToInitialLocation) {
                 var returnDistance = 0.0
                 while (returnDistance < target && callCount < AppConstants.RoamingConstants.MAX_OSRM_PLANNING_CALLS) {
                     val dest = randomPointInRadius(center, radius)
-                    val result = fetchSegmentOrFallback(profile, allWaypoints.last(), dest)
+                    val (result, fellBack) = fetchSegmentOrFallback(profile, allWaypoints.last(), dest)
                     allWaypoints.addAll(result.waypoints.drop(1))
                     returnDistance += result.distanceMeters
                     callCount++
+                    totalSegments++
+                    if (fellBack) fallbackCount++
                 }
                 // Final leg: follow roads back to center
-                val result = fetchSegmentOrFallback(profile, allWaypoints.last(), center)
+                val (result, fellBack) = fetchSegmentOrFallback(profile, allWaypoints.last(), center)
                 allWaypoints.addAll(result.waypoints.drop(1))
+                totalSegments++
+                if (fellBack) fallbackCount++
+            }
+
+            if (fallbackCount > 0) {
+                routingErrorReporter.report(
+                    "Road-following partially unavailable — $fallbackCount of $totalSegments legs used straight-line paths",
+                )
             }
 
             return allWaypoints
@@ -118,19 +133,23 @@ class RoamingEngine
          * Fetches one OSRM segment, falling back to a straight-line two-point segment
          * (with haversine distance) if the request fails. Keeps the planning loop's
          * already-accumulated road segments intact instead of abandoning the whole route.
+         * @return the segment result paired with whether it fell back to straight-line.
          */
         private suspend fun fetchSegmentOrFallback(
             profile: String,
             from: LatLng,
             to: LatLng,
-        ): OsrmRouteResult =
-            osrmClient.getRouteWithDistance(profile, listOf(from, to)).getOrElse { e ->
-                Log.w(TAG, "OSRM segment failed, falling back to straight-line segment", e)
-                OsrmRouteResult(
-                    waypoints = listOf(from, to),
-                    distanceMeters = haversineDistance(from, to),
-                )
-            }
+        ): Pair<OsrmRouteResult, Boolean> =
+            osrmClient.getRouteWithDistance(profile, listOf(from, to)).fold(
+                onSuccess = { it to false },
+                onFailure = { e ->
+                    Log.w(TAG, "OSRM segment failed, falling back to straight-line segment", e)
+                    OsrmRouteResult(
+                        waypoints = listOf(from, to),
+                        distanceMeters = haversineDistance(from, to),
+                    ) to true
+                },
+            )
 
         /**
          * Starts a roaming session.

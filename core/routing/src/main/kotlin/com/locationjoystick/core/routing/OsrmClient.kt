@@ -2,9 +2,15 @@ package com.locationjoystick.core.routing
 
 import android.util.Log
 import com.locationjoystick.core.common.constants.AppConstants
+import com.locationjoystick.core.common.util.haversineDistance
+import com.locationjoystick.core.common.util.interpolatePosition
 import com.locationjoystick.core.model.LatLng
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -12,11 +18,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import java.io.IOException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "OsrmClient"
+private const val NO_SEGMENT = "NoSegment"
 
 /**
  * Retrofit API interface for OSRM (Open Source Routing Machine) HTTP API.
@@ -90,7 +100,57 @@ data class OsrmNearestWaypoint(
 class OsrmRouteException(
     val code: String,
     message: String,
-) : Exception(message)
+) : Exception(message) {
+    val reason: OsrmFailureReason =
+        if (code == NO_SEGMENT) OsrmFailureReason.Unknown else OsrmFailureReason.NoRouteFound
+}
+
+/** Thrown when the OSRM HTTP response is non-2xx, carrying the status code for callers to branch on. */
+class OsrmHttpException(
+    val httpCode: Int,
+    message: String,
+) : Exception(message) {
+    val reason: OsrmFailureReason = OsrmFailureReason.ServerError(httpCode)
+}
+
+/** Classified reason an OSRM request failed, used to build accurate user-facing messages and retry decisions. */
+sealed class OsrmFailureReason {
+    object Timeout : OsrmFailureReason()
+
+    data class ServerError(
+        val code: Int,
+    ) : OsrmFailureReason()
+
+    object NoRouteFound : OsrmFailureReason()
+
+    object NetworkUnavailable : OsrmFailureReason()
+
+    object Unknown : OsrmFailureReason()
+}
+
+/** Classifies a failure from an OSRM request by exception type/field — never by parsing message strings. */
+fun classifyOsrmFailure(e: Throwable): OsrmFailureReason =
+    when (e) {
+        is SocketTimeoutException -> OsrmFailureReason.Timeout
+        is OsrmHttpException -> e.reason
+        is OsrmRouteException -> e.reason
+        is UnknownHostException -> OsrmFailureReason.NetworkUnavailable
+        is IOException -> OsrmFailureReason.NetworkUnavailable
+        else -> OsrmFailureReason.Unknown
+    }
+
+/** Short, user-facing description of [reason] (no trailing punctuation — callers append their own context). */
+fun osrmFailureMessage(reason: OsrmFailureReason): String =
+    when (reason) {
+        is OsrmFailureReason.Timeout -> "Routing server timed out"
+        is OsrmFailureReason.ServerError -> "Routing server unavailable"
+        is OsrmFailureReason.NoRouteFound -> "No road route found"
+        is OsrmFailureReason.NetworkUnavailable -> "No network connection"
+        is OsrmFailureReason.Unknown -> "Road routing unavailable"
+    }
+
+private fun isRetryable(reason: OsrmFailureReason): Boolean =
+    reason is OsrmFailureReason.Timeout || reason is OsrmFailureReason.ServerError || reason is OsrmFailureReason.NetworkUnavailable
 
 /**
  * HTTP client for OSRM routing API.
@@ -108,7 +168,6 @@ class OsrmClient
     ) {
         companion object {
             const val PROFILE_FOOT = AppConstants.RoamingConstants.OSRM_PROFILE_FOOT
-            private const val NO_SEGMENT = "NoSegment"
         }
 
         @Inject
@@ -153,35 +212,158 @@ class OsrmClient
             }
 
         /**
-         * Requests a route for [profile]. If the failure is [NO_SEGMENT] (a waypoint is too far
-         * from any road), snaps every waypoint to its nearest road node and retries once before
-         * falling back further. If [profile] is [PROFILE_FOOT] and the request still fails,
-         * retries once with [AppConstants.RoamingConstants.OSRM_PROFILE_DRIVING] — the app should
-         * always prefer walking directions, falling back to driving only when walking routing is
-         * unavailable (e.g. a self-hosted OSRM instance without a foot profile graph).
+         * Requests a route for [profile]. Transient failures (timeout/5xx/network) are retried up to
+         * [AppConstants.OsrmConstants.RETRY_COUNT] times before any of the fallback chains below run.
+         *
+         * If the failure is [NO_SEGMENT] (a waypoint is too far from any road), snaps every waypoint
+         * to its nearest road node and retries once before falling back further. If [profile] is
+         * [PROFILE_FOOT] and the request still fails, retries once with
+         * [AppConstants.RoamingConstants.OSRM_PROFILE_DRIVING] — the app should always prefer walking
+         * directions, falling back to driving only when walking routing is unavailable (e.g. a
+         * self-hosted OSRM instance without a foot profile graph).
+         *
+         * As a last resort for a single long A→B leg (exactly 2 waypoints, beyond
+         * [AppConstants.OsrmConstants.BISECTION_MIN_DISTANCE_METERS]), bisects the leg and resolves
+         * each half independently — see [bisectLeg].
          */
         private suspend fun fetchRoute(
             profile: String,
             waypoints: List<LatLng>,
         ): Result<OsrmRoute> =
             withContext(Dispatchers.IO) {
-                requestRoute(profile, waypoints)
+                requestRouteWithRetry(profile, waypoints)
                     .recoverCatching { e ->
                         if (e is OsrmRouteException && e.code == NO_SEGMENT) {
                             Log.w(TAG, "OSRM route failed (NoSegment), snapping waypoints to nearest road", e)
                             val snapped = snapToRoad(profile, waypoints)
-                            requestRoute(profile, snapped).getOrThrow()
+                            requestRouteWithRetry(profile, snapped).getOrThrow()
                         } else {
                             throw e
                         }
                     }.recoverCatching { e ->
                         if (profile != PROFILE_FOOT) throw e
                         Log.w(TAG, "OSRM foot route failed, retrying with driving profile", e)
-                        requestRoute(AppConstants.RoamingConstants.OSRM_PROFILE_DRIVING, waypoints).getOrThrow()
+                        requestRouteWithRetry(AppConstants.RoamingConstants.OSRM_PROFILE_DRIVING, waypoints).getOrThrow()
+                    }.recoverCatching { e ->
+                        bisectIfEligible(profile, waypoints, e)
                     }.onFailure { e ->
                         Log.e(TAG, "OSRM route request failed — will fall back to straight-line", e)
                     }
             }
+
+        /**
+         * Retries [requestRoute] up to [maxRetries] times with a fixed backoff
+         * ([AppConstants.OsrmConstants.RETRY_BACKOFF_MS]), but only for retryable reasons
+         * ([isRetryable]) — a genuinely-no-route response is never retried.
+         */
+        private suspend fun requestRouteWithRetry(
+            profile: String,
+            waypoints: List<LatLng>,
+            maxRetries: Int = AppConstants.OsrmConstants.RETRY_COUNT,
+        ): Result<OsrmRoute> {
+            var result = requestRoute(profile, waypoints)
+            var attempt = 0
+            while (attempt < maxRetries) {
+                val reason = classifyOsrmFailure(result.exceptionOrNull() ?: return result)
+                if (!isRetryable(reason)) break
+                delay(AppConstants.OsrmConstants.RETRY_BACKOFF_MS[attempt])
+                attempt++
+                result = requestRoute(profile, waypoints)
+            }
+            return result
+        }
+
+        /**
+         * Bisects a failed single-leg ([waypoints].size == 2) request beyond
+         * [AppConstants.OsrmConstants.BISECTION_MIN_DISTANCE_METERS], otherwise rethrows [cause].
+         * The whole operation is bounded by [AppConstants.OsrmConstants.BISECTION_TIME_BUDGET_MS] via
+         * cancellation — a polled elapsed-time check cannot bound a single in-flight call that blocks
+         * for up to the underlying callTimeout.
+         */
+        private suspend fun bisectIfEligible(
+            profile: String,
+            waypoints: List<LatLng>,
+            cause: Throwable,
+        ): OsrmRoute {
+            if (waypoints.size != 2) throw cause
+            val (from, to) = waypoints[0] to waypoints[1]
+            if (haversineDistance(from, to) <= AppConstants.OsrmConstants.BISECTION_MIN_DISTANCE_METERS) throw cause
+            Log.w(TAG, "OSRM route failed past bisection distance threshold, bisecting", cause)
+            val mid = interpolatePosition(from, to, 0.5)
+            val result =
+                withTimeoutOrNull(AppConstants.OsrmConstants.BISECTION_TIME_BUDGET_MS) {
+                    coroutineScope {
+                        val left = async { bisectLeg(profile, from, mid, depth = 1) }
+                        val right = async { bisectLeg(profile, mid, to, depth = 1) }
+                        combineRoutes(left.await(), right.await())
+                    }
+                }
+            return result ?: throw cause
+        }
+
+        /**
+         * Resolves one bisection leg: a single one-shot/retried request, recursively splitting on
+         * failure up to [AppConstants.OsrmConstants.BISECTION_MAX_DEPTH]. Leaves beyond
+         * [AppConstants.OsrmConstants.BISECTION_RETRY_DEPTH_CUTOFF] skip retry to keep total request
+         * volume bounded — depth 5 with retries at every level could reach ~96 HTTP calls for one tap
+         * against a shared, no-SLA demo server.
+         */
+        private suspend fun bisectLeg(
+            profile: String,
+            from: LatLng,
+            to: LatLng,
+            depth: Int,
+        ): OsrmRoute {
+            val retries =
+                if (depth <=
+                    AppConstants.OsrmConstants.BISECTION_RETRY_DEPTH_CUTOFF
+                ) {
+                    AppConstants.OsrmConstants.RETRY_COUNT
+                } else {
+                    0
+                }
+            return requestRouteWithRetry(profile, listOf(from, to), retries).getOrElse { e ->
+                if (depth >= AppConstants.OsrmConstants.BISECTION_MAX_DEPTH) {
+                    Log.w(TAG, "Bisection leg failed at max depth, using straight-line fallback", e)
+                    straightLineSubRoute(from, to)
+                } else {
+                    val mid = interpolatePosition(from, to, 0.5)
+                    coroutineScope {
+                        val left = async { bisectLeg(profile, from, mid, depth + 1) }
+                        val right = async { bisectLeg(profile, mid, to, depth + 1) }
+                        combineRoutes(left.await(), right.await())
+                    }
+                }
+            }
+        }
+
+        private fun straightLineSubRoute(
+            from: LatLng,
+            to: LatLng,
+        ): OsrmRoute =
+            OsrmRoute(
+                geometry =
+                    OsrmGeometry(
+                        coordinates = listOf(listOf(from.longitude, from.latitude), listOf(to.longitude, to.latitude)),
+                        type = "LineString",
+                    ),
+                distance = haversineDistance(from, to),
+                duration = 0.0,
+            )
+
+        private fun combineRoutes(
+            a: OsrmRoute,
+            b: OsrmRoute,
+        ): OsrmRoute =
+            OsrmRoute(
+                geometry =
+                    OsrmGeometry(
+                        coordinates = a.geometry.coordinates + b.geometry.coordinates.drop(1),
+                        type = "LineString",
+                    ),
+                distance = a.distance + b.distance,
+                duration = a.duration + b.duration,
+            )
 
         /**
          * Snaps each waypoint to its nearest road node via the OSRM nearest service.
@@ -218,7 +400,7 @@ class OsrmClient
                 val response = api.getRoute(profile = profile, coordinates = coordinates)
 
                 if (!response.isSuccessful) {
-                    error("OSRM HTTP ${response.code()}: ${response.message()}")
+                    throw OsrmHttpException(response.code(), "OSRM HTTP ${response.code()}: ${response.message()}")
                 }
 
                 val body =
@@ -235,16 +417,21 @@ class OsrmClient
 
         /**
          * Returns a route from [from] to [to].
-         * If [followRoads] is false or OSRM fails, falls back to a straight-line two-point route.
+         * If [followRoads] is false or OSRM fails, falls back to a straight-line two-point route,
+         * calling [onFallback] with the classified failure reason in the latter case.
          */
         suspend fun resolveRoute(
             profile: String,
             from: LatLng,
             to: LatLng,
             followRoads: Boolean,
+            onFallback: (OsrmFailureReason) -> Unit = {},
         ): List<LatLng> {
             if (!followRoads) return straightLineRoute(from, to)
-            return getRoute(profile, listOf(from, to)).getOrElse { straightLineRoute(from, to) }
+            return getRoute(profile, listOf(from, to)).getOrElse { e ->
+                onFallback(classifyOsrmFailure(e))
+                straightLineRoute(from, to)
+            }
         }
 
         fun straightLineRoute(

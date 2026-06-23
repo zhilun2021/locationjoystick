@@ -20,7 +20,7 @@ class RoamingEngineStartRoamingTest {
 
     @Before
     fun setUp() {
-        engine = RoamingEngine(OsrmClient(), RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+        engine = RoamingEngine(OsrmClient(), RouteInterpolator(), RoutingErrorReporter(), kotlinx.coroutines.Dispatchers.Unconfined)
     }
 
     @After

@@ -6,17 +6,24 @@ import com.locationjoystick.core.model.distanceTo
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RoamingWaypointPlannerTest {
     private val mockOsrmClient = mockk<OsrmClient>(relaxed = true)
-    private val engine = RoamingEngine(mockOsrmClient, RouteInterpolator(), kotlinx.coroutines.Dispatchers.Unconfined)
+    private val routingErrorReporter = RoutingErrorReporter()
+    private val engine = RoamingEngine(mockOsrmClient, RouteInterpolator(), routingErrorReporter, kotlinx.coroutines.Dispatchers.Unconfined)
     private val center = LatLng(48.8566, 2.3522)
 
     @Test
@@ -153,5 +160,51 @@ class RoamingWaypointPlannerTest {
             route.drop(1).forEach { point ->
                 assertTrue("fallback point outside radius", center.distanceTo(point) <= 500.0 + 10.0)
             }
+        }
+
+    @Test
+    fun `planRoute road-following emits a fallback summary only when segments fell back`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val received = mutableListOf<String>()
+            backgroundScope.launch { routingErrorReporter.errors.collect { received.add(it) } }
+
+            coEvery { mockOsrmClient.getRouteWithDistance(any(), any()) } returns Result.failure(Exception("Network error"))
+            val config =
+                RoamingConfig(
+                    centerPosition = center,
+                    radiusMeters = 500.0,
+                    distanceMeters = 1000.0,
+                    useRoadSnapping = true,
+                    returnToInitialLocation = false,
+                )
+            engine.planRoute(config)
+
+            assertEquals(1, received.size)
+            assertTrue(
+                "expected a fallback-count summary, got: ${received.first()}",
+                received.first().contains("partially unavailable"),
+            )
+        }
+
+    @Test
+    fun `planRoute road-following emits no summary when every segment succeeds`() =
+        runTest(UnconfinedTestDispatcher()) {
+            val received = mutableListOf<String>()
+            backgroundScope.launch { routingErrorReporter.errors.collect { received.add(it) } }
+
+            val dest = LatLng(48.86, 2.36)
+            val segmentResult = OsrmRouteResult(waypoints = listOf(center, dest), distanceMeters = 400.0)
+            coEvery { mockOsrmClient.getRouteWithDistance(any(), any()) } returns Result.success(segmentResult)
+            val config =
+                RoamingConfig(
+                    centerPosition = center,
+                    radiusMeters = 500.0,
+                    distanceMeters = 1000.0,
+                    useRoadSnapping = true,
+                    returnToInitialLocation = false,
+                )
+            engine.planRoute(config)
+
+            assertNull(received.firstOrNull())
         }
 }

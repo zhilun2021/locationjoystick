@@ -19,6 +19,7 @@ import com.locationjoystick.core.model.MockMode
 import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.routing.OsrmClient
+import com.locationjoystick.core.routing.RoutingErrorReporter
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -120,6 +121,7 @@ class MapViewModelTest {
             startRouteReplayUseCase = startRouteReplayUseCase,
             ephemeralReplayController = ephemeralReplayController,
             osrmClient = osrmClient,
+            routingErrorReporter = RoutingErrorReporter(),
             appScope = CoroutineScope(testDispatcher),
         )
 

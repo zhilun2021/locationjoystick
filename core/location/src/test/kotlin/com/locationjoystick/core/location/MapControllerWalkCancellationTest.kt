@@ -15,6 +15,7 @@ import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.routing.OsrmClient
+import com.locationjoystick.core.routing.RoutingErrorReporter
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -77,14 +78,15 @@ class MapControllerWalkCancellationTest {
                 mockk<OsrmClient>(relaxed = true).also {
                     // resolveRoute with followRoads=false returns a straight-line pair — mirror
                     // the real implementation so addWaypoint produces a valid waypoint list.
-                    coEvery { it.resolveRoute(any(), any(), any(), any()) } answers {
+                    coEvery { it.resolveRoute(any(), any(), any(), any(), any()) } answers {
                         listOf(secondArg<LatLng>(), thirdArg<LatLng>())
                     }
                 }
             val walkToEngine = WalkToEngine(settingsRepository, locationRepository)
             val walkCoordinator = WalkCoordinator(locationRepository, walkToEngine)
+            val routingErrorReporter = RoutingErrorReporter()
             val ephemeralController =
-                EphemeralReplayController(locationRepository, settingsRepository, walkCoordinator, osrmClient)
+                EphemeralReplayController(locationRepository, settingsRepository, walkCoordinator, osrmClient, routingErrorReporter)
 
             val context = mockk<Context>(relaxed = true)
             val isRoaming = MutableStateFlow(false)
@@ -113,6 +115,7 @@ class MapControllerWalkCancellationTest {
                     startRouteReplayUseCase = startRouteReplayUseCase,
                     ephemeralReplayController = ephemeralController,
                     osrmClient = osrmClient,
+                    routingErrorReporter = routingErrorReporter,
                     appScope = backgroundScope,
                 )
 
