@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,7 +77,7 @@ internal fun RoutesPickerSheet(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.shapes.small)
                                     .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
@@ -371,7 +370,7 @@ private fun StartRouteDialog(
     var returnToLocation by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(16.dp)) {
+        Card(shape = MaterialTheme.shapes.medium) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text("Start route", style = MaterialTheme.typography.titleLarge)
                 Spacer(Modifier.height(16.dp))

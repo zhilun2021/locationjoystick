@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -271,7 +270,7 @@ private fun FloatingPickerShell(
                 Modifier
                     .fillMaxSize()
                     .padding(16.dp)
-                    .background(LjBg, RoundedCornerShape(16.dp))
+                    .background(LjBg, MaterialTheme.shapes.medium)
                     .clickable { /* consume touches inside panel */ },
         ) {
             Column(
@@ -376,8 +375,7 @@ internal fun FavoritesFloatingView(
                                         .background(
                                             androidx.compose.ui.graphics.Color.White
                                                 .copy(alpha = 0.12f),
-                                            androidx.compose.foundation.shape
-                                                .RoundedCornerShape(8.dp),
+                                            MaterialTheme.shapes.small,
                                         ).padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
@@ -544,7 +542,7 @@ internal fun RoutesFloatingView(
                                         .fillMaxWidth()
                                         .background(
                                             Color.White.copy(alpha = 0.12f),
-                                            RoundedCornerShape(8.dp),
+                                            MaterialTheme.shapes.small,
                                         ).padding(12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,

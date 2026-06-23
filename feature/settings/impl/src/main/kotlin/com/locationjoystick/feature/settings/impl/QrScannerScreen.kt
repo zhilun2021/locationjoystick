@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -192,7 +191,7 @@ fun QrScannerScreen(
                 label,
                 modifier =
                     Modifier
-                        .background(Color.Black.copy(alpha = 0.7f), RoundedCornerShape(4.dp))
+                        .background(Color.Black.copy(alpha = 0.7f), MaterialTheme.shapes.extraSmall)
                         .padding(8.dp),
                 color = Color.White,
                 style = MaterialTheme.typography.labelSmall,

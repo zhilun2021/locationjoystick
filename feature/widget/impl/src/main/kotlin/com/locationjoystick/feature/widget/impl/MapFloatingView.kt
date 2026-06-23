@@ -198,8 +198,8 @@ internal fun MapFloatingView(
             Modifier
                 .fillMaxSize()
                 .padding(16.dp)
-                .background(LjBg, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp)),
+                .background(LjBg, MaterialTheme.shapes.medium)
+                .clip(MaterialTheme.shapes.medium),
     ) {
         AndroidView(
             factory = { _ ->

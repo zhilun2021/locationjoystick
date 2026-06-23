@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -49,7 +48,7 @@ fun QrShareDialog(
             modifier =
                 Modifier
                     .fillMaxWidth(0.9f)
-                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .background(Color.White, MaterialTheme.shapes.small)
                     .padding(16.dp),
         ) {
             Text(

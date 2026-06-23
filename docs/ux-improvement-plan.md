@@ -23,13 +23,15 @@ Most `contentDescription = null` instances checked are actually fine (icon sits 
 
 Rule going forward: `contentDescription = null` is only correct when a visible text label sits next to the icon. Standalone icon buttons (FABs, icon-only toolbar actions) always need a real description.
 
-## Phase 2 — Apply existing token system consistently (MEDIUM)
+## Phase 2 — Apply existing token system consistently (MEDIUM) — DONE 2026-06-23
 
 The shape scale already exists in `LjShapes.kt` — problem is screens use raw `RoundedCornerShape(Xdp)` literals instead of `MaterialTheme.shapes.small/medium/...`.
 
-- [ ] Grep all screens for `RoundedCornerShape(` literals outside `LjShapes.kt`/`LjCard.kt`; replace with theme shape tokens where the corner radius matches an existing tier (8/16/24/32)
-- [ ] For the 50dp "pill" outlier found in audit — decide: is it a legitimate one-off (e.g. a chip/pill control) or should `LjShapes` gain an explicit `pill`/`full` tier? Don't silently absorb it into `extraLarge`.
-- [ ] Spacing: no `LjSpacing` token object exists yet. Add one to `:core:designsystem` (e.g. `xs=4dp, sm=8dp, md=16dp, lg=24dp, xl=32dp`) mirroring the `LjShapes` pattern, then sweep raw `.dp` padding/spacing literals in screens to match the nearest tier. Don't invent new in-between values (12dp/20dp) going forward.
+- [x] Grepped all screens for `RoundedCornerShape(` literals outside `LjShapes.kt`. Replaced every literal whose radius exactly matched an existing tier (4→extraSmall, 8→small, 16→medium) with the matching `MaterialTheme.shapes.*` token, across `QrScannerScreen`, `SettingsScreen`, `QrShareDialog`, `MapFloatingView`, `WidgetPanelContent`, `FavoritesScreen`, `MapBottomSheets` (×2, including a second `StartRouteDialog` Card that mirrors the one in `RoutesScreen`), `RoutesScreen` (×2), `IdleScreen`, `FavoritesList`. Removed the now-unused `RoundedCornerShape` import from each file that no longer needs it.
+  - Left alone (no matching tier — would change the visual, not just detokenize it): `MapFloatingView`'s `RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)` (asymmetric bottom-sheet-style corners — `shapes.medium` rounds all 4 corners, which would round the bottom edge too) and its `RoundedCornerShape(2.dp)` drag-handle pill; `NominatimSearchBar`'s 12dp values (between `small`=8 and `medium`=16, doesn't match a tier).
+- [x] The 50dp "pill" outlier (`LjTopBar.kt:44`, `RoundedCornerShape(50)`) — this is the percent-based `RoundedCornerShape(Int)` overload (50% = fully rounded), not a 50dp literal. It's a single-use, proportional pill shape for one toggle button, conceptually unlike the fixed-dp corner tiers in `LjShapes`. Decision: legitimate one-off — Material3's `Shapes` data class only has 5 named slots (extraSmall…extraLarge) and has no "pill" concept; adding one wouldn't fit that data class, and a separate top-level constant for a single call site would be a single-use abstraction. Left as-is.
+- [x] Added `LjSpacing` object (`core/designsystem/.../LjSpacing.kt`) mirroring `LjShapes`: `xs=4dp, sm=8dp, md=16dp, lg=24dp, xl=32dp`.
+  - **Scoped down**: did not retrofit the ~275 existing `.dp` padding/spacing/size call sites across 33 files onto this scale. Many of those values are intentionally fine-grained (2dp drag handles, 6dp icon gaps, 12dp/20dp layout spacing that doesn't cleanly round to a tier), and forcing them to the nearest tier risks visible layout regressions across every screen with no way to visually verify each one in this pass (no device/emulator session covering every affected screen). `LjSpacing` is the foundation for **new code going forward** — use it instead of new raw `.dp` literals; a full retrofit of existing call sites is a separate, larger effort that should land with visual QA per screen, not as one blind mechanical pass.
 
 ## Phase 3 — Unify state handling (HIGH — ties directly to "reliability" goal) — DONE 2026-06-23
 

@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -207,7 +206,7 @@ private fun IdleDestinationCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.medium,
         colors =
             CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
