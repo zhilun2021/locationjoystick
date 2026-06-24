@@ -4,15 +4,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -37,10 +38,10 @@ fun LjTopBar(
     actions: @Composable () -> Unit = {},
     showSpoofToggle: Boolean = true,
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             if (showSpoofToggle) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TextButton(
                         onClick = onToggleSpoofing,
                         shape = RoundedCornerShape(50),
@@ -49,17 +50,17 @@ fun LjTopBar(
                                 containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
                                 contentColor = if (isSpoofing) LjError else LjSuccess,
                             ),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
                         modifier = Modifier.semantics { contentDescription = title },
                     ) {
                         Icon(
                             imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 6.dp),
+                            modifier = Modifier.size(16.dp).padding(end = 4.dp),
                         )
                         Text(
                             text = if (isSpoofing) "Stop" else "Start",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
@@ -78,7 +79,7 @@ fun LjTopBar(
         },
         actions = { actions() },
         colors =
-            TopAppBarDefaults.topAppBarColors(
+            TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surface,
                 titleContentColor = MaterialTheme.colorScheme.onSurface,
                 navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
