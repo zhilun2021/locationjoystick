@@ -35,30 +35,33 @@ fun LjTopBar(
     onNavigationClick: (() -> Unit)? = null,
     navigationIcon: ImageVector = LjIcons.Menu,
     actions: @Composable () -> Unit = {},
+    showSpoofToggle: Boolean = true,
 ) {
     TopAppBar(
         title = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
-                TextButton(
-                    onClick = onToggleSpoofing,
-                    shape = RoundedCornerShape(50),
-                    colors =
-                        ButtonDefaults.textButtonColors(
-                            containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
-                            contentColor = if (isSpoofing) LjError else LjSuccess,
-                        ),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
-                    modifier = Modifier.semantics { contentDescription = title },
-                ) {
-                    Icon(
-                        imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 6.dp),
-                    )
-                    Text(
-                        text = if (isSpoofing) "Stop" else "Start",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+            if (showSpoofToggle) {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                    TextButton(
+                        onClick = onToggleSpoofing,
+                        shape = RoundedCornerShape(50),
+                        colors =
+                            ButtonDefaults.textButtonColors(
+                                containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
+                                contentColor = if (isSpoofing) LjError else LjSuccess,
+                            ),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 6.dp),
+                        modifier = Modifier.semantics { contentDescription = title },
+                    ) {
+                        Icon(
+                            imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                        Text(
+                            text = if (isSpoofing) "Stop" else "Start",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
                 }
             }
         },

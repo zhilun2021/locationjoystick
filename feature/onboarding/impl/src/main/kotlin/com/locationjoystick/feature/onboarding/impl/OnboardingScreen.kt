@@ -125,6 +125,7 @@ internal fun OnboardingScreen(
         onNavigationClick = null,
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.background,
+        showSpoofToggle = false,
     ) { paddingValues ->
         Column(
             modifier =

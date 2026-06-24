@@ -27,6 +27,7 @@ fun LjScaffold(
     snackbarHost: @Composable () -> Unit = { SnackbarHost(remember { SnackbarHostState() }) },
     containerColor: Color = MaterialTheme.colorScheme.background,
     contentWindowInsets: WindowInsets = WindowInsets(0),
+    showSpoofToggle: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -39,6 +40,7 @@ fun LjScaffold(
                 onNavigationClick = onNavigationClick,
                 navigationIcon = navigationIcon,
                 actions = actions,
+                showSpoofToggle = showSpoofToggle,
             )
         },
         bottomBar = bottomBar,
