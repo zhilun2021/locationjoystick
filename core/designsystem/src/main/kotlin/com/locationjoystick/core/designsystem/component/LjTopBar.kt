@@ -74,7 +74,10 @@ fun LjTopBar(
                             contentColor = if (isSpoofing) LjError else LjSuccess,
                         ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                    modifier = Modifier.semantics { contentDescription = title },
+                    modifier =
+                        Modifier.semantics {
+                            contentDescription = if (isSpoofing) "Stop location simulation" else "Start location simulation"
+                        },
                 ) {
                     Icon(
                         imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,

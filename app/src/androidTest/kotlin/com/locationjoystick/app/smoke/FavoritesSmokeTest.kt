@@ -73,7 +73,7 @@ class FavoritesSmokeTest : BaseSmokeTest() {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("from map").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("Pick Location").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Search location").assertIsDisplayed()
         Espresso.pressBack()
         composeRule.waitForIdle()
         composeRule.onNodeWithContentDescription("Add favorite").assertIsDisplayed()

@@ -50,7 +50,7 @@ class RouteCreatorSmokeTest : BaseSmokeTest() {
     }
 
     @Test
-    fun route_creator_shows_title() {
-        composeRule.onNodeWithText("Create Route").assertIsDisplayed()
+    fun route_creator_shows_spoof_toggle() {
+        composeRule.onNodeWithContentDescription("Start location simulation").assertIsDisplayed()
     }
 }

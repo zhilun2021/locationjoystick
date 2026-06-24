@@ -53,6 +53,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -1239,7 +1241,7 @@ private fun FeatureRow(
             Checkbox(
                 checked = feature in uiState.enabledWidgetFeatures,
                 enabled = rowEnabled,
-                modifier = Modifier.width(56.dp),
+                modifier = Modifier.width(56.dp).semantics { contentDescription = "${meta.label} on widget" },
                 onCheckedChange = { checked ->
                     val updated = uiState.enabledWidgetFeatures.toMutableSet()
                     if (checked) {
@@ -1262,7 +1264,7 @@ private fun FeatureRow(
         if (FeatureSurface.MAP in feature.surfaces) {
             Checkbox(
                 checked = feature in uiState.enabledMapFeatures,
-                modifier = Modifier.width(56.dp),
+                modifier = Modifier.width(56.dp).semantics { contentDescription = "${meta.label} on map" },
                 onCheckedChange = { checked ->
                     val updated = uiState.enabledMapFeatures.toMutableSet()
                     if (checked) updated.add(feature) else updated.remove(feature)
