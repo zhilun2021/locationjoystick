@@ -2,9 +2,9 @@ package com.locationjoystick.core.designsystem.component
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -38,52 +38,55 @@ fun LjTopBar(
     actions: @Composable () -> Unit = {},
     showSpoofToggle: Boolean = true,
 ) {
-    CenterAlignedTopAppBar(
-        title = {
-            if (showSpoofToggle) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    TextButton(
-                        onClick = onToggleSpoofing,
-                        shape = RoundedCornerShape(50),
-                        colors =
-                            ButtonDefaults.textButtonColors(
-                                containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
-                                contentColor = if (isSpoofing) LjError else LjSuccess,
-                            ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                        modifier = Modifier.semantics { contentDescription = title },
-                    ) {
+    Box(modifier = modifier) {
+        CenterAlignedTopAppBar(
+            title = {},
+            navigationIcon = {
+                if (onNavigationClick != null) {
+                    IconButton(onClick = onNavigationClick) {
                         Icon(
-                            imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp).padding(end = 4.dp),
-                        )
-                        Text(
-                            text = if (isSpoofing) "Stop" else "Start",
-                            style = MaterialTheme.typography.bodyMedium,
+                            imageVector = navigationIcon,
+                            contentDescription = "Open navigation menu",
                         )
                     }
                 }
-            }
-        },
-        modifier = modifier,
-        navigationIcon = {
-            if (onNavigationClick != null) {
-                IconButton(onClick = onNavigationClick) {
+            },
+            actions = { actions() },
+            colors =
+                TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+        )
+        if (showSpoofToggle) {
+            Box(
+                modifier = Modifier.matchParentSize().windowInsetsPadding(TopAppBarDefaults.windowInsets),
+                contentAlignment = Alignment.Center,
+            ) {
+                TextButton(
+                    onClick = onToggleSpoofing,
+                    shape = RoundedCornerShape(50),
+                    colors =
+                        ButtonDefaults.textButtonColors(
+                            containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
+                            contentColor = if (isSpoofing) LjError else LjSuccess,
+                        ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
+                    modifier = Modifier.semantics { contentDescription = title },
+                ) {
                     Icon(
-                        imageVector = navigationIcon,
-                        contentDescription = "Open navigation menu",
+                        imageVector = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp).padding(end = 4.dp),
+                    )
+                    Text(
+                        text = if (isSpoofing) "Stop" else "Start",
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
-        },
-        actions = { actions() },
-        colors =
-            TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-    )
+        }
+    }
 }
