@@ -61,11 +61,12 @@ class RoamingEngineTest {
         val se = points.count { it.latitude < 0.0 && it.longitude > 0.0 }
         val sw = points.count { it.latitude < 0.0 && it.longitude < 0.0 }
 
-        // Each quadrant should have ~25 points (±10 tolerance)
-        assertTrue("NE quadrant should have ~25 points, got $ne", ne in 15..35)
-        assertTrue("NW quadrant should have ~25 points, got $nw", nw in 15..35)
-        assertTrue("SE quadrant should have ~25 points, got $se", se in 15..35)
-        assertTrue("SW quadrant should have ~25 points, got $sw", sw in 15..35)
+        // Each quadrant should have ~25 points. Bound is ~3.5 std devs (Binomial(100, 0.25),
+        // sigma=4.33) to keep false-failure rate negligible under random sampling.
+        assertTrue("NE quadrant should have ~25 points, got $ne", ne in 10..40)
+        assertTrue("NW quadrant should have ~25 points, got $nw", nw in 10..40)
+        assertTrue("SE quadrant should have ~25 points, got $se", se in 10..40)
+        assertTrue("SW quadrant should have ~25 points, got $sw", sw in 10..40)
     }
 
     @Test
