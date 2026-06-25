@@ -142,7 +142,7 @@ internal sealed class SettingsAction {
     ) : SettingsAction()
 
     data class SetTapToWalkScaleMpx(
-        val scale: Double,
+        val scale: Int,
     ) : SettingsAction()
 
     data object SaveChanges : SettingsAction()

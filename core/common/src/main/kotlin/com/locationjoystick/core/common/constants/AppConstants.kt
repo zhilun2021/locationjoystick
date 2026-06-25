@@ -353,8 +353,8 @@ object AppConstants {
     }
 
     object TapToWalkConstants {
-        const val DEFAULT_SCALE_MPX = 10.0
-        const val MIN_SCALE_MPX = 1.0
-        const val MAX_SCALE_MPX = 50.0
+        const val DEFAULT_SCALE_MPX = 10
+        const val MIN_SCALE_MPX = 1
+        const val MAX_SCALE_MPX = 50
     }
 }

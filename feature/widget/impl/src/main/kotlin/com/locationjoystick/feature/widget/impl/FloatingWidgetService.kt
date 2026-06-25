@@ -44,6 +44,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import android.view.WindowManager as AndroidWindowManager
@@ -119,7 +122,7 @@ class FloatingWidgetService :
     private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
 
     private val isTapToWalkActiveFlow = MutableStateFlow(false)
-    private val tapToWalkScaleMpxFlow = MutableStateFlow(AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+    private lateinit var tapToWalkScaleMpx: StateFlow<Int>
     private var tapToWalkOverlay: TapToWalkOverlay? = null
 
     // Drag position — class-level so onConfigurationChanged can read them after rotation.
@@ -160,6 +163,10 @@ class FloatingWidgetService :
                 callbacks = panelCallbacks,
                 settingsRepository = settingsRepository,
             )
+        tapToWalkScaleMpx =
+            settingsRepository
+                .getTapToWalkScaleMpx()
+                .stateIn(lifecycleScope, SharingStarted.Eagerly, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
         serviceBinder.bind()
         lifecycleScope.launch {
             settingsRepository.getActiveSpeedProfile().collect { profile ->
@@ -189,11 +196,6 @@ class FloatingWidgetService :
         lifecycleScope.launch {
             settingsRepository.getWidgetFeatures().collect { features ->
                 if (AppFeature.ELEVATION_CONTROLS !in features) setElevationMode(null)
-            }
-        }
-        lifecycleScope.launch {
-            settingsRepository.getTapToWalkScaleMpx().collect { scale ->
-                tapToWalkScaleMpxFlow.value = scale
             }
         }
         lifecycleScope.launch {
@@ -364,7 +366,7 @@ class FloatingWidgetService :
                     savedStateRegistryOwner = this,
                     onWalkTo = { pos -> mapController.walkTo(pos) },
                     getPosition = { mapController.sharedState.value.currentPosition },
-                    getScaleMpx = { tapToWalkScaleMpxFlow.value },
+                    getScaleMpx = { tapToWalkScaleMpx.value.toDouble() },
                     onDismissed = { isTapToWalkActiveFlow.value = false },
                 )
             tapToWalkOverlay = overlay

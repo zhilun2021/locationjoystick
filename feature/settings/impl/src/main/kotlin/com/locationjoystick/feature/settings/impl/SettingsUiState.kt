@@ -36,6 +36,6 @@ data class SettingsUiState(
     val enabledMapFeatures: Set<AppFeature> = AppFeature.DEFAULT_MAP_ENABLED,
     val floatingMapQuickWalk: Boolean = false,
     val tapToWalkOverlayEnabled: Boolean = false,
-    val tapToWalkScaleMpx: Double = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
+    val tapToWalkScaleMpx: Int = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
     val isDirty: Boolean = false,
 )

@@ -26,9 +26,11 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.designsystem.LjIcons
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.model.LatLng
+import kotlin.math.PI
 import kotlin.math.cos
 
 internal class TapToWalkOverlay(
@@ -78,6 +80,7 @@ internal class TapToWalkOverlay(
     }
 
     fun dismiss() {
+        val had = overlayView != null
         overlayView?.let { view ->
             try {
                 if (view.isAttachedToWindow) windowManager.removeView(view)
@@ -87,7 +90,7 @@ internal class TapToWalkOverlay(
             view.disposeComposition()
         }
         overlayView = null
-        onDismissed()
+        if (had) onDismissed()
     }
 
     private fun overlayLayoutParams() =
@@ -118,11 +121,11 @@ internal class TapToWalkOverlay(
         ): LatLng {
             val dx = (tapX - screenW / 2f) * metersPerPixel
             val dy = -(tapY - screenH / 2f) * metersPerPixel
-            val lat = currentPos.latitude + (dy / 6_371_000.0) * (180.0 / Math.PI)
+            val lat = currentPos.latitude + (dy / AppConstants.LocationConstants.EARTH_RADIUS_METERS) * (180.0 / PI)
             val lon =
                 currentPos.longitude +
-                    (dx / 6_371_000.0) * (180.0 / Math.PI) /
-                    cos(currentPos.latitude * Math.PI / 180.0)
+                    (dx / AppConstants.LocationConstants.EARTH_RADIUS_METERS) * (180.0 / PI) /
+                    cos(currentPos.latitude * PI / 180.0)
             return LatLng(lat.coerceIn(-90.0, 90.0), lon)
         }
     }

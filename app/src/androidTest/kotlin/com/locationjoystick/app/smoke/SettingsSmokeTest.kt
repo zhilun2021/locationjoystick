@@ -108,4 +108,32 @@ class SettingsSmokeTest : BaseSmokeTest() {
         composeRule.onNodeWithText("Import from GPS Joystick").assertIsDisplayed()
         composeRule.onNodeWithText("Import from YAMLA").assertIsDisplayed()
     }
+
+    @Test
+    fun settings_shows_tap_to_walk_section() {
+        composeRule.onNodeWithText("Menus").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Tap to Walk").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun settings_shows_location_memory_section() {
+        composeRule.onNodeWithText("GPS Settings").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Location Memory").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun settings_shows_favorites_section() {
+        composeRule.onNodeWithText("Favorites & Routes").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Favorites").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun settings_shows_routes_section() {
+        composeRule.onNodeWithText("Favorites & Routes").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Routes").performScrollTo().assertIsDisplayed()
+    }
 }

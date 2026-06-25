@@ -233,7 +233,7 @@ interface PreferencesDataSource {
     fun getTapToWalkOverlayEnabled(): Flow<Boolean>
 
     /** Gets the scale factor (meters per pixel) for the tap-to-walk overlay coordinate conversion. */
-    fun getTapToWalkScaleMpx(): Flow<Double>
+    fun getTapToWalkScaleMpx(): Flow<Int>
 
     /** Returns all settings needed by the settings UI in a single DataStore scan. */
     fun getSettingsSnapshot(): Flow<SettingsSnapshot>
@@ -273,7 +273,7 @@ data class SettingsSnapshot(
     val roamingDefaults: RoamingDefaults,
     val floatingMapQuickWalk: Boolean = false,
     val tapToWalkOverlayEnabled: Boolean = false,
-    val tapToWalkScaleMpx: Double = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
+    val tapToWalkScaleMpx: Int = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
 )
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -364,7 +364,7 @@ class AppPreferencesDataSource
             val FEATURE_ORDER = stringPreferencesKey("feature_order")
             val FLOATING_MAP_QUICK_WALK = booleanPreferencesKey("floating_map_quick_walk")
             val TAP_TO_WALK_OVERLAY_ENABLED = booleanPreferencesKey("tap_to_walk_overlay_enabled")
-            val TAP_TO_WALK_SCALE_MPX = doublePreferencesKey("tap_to_walk_scale_mpx")
+            val TAP_TO_WALK_SCALE_MPX = intPreferencesKey("tap_to_walk_scale_mpx_int")
         }
 
         override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -711,8 +711,7 @@ class AppPreferencesDataSource
 
         override fun getTapToWalkOverlayEnabled(): Flow<Boolean> = pref(Keys.TAP_TO_WALK_OVERLAY_ENABLED, false)
 
-        override fun getTapToWalkScaleMpx(): Flow<Double> =
-            pref(Keys.TAP_TO_WALK_SCALE_MPX, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+        override fun getTapToWalkScaleMpx(): Flow<Int> = pref(Keys.TAP_TO_WALK_SCALE_MPX, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
 
         override suspend fun applySnapshot(snapshot: SettingsSnapshot) {
             dataStore.edit { prefs ->
