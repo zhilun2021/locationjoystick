@@ -7,8 +7,10 @@ import com.locationjoystick.core.model.SpeedProfile
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -256,5 +258,30 @@ class WalkToEngineTest {
             advanceTimeBy(AppConstants.LocationConstants.UPDATE_INTERVAL_MS + 1)
 
             assertEquals("should not call onPositionUpdate with null position", 0, callCount)
+        }
+
+    @Test
+    fun `onArrival is not invoked once the walk job has been cancelled`() =
+        runTest {
+            val current = LatLng(48.8566, 2.3522)
+            val target = LatLng(48.9000, 2.3522)
+            locationRepository.setPositionInternal(current)
+            locationRepository.setWalkTarget(target)
+
+            var arrivalCalled = false
+            lateinit var job: Job
+            with(engine) {
+                job =
+                    backgroundScope.launchWalkAlongRoute(
+                        waypoints = listOf(target),
+                        onPositionUpdate = { newPos, _, _ -> locationRepository.updatePosition(newPos) },
+                        onArrival = { arrivalCalled = true },
+                    )
+            }
+
+            job.cancel()
+            advanceUntilIdle()
+
+            assertFalse("onArrival should never run once the walk job has been cancelled", arrivalCalled)
         }
 }

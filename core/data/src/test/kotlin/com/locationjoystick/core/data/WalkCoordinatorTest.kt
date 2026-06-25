@@ -7,8 +7,10 @@ import com.locationjoystick.core.model.SpeedProfile
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -198,5 +200,35 @@ class WalkCoordinatorTest {
                 locationRepository.walkTarget.value,
             )
             assertEquals(MockMode.WALK_TO, locationRepository.currentMode.value)
+        }
+
+    @Test
+    fun `walk B mode and target survive when walk A onArrival races with cancellation`() =
+        runTest {
+            val current = LatLng(48.8566, 2.3522)
+            // targetA within arrival threshold (0.5m ≈ < 1.0m threshold) so the for-loop
+            // exits immediately and onArrival() is the very next call — maximises race window.
+            val targetA = LatLng(48.856604498, 2.3522)
+            val targetB = LatLng(48.8700, 2.3522)
+            locationRepository.setPositionInternal(current)
+
+            walkCoordinator.startWalk(targetA, backgroundScope)
+            // Cancel walk A by starting walk B before any coroutine has had a chance to run.
+            walkCoordinator.startWalk(targetB, backgroundScope)
+
+            // Drain: walk A's coroutine runs ensureActive() → throws CancellationException →
+            // onArrival() (setMockMode TELEPORT) never executes.
+            advanceUntilIdle()
+
+            assertEquals(
+                "Mode must remain WALK_TO — walk A onArrival must not fire TELEPORT after cancellation",
+                MockMode.WALK_TO,
+                locationRepository.currentMode.value,
+            )
+            assertEquals(
+                "Walk target must be targetB — walk A finally-block must not null it out",
+                targetB,
+                locationRepository.walkTarget.value,
+            )
         }
 }

@@ -77,7 +77,6 @@ class WalkCoordinator
                         onArrival = {
                             Log.d(TAG, "Arrived at road-following destination $finalTarget")
                             locationRepository.setMockMode(MockMode.TELEPORT)
-                            locationRepository.setWalkTarget(null)
                             locationRepository.emitCompletion("Walk complete")
                         },
                     )

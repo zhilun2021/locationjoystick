@@ -10,6 +10,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -82,6 +83,7 @@ class WalkToEngine
                         }
                     }
                     Log.d(TAG, "Reached final target; stopping walk")
+                    ensureActive()
                     onArrival()
                 } catch (_: CancellationException) {
                     // normal cancellation — no log needed
