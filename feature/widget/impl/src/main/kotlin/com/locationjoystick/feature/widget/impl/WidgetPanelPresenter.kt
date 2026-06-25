@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.locationjoystick.core.data.SettingsRepository
 import com.locationjoystick.core.designsystem.LjTheme
 import com.locationjoystick.core.location.MapController
 import com.locationjoystick.core.location.ephemeralWaypoints
@@ -38,6 +39,7 @@ internal class WidgetPanelPresenter(
     private val serviceScope: CoroutineScope,
     private val mapController: MapController,
     private val callbacks: Callbacks,
+    private val settingsRepository: SettingsRepository,
 ) {
     companion object {
         private const val TAG = "WidgetPanelPresenter"
@@ -195,6 +197,7 @@ internal class WidgetPanelPresenter(
         showPanel(params = mapPanelLayoutParams(), logTag = "map") {
             val shared by mapController.sharedState.collectAsStateWithLifecycle()
             val initialPosition = remember { mapController.sharedState.value.currentPosition }
+            val quickWalk by settingsRepository.getFloatingMapQuickWalk().collectAsStateWithLifecycle(initialValue = false)
             MapFloatingView(
                 currentPosition = shared.currentPosition,
                 initialPosition = initialPosition,
@@ -240,6 +243,7 @@ internal class WidgetPanelPresenter(
                 onSearchCommitted = { name, lat, lon -> mapController.addRecentSearch(name, lat, lon) },
                 cooldownForPosition = { pos -> mapController.cooldownForPosition(pos) },
                 onSaveCurrentLocation = { name -> callbacks.saveCurrentLocation(name) },
+                quickWalk = quickWalk,
             )
         }
     }

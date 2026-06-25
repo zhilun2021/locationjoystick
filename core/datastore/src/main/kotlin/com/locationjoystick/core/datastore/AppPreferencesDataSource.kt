@@ -226,6 +226,15 @@ interface PreferencesDataSource {
     /** Sets the selected hot route IDs. */
     suspend fun setSelectedHotRouteIds(ids: Set<String>)
 
+    /** Gets whether the floating map skips the confirmation panel and walks immediately on tap. */
+    fun getFloatingMapQuickWalk(): Flow<Boolean>
+
+    /** Gets whether the screen tap-to-walk overlay is enabled. */
+    fun getTapToWalkOverlayEnabled(): Flow<Boolean>
+
+    /** Gets the scale factor (meters per pixel) for the tap-to-walk overlay coordinate conversion. */
+    fun getTapToWalkScaleMpx(): Flow<Double>
+
     /** Returns all settings needed by the settings UI in a single DataStore scan. */
     fun getSettingsSnapshot(): Flow<SettingsSnapshot>
 
@@ -262,6 +271,9 @@ data class SettingsSnapshot(
     val hotRoutesEnabled: Boolean,
     val selectedHotRouteIds: Set<String>,
     val roamingDefaults: RoamingDefaults,
+    val floatingMapQuickWalk: Boolean = false,
+    val tapToWalkOverlayEnabled: Boolean = false,
+    val tapToWalkScaleMpx: Double = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
 )
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -350,6 +362,9 @@ class AppPreferencesDataSource
             val HOT_ROUTE_SELECTED_IDS = stringSetPreferencesKey("hot_route_selected_ids")
             val MAP_FAB_ITEMS = stringSetPreferencesKey("map_fab_items")
             val FEATURE_ORDER = stringPreferencesKey("feature_order")
+            val FLOATING_MAP_QUICK_WALK = booleanPreferencesKey("floating_map_quick_walk")
+            val TAP_TO_WALK_OVERLAY_ENABLED = booleanPreferencesKey("tap_to_walk_overlay_enabled")
+            val TAP_TO_WALK_SCALE_MPX = doublePreferencesKey("tap_to_walk_scale_mpx")
         }
 
         override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> =
@@ -692,6 +707,13 @@ class AppPreferencesDataSource
             dataStore.edit { prefs -> prefs[Keys.HOT_ROUTE_SELECTED_IDS] = ids }
         }
 
+        override fun getFloatingMapQuickWalk(): Flow<Boolean> = pref(Keys.FLOATING_MAP_QUICK_WALK, false)
+
+        override fun getTapToWalkOverlayEnabled(): Flow<Boolean> = pref(Keys.TAP_TO_WALK_OVERLAY_ENABLED, false)
+
+        override fun getTapToWalkScaleMpx(): Flow<Double> =
+            pref(Keys.TAP_TO_WALK_SCALE_MPX, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+
         override suspend fun applySnapshot(snapshot: SettingsSnapshot) {
             dataStore.edit { prefs ->
                 prefs[Keys.WALK_SPEED_MS] = snapshot.walkSpeedMs.coerceAtLeast(MIN_SPEED_MS)
@@ -739,6 +761,13 @@ class AppPreferencesDataSource
                 prefs[Keys.HOT_LOCATION_SELECTED_IDS] = snapshot.selectedHotLocationIds
                 prefs[Keys.HOT_ROUTES_ENABLED] = snapshot.hotRoutesEnabled
                 prefs[Keys.HOT_ROUTE_SELECTED_IDS] = snapshot.selectedHotRouteIds
+                prefs[Keys.FLOATING_MAP_QUICK_WALK] = snapshot.floatingMapQuickWalk
+                prefs[Keys.TAP_TO_WALK_OVERLAY_ENABLED] = snapshot.tapToWalkOverlayEnabled
+                prefs[Keys.TAP_TO_WALK_SCALE_MPX] =
+                    snapshot.tapToWalkScaleMpx.coerceIn(
+                        AppConstants.TapToWalkConstants.MIN_SCALE_MPX,
+                        AppConstants.TapToWalkConstants.MAX_SCALE_MPX,
+                    )
                 prefs[Keys.ROAMING_RADIUS_METERS] = snapshot.roamingDefaults.radiusMeters
                 prefs[Keys.ROAMING_DISTANCE_METERS] = snapshot.roamingDefaults.distanceMeters
                 prefs[Keys.ROAMING_SPEED_PROFILE_ID] = snapshot.roamingDefaults.speedProfileId
@@ -812,6 +841,11 @@ class AppPreferencesDataSource
                                 followRoads = prefs[Keys.ROAMING_ROAD_FOLLOWING] ?: DEFAULT_ROAMING_FOLLOW_ROADS,
                                 returnToInitialLocation = prefs[Keys.ROAMING_RETURN_TO_START] ?: DEFAULT_ROAMING_RETURN_TO_START,
                             ),
+                        floatingMapQuickWalk = prefs[Keys.FLOATING_MAP_QUICK_WALK] ?: false,
+                        tapToWalkOverlayEnabled = prefs[Keys.TAP_TO_WALK_OVERLAY_ENABLED] ?: false,
+                        tapToWalkScaleMpx =
+                            prefs[Keys.TAP_TO_WALK_SCALE_MPX]
+                                ?: AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
                     )
                 }
 

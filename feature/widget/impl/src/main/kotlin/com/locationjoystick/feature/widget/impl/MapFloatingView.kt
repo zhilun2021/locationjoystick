@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -122,6 +123,7 @@ internal fun MapFloatingView(
     onSearchCommitted: ((String, Double, Double) -> Unit)? = null,
     cooldownForPosition: ((LatLng) -> Flow<CooldownState>)? = null,
     onSaveCurrentLocation: ((String) -> Unit)? = null,
+    quickWalk: Boolean = false,
 ) {
     val isRoaming = mockMode == MockMode.ROAMING
     val isRouteReplay = mockMode == MockMode.ROUTE_REPLAY
@@ -132,6 +134,8 @@ internal fun MapFloatingView(
     var showRoamingSheet by remember { mutableStateOf(false) }
     var walkStart by remember { mutableStateOf<LatLng?>(null) }
     var pendingTap by remember { mutableStateOf<LatLng?>(null) }
+    val quickWalkState = rememberUpdatedState(quickWalk)
+    val onWalkToState = rememberUpdatedState(onWalkTo)
     var showSearch by remember { mutableStateOf(false) }
     var showFavoritesPicker by remember { mutableStateOf(false) }
     val isFollowingCamera = remember { mutableStateOf(true) }
@@ -239,7 +243,12 @@ internal fun MapFloatingView(
                         }
 
                         map.addOnMapClickListener { latLng ->
-                            pendingTap = LatLng(latLng.latitude, latLng.longitude)
+                            val pos = LatLng(latLng.latitude, latLng.longitude)
+                            if (quickWalkState.value) {
+                                onWalkToState.value(pos)
+                            } else {
+                                pendingTap = pos
+                            }
                             true
                         }
 

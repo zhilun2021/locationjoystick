@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tap to Walk — locationjoystick</title>
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
+</head>
+<body>
+<div class="layout">
+
+  <main>
+    <h2 id="tap-to-walk">Tap to Walk</h2>
+    <p>
+      Tap to Walk gives you two shortcuts for moving your spoofed location with a single tap,
+      without opening the app. Both are off by default. Turn them on in
+      <strong>Settings → Menus → Tap to Walk</strong>.
+    </p>
+
+    <h2 id="floating-map-quick-walk">Floating map quick walk</h2>
+    <p>
+      When this is on, tapping anywhere on the floating map immediately starts walking to that
+      point. The confirmation sheet is skipped — the walk begins straight away.
+    </p>
+    <p>
+      Useful when you already know where you want to go and don't need to choose between
+      Walk, Teleport, or Walk via roads every time.
+    </p>
+
+    <h2 id="screen-overlay">Screen tap-to-walk overlay</h2>
+    <p>
+      This adds a crosshair button to the floating widget panel. Tap it once to activate a
+      transparent layer that sits over whatever app you're currently using. Your next tap on
+      the screen — anywhere — is treated as a walk destination. The overlay then disappears
+      automatically.
+    </p>
+    <p>
+      To cancel without walking anywhere, tap the close button in the bottom-right corner.
+    </p>
+
+    <h3 id="scale-setting">Scale setting</h3>
+    <p>
+      The overlay converts where you tapped on screen into a real-world GPS coordinate using
+      the <strong>Scale</strong> value (shown in meters per pixel). A higher number means each
+      pixel on screen represents more distance on the ground — useful when the game map is
+      zoomed out. A lower number is better for zoomed-in maps where precision matters.
+    </p>
+    <p>
+      If your taps are landing too far from where you intended, adjust the scale to match how
+      zoomed in the game is. Zooming the game map out generally gives more accurate results
+      because small positioning errors become less significant.
+    </p>
+
+    <h3 id="warning">Important note</h3>
+    <p>
+      The overlay assumes the map you're tapping is oriented with north at the top. If the game
+      rotates the map to follow your character, taps may not land in the expected direction.
+    </p>
+    <p>
+      Some apps can detect when location is being mocked and may take action on the account.
+      Use this feature only in apps where you understand and accept that risk.
+    </p>
+  </main>
+
+</div>
+<script src="wiki-init.js"></script>
+</body>
+</html>

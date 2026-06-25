@@ -22,4 +22,6 @@ dependencies {
 
     implementation(libs.bundles.lifecycle)
     implementation(libs.androidx.compose.material.icons.extended)
+
+    testImplementation(libs.junit)
 }

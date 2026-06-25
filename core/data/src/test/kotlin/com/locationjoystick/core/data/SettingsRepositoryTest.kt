@@ -1172,6 +1172,12 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
 
     override suspend fun setSelectedHotRouteIds(ids: Set<String>) = Unit
 
+    override fun getFloatingMapQuickWalk(): Flow<Boolean> = flowOf(false)
+
+    override fun getTapToWalkOverlayEnabled(): Flow<Boolean> = flowOf(false)
+
+    override fun getTapToWalkScaleMpx(): Flow<Double> = flowOf(AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+
     val recentSearchesFlow = MutableStateFlow<List<RecentSearch>>(emptyList())
 
     override fun getRecentSearches(): Flow<List<RecentSearch>> = recentSearchesFlow

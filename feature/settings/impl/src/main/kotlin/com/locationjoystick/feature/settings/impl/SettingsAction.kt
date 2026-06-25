@@ -133,6 +133,18 @@ internal sealed class SettingsAction {
 
     data object QrEnterCode : SettingsAction()
 
+    data class SetFloatingMapQuickWalk(
+        val enabled: Boolean,
+    ) : SettingsAction()
+
+    data class SetTapToWalkOverlayEnabled(
+        val enabled: Boolean,
+    ) : SettingsAction()
+
+    data class SetTapToWalkScaleMpx(
+        val scale: Double,
+    ) : SettingsAction()
+
     data object SaveChanges : SettingsAction()
 
     data object DiscardChanges : SettingsAction()

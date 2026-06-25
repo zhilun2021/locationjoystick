@@ -118,6 +118,9 @@ class SettingsViewModel
             val selectedHotLocationIds: Set<String>? = null,
             val hotRoutesEnabled: Boolean? = null,
             val selectedHotRouteIds: Set<String>? = null,
+            val floatingMapQuickWalk: Boolean? = null,
+            val tapToWalkOverlayEnabled: Boolean? = null,
+            val tapToWalkScaleMpx: Double? = null,
         )
 
         private val mutableDraft = MutableStateFlow(DraftState())
@@ -172,6 +175,9 @@ class SettingsViewModel
                     selectedHotLocationIds = draftState.selectedHotLocationIds ?: snapshot.selectedHotLocationIds,
                     hotRoutesEnabled = draftState.hotRoutesEnabled ?: snapshot.hotRoutesEnabled,
                     selectedHotRouteIds = draftState.selectedHotRouteIds ?: snapshot.selectedHotRouteIds,
+                    floatingMapQuickWalk = draftState.floatingMapQuickWalk ?: snapshot.floatingMapQuickWalk,
+                    tapToWalkOverlayEnabled = draftState.tapToWalkOverlayEnabled ?: snapshot.tapToWalkOverlayEnabled,
+                    tapToWalkScaleMpx = draftState.tapToWalkScaleMpx ?: snapshot.tapToWalkScaleMpx,
                     isDirty = isDirty,
                 )
             }.stateIn(
@@ -316,6 +322,18 @@ class SettingsViewModel
             mutableDraft.update { it.copy(selectedHotRouteIds = ids) }
         }
 
+        fun setFloatingMapQuickWalk(enabled: Boolean) {
+            mutableDraft.update { it.copy(floatingMapQuickWalk = enabled) }
+        }
+
+        fun setTapToWalkOverlayEnabled(enabled: Boolean) {
+            mutableDraft.update { it.copy(tapToWalkOverlayEnabled = enabled) }
+        }
+
+        fun setTapToWalkScaleMpx(scale: Double) {
+            mutableDraft.update { it.copy(tapToWalkScaleMpx = scale) }
+        }
+
         val hotRouteTree: HotItemTree =
             run {
                 val routes = RouteRepository.HOT_ROUTES
@@ -364,6 +382,9 @@ class SettingsViewModel
                             selectedHotLocationIds = state.selectedHotLocationIds,
                             hotRoutesEnabled = state.hotRoutesEnabled,
                             selectedHotRouteIds = state.selectedHotRouteIds,
+                            floatingMapQuickWalk = state.floatingMapQuickWalk,
+                            tapToWalkOverlayEnabled = state.tapToWalkOverlayEnabled,
+                            tapToWalkScaleMpx = state.tapToWalkScaleMpx,
                             roamingDefaults =
                                 d.roamingDefaults
                                     ?: settingsRepository.getRoamingDefaults().first(),

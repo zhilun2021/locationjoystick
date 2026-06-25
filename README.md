@@ -36,6 +36,7 @@ Here's everything included:
 | **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
 | **Elevation Controls** | *(Experimental, root required)* Injects synthetic accelerometer + rotation-vector sensor events so apps see the phone as tilted. Three modes: tilt up / neutral / tilt down. Controlled from the floating widget. Disabled automatically for non-root devices. |
 | **Group Sync** | Sync spoofed location across multiple devices on the same Wi-Fi network. No account needed. One device is the leader (shares position via QR-joined session); others are followers (mirror leader's location). |
+| **Tap to Walk** | Two quick-walk shortcuts. Floating map quick-walk: tap the floating map to walk there without a confirmation sheet. Screen overlay: a crosshair button in the widget panel activates a transparent full-screen overlay — tap any point in a game or map app to walk there. Configurable meters-per-pixel scale. |
 
 ---
 

@@ -241,6 +241,37 @@ class SettingsViewModelDraftTest {
         }
 
     // -------------------------------------------------------------------------
+    // Tap-to-walk
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `setFloatingMapQuickWalk marks dirty and updates state`() =
+        runTest(testDispatcher) {
+            backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
+            viewModel.setFloatingMapQuickWalk(true)
+            assertTrue(viewModel.uiState.value.isDirty)
+            assertTrue(viewModel.uiState.value.floatingMapQuickWalk)
+        }
+
+    @Test
+    fun `setTapToWalkOverlayEnabled marks dirty and updates state`() =
+        runTest(testDispatcher) {
+            backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
+            viewModel.setTapToWalkOverlayEnabled(true)
+            assertTrue(viewModel.uiState.value.isDirty)
+            assertTrue(viewModel.uiState.value.tapToWalkOverlayEnabled)
+        }
+
+    @Test
+    fun `setTapToWalkScaleMpx marks dirty and updates state`() =
+        runTest(testDispatcher) {
+            backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
+            viewModel.setTapToWalkScaleMpx(25.0)
+            assertTrue(viewModel.uiState.value.isDirty)
+            assertEquals(25.0, viewModel.uiState.value.tapToWalkScaleMpx, 0.001)
+        }
+
+    // -------------------------------------------------------------------------
     // discardChanges
     // -------------------------------------------------------------------------
 

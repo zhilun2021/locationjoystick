@@ -80,6 +80,9 @@ internal fun WidgetPanel(
     onRouteClicked: () -> Unit,
     onRoutePauseResume: () -> Unit,
     onRouteStop: () -> Unit,
+    isTapToWalkEnabled: Boolean = false,
+    isTapToWalkActive: Boolean = false,
+    onTapToWalkClicked: () -> Unit = {},
     onDrag: (dx: Float, dy: Float) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.Start) {
@@ -244,6 +247,25 @@ internal fun WidgetPanel(
                             modifier = Modifier.size(UiConstants.FAB_ICON_SIZE),
                         )
                     }
+                }
+            }
+            if (isTapToWalkEnabled) {
+                val crosshairTint = if (isTapToWalkActive) MaterialTheme.colorScheme.primary else LjInactive
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier =
+                        Modifier
+                            .padding(4.dp)
+                            .size(UiConstants.FAB_CONTAINER_SIZE)
+                            .background(Color.Black, CircleShape)
+                            .clickable { onTapToWalkClicked() },
+                ) {
+                    Icon(
+                        imageVector = LjIcons.MyLocation,
+                        contentDescription = if (isTapToWalkActive) "Cancel tap-to-walk" else "Tap to walk",
+                        tint = crosshairTint,
+                        modifier = Modifier.size(UiConstants.FAB_ICON_SIZE),
+                    )
                 }
             }
         }

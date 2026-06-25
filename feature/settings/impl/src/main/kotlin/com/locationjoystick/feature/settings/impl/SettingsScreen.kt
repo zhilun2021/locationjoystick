@@ -369,6 +369,18 @@ fun SettingsRoute(
                     viewModel.updateRoamingDefaults(action.defaults)
                 }
 
+                is SettingsAction.SetFloatingMapQuickWalk -> {
+                    viewModel.setFloatingMapQuickWalk(action.enabled)
+                }
+
+                is SettingsAction.SetTapToWalkOverlayEnabled -> {
+                    viewModel.setTapToWalkOverlayEnabled(action.enabled)
+                }
+
+                is SettingsAction.SetTapToWalkScaleMpx -> {
+                    viewModel.setTapToWalkScaleMpx(action.scale)
+                }
+
                 SettingsAction.Export -> {
                     exportLauncher.launch(
                         "${AppConstants.ExportConstants.FILENAME_PREFIX}-${System.currentTimeMillis()}.json",
@@ -809,10 +821,94 @@ private fun SettingsMenusSubScreen(
                                 .padding(16.dp),
                     ) {
                         AppFeaturesSection(uiState, isRooted, onAction)
+                        Spacer(Modifier.height(24.dp))
+                        TapToWalkSection(uiState, onAction)
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TapToWalkSection(
+    uiState: SettingsUiState,
+    onAction: (SettingsAction) -> Unit,
+) {
+    var showOverlayWarning by rememberSaveable { mutableStateOf(false) }
+
+    Text("Tap to Walk", style = MaterialTheme.typography.headlineSmall)
+    Spacer(Modifier.height(4.dp))
+    Text(
+        "Walk to a location by tapping it.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(8.dp))
+    LjCheckboxRow(
+        checked = uiState.floatingMapQuickWalk,
+        onCheckedChange = { onAction(SettingsAction.SetFloatingMapQuickWalk(it)) },
+        title = "Floating map: skip confirmation",
+        description = "Tapping the floating map walks immediately, without showing the action panel.",
+    )
+    Spacer(Modifier.height(8.dp))
+    LjCheckboxRow(
+        checked = uiState.tapToWalkOverlayEnabled,
+        onCheckedChange = { enabled ->
+            if (enabled) showOverlayWarning = true else onAction(SettingsAction.SetTapToWalkOverlayEnabled(false))
+        },
+        title = "Screen tap-to-walk overlay",
+        description = "Adds a crosshair button to the widget. Tap it to intercept your next screen touch and walk to that position.",
+    )
+    if (uiState.tapToWalkOverlayEnabled) {
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Scale (meters per pixel) — zoom out in the game for better accuracy",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(4.dp))
+        OutlinedTextField(
+            value = uiState.tapToWalkScaleMpx.roundToInt().toString(),
+            onValueChange = { raw ->
+                raw.toDoubleOrNull()?.let { v ->
+                    onAction(
+                        SettingsAction.SetTapToWalkScaleMpx(
+                            v.coerceIn(
+                                AppConstants.TapToWalkConstants.MIN_SCALE_MPX,
+                                AppConstants.TapToWalkConstants.MAX_SCALE_MPX,
+                            ),
+                        ),
+                    )
+                }
+            },
+            label = { Text("m/px") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    if (showOverlayWarning) {
+        AlertDialog(
+            onDismissRequest = { showOverlayWarning = false },
+            title = { Text("Enable screen tap-to-walk?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Anti-cheat risk: a screen overlay that intercepts taps may increase detection chance. Use at your own risk.")
+                    Text("Accuracy: walk targets are estimated from screen position and may not match the exact tapped location.")
+                    Text("Tip: zoom out in the game for better accuracy — a larger area on screen means less positioning error per pixel.")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showOverlayWarning = false
+                    onAction(SettingsAction.SetTapToWalkOverlayEnabled(true))
+                }) { Text("Enable anyway") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showOverlayWarning = false }) { Text("Cancel") }
+            },
+        )
     }
 }
 

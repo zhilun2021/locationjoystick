@@ -6,6 +6,7 @@
     { href: 'favorites.html', label: 'Favorites' },
     { href: 'share.html', label: 'Share &amp; Deep Links' },
     { href: 'group.html', label: 'Group Sync' },
+    { href: 'tap-to-walk.html', label: 'Tap to Walk' },
     { href: 'settings.html', label: 'Settings' },
     { href: 'overlays.html', label: 'Overlays' },
     { href: 'troubleshooting.html', label: 'Troubleshooting' },

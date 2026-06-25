@@ -351,4 +351,10 @@ object AppConstants {
         const val MAX_NOISE_AMPLITUDE_MS2 = 2f
         const val GRAVITY = 9.80665f
     }
+
+    object TapToWalkConstants {
+        const val DEFAULT_SCALE_MPX = 10.0
+        const val MIN_SCALE_MPX = 1.0
+        const val MAX_SCALE_MPX = 50.0
+    }
 }

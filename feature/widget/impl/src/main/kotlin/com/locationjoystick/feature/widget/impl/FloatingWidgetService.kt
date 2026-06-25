@@ -118,6 +118,10 @@ class FloatingWidgetService :
 
     private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
 
+    private val isTapToWalkActiveFlow = MutableStateFlow(false)
+    private val tapToWalkScaleMpxFlow = MutableStateFlow(AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+    private var tapToWalkOverlay: TapToWalkOverlay? = null
+
     // Drag position — class-level so onConfigurationChanged can read them after rotation.
     private var dragOffsetX = 0f
     private var dragOffsetY = 0f
@@ -154,6 +158,7 @@ class FloatingWidgetService :
                 serviceScope = serviceScope,
                 mapController = mapController,
                 callbacks = panelCallbacks,
+                settingsRepository = settingsRepository,
             )
         serviceBinder.bind()
         lifecycleScope.launch {
@@ -186,6 +191,16 @@ class FloatingWidgetService :
                 if (AppFeature.ELEVATION_CONTROLS !in features) setElevationMode(null)
             }
         }
+        lifecycleScope.launch {
+            settingsRepository.getTapToWalkScaleMpx().collect { scale ->
+                tapToWalkScaleMpxFlow.value = scale
+            }
+        }
+        lifecycleScope.launch {
+            settingsRepository.getTapToWalkOverlayEnabled().collect { enabled ->
+                if (!enabled) dismissTapToWalkOverlay()
+            }
+        }
     }
 
     override fun onStartCommand(
@@ -202,6 +217,7 @@ class FloatingWidgetService :
         mapController.stopWalk()
         serviceScope.cancel()
         panelPresenter.hidePanelView()
+        dismissTapToWalkOverlay()
         // Tear down the FAB composition so the Recomposer and any captured state holders are
         // released. The base OverlayService.onDestroy() removes the view from the WindowManager.
         composeView?.disposeComposition()
@@ -255,6 +271,8 @@ class FloatingWidgetService :
             val isPanelExpanded by isPanelExpandedFlow.collectAsStateWithLifecycle()
             val elevationMode by elevationModeFlow.collectAsStateWithLifecycle()
             val hasPendingCompletion by pendingCompletionFlow.collectAsStateWithLifecycle()
+            val isTapToWalkEnabled by settingsRepository.getTapToWalkOverlayEnabled().collectAsStateWithLifecycle(initialValue = false)
+            val isTapToWalkActive by isTapToWalkActiveFlow.collectAsStateWithLifecycle()
 
             LjTheme {
                 WidgetPanel(
@@ -269,6 +287,9 @@ class FloatingWidgetService :
                     isPanelExpanded = isPanelExpanded,
                     elevationMode = elevationMode,
                     hasPendingCompletion = hasPendingCompletion,
+                    isTapToWalkEnabled = isTapToWalkEnabled,
+                    isTapToWalkActive = isTapToWalkActive,
+                    onTapToWalkClicked = { onTapToWalkClicked() },
                     onToggleMaster = {
                         if (!isPanelExpandedFlow.value) pendingCompletionFlow.value = false
                         isPanelExpandedFlow.value = !isPanelExpandedFlow.value
@@ -329,6 +350,32 @@ class FloatingWidgetService :
     private fun setElevationMode(mode: ElevationMode?) {
         elevationModeFlow.value = mode
         mockLocationService?.setElevationMode(mode)
+    }
+
+    private fun onTapToWalkClicked() {
+        if (tapToWalkOverlay?.isShowing() == true) {
+            dismissTapToWalkOverlay()
+        } else {
+            val overlay =
+                TapToWalkOverlay(
+                    context = this,
+                    windowManager = windowManager,
+                    lifecycleOwner = this,
+                    savedStateRegistryOwner = this,
+                    onWalkTo = { pos -> mapController.walkTo(pos) },
+                    getPosition = { mapController.sharedState.value.currentPosition },
+                    getScaleMpx = { tapToWalkScaleMpxFlow.value },
+                    onDismissed = { isTapToWalkActiveFlow.value = false },
+                )
+            tapToWalkOverlay = overlay
+            isTapToWalkActiveFlow.value = true
+            overlay.show()
+        }
+    }
+
+    private fun dismissTapToWalkOverlay() {
+        tapToWalkOverlay?.dismiss()
+        tapToWalkOverlay = null
     }
 
     private fun onRouteIconClicked() {
