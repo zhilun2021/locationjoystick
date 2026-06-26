@@ -298,6 +298,7 @@ object AppConstants {
         const val GITHUB_ISSUES_URL = "https://github.com/shortcuts/locationjoystick/issues/new?template=bug_report.yml"
         const val GITHUB_FEATURE_REQUEST_URL = "https://github.com/shortcuts/locationjoystick/issues/new?template=feature_request.md"
         const val DOCS_URL = "https://shortcuts.github.io/locationjoystick/"
+        const val TROUBLESHOOTING_URL = "https://shortcuts.github.io/locationjoystick/troubleshooting.html"
         const val PRIVACY_POLICY_URL = "https://shortcuts.github.io/locationjoystick/privacy.html"
         const val ACKNOWLEDGEMENTS_URL = "https://shortcuts.github.io/locationjoystick/acknowledgements.html"
         const val DEEP_LINK_HOST = "locationjoystick.shrtcts.fr"

@@ -15,6 +15,26 @@
     <h2 id="troubleshooting">Troubleshooting</h2>
     <p>Common setup problems and how to fix them.</p>
 
+    <h2 id="allow-restricted-settings">Allow restricted settings (Android 12+ sideloaded APK)</h2>
+    <p>
+      On Android 12 and later, apps installed directly from a file (such as the APK downloaded from GitHub) are
+      blocked from using certain settings — including the overlay permission — until you explicitly allow them.
+      This step is <strong>not</strong> needed if you installed from the Play Store.
+    </p>
+    <p>To allow restricted settings:</p>
+    <ol>
+      <li>Open the <strong>Settings</strong> app on your phone.</li>
+      <li>Go to <strong>Apps</strong> (sometimes called "Application Manager").</li>
+      <li>Scroll down and tap <strong>locationjoystick</strong>.</li>
+      <li>Tap the <strong>⋮</strong> (three-dot menu) in the top-right corner of the app info screen.</li>
+      <li>Tap <strong>Allow restricted settings</strong>.</li>
+      <li>Return to locationjoystick and complete the setup again.</li>
+    </ol>
+    <p>
+      If you do not see the three-dot menu, your device or Android version may not require this step — skip it and
+      continue setup normally.
+    </p>
+
     <h2 id="app-missing-from-list">App missing from the "Select mock location app" list</h2>
     <p>
       Open the app at least once before checking the list — a freshly installed app will not appear until it has been
@@ -22,8 +42,8 @@
     </p>
     <p>
       On some phones (MIUI, ColorOS, and other custom Android skins), the system hides newly installed apps from this
-      list until you grant an additional "allow restricted settings" permission from the app's info page, or until
-      after a reboot. If the app still does not appear, try reinstalling it, then reboot once more before checking again.
+      list until you grant the "Allow restricted settings" permission (see above) or until after a reboot. If the app
+      still does not appear, try reinstalling it, then reboot once more before checking again.
     </p>
 
     <h2 id="mock-location-not-detected">Mock location not detected</h2>
