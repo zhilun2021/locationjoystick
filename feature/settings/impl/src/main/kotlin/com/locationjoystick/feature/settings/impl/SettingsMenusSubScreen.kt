@@ -355,27 +355,28 @@ private fun PhoneScreenPreview(
     val circleColor = MaterialTheme.colorScheme.primary
     val bgColor = MaterialTheme.colorScheme.surfaceVariant
     Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(9f / 16f)
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    onPositionChange(
-                        (down.position.x / size.width).coerceIn(0f, 1f),
-                        (down.position.y / size.height).coerceIn(0f, 1f),
-                    )
-                    drag(down.id) { change ->
-                        change.consume()
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(9f / 16f)
+                .clip(RoundedCornerShape(8.dp))
+                .background(bgColor)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
                         onPositionChange(
-                            (change.position.x / size.width).coerceIn(0f, 1f),
-                            (change.position.y / size.height).coerceIn(0f, 1f),
+                            (down.position.x / size.width).coerceIn(0f, 1f),
+                            (down.position.y / size.height).coerceIn(0f, 1f),
                         )
+                        drag(down.id) { change ->
+                            change.consume()
+                            onPositionChange(
+                                (change.position.x / size.width).coerceIn(0f, 1f),
+                                (change.position.y / size.height).coerceIn(0f, 1f),
+                            )
+                        }
                     }
-                }
-            },
+                },
     ) {
         val circleCx = cx * size.width
         val circleCy = cy * size.height
