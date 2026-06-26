@@ -2,19 +2,26 @@ package com.locationjoystick.feature.settings.impl
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -23,20 +30,26 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
@@ -121,33 +134,40 @@ private fun TapToWalkSection(
     uiState: SettingsUiState,
     onAction: (SettingsAction) -> Unit,
 ) {
-    var showOverlayWarning by rememberSaveable { mutableStateOf(false) }
+    var showWarning by rememberSaveable { mutableStateOf(false) }
+    val enabled = uiState.floatingMapQuickWalk || uiState.tapToWalkOverlayEnabled
 
     Text("Tap to Walk", style = MaterialTheme.typography.headlineSmall)
     Spacer(Modifier.height(4.dp))
     Text(
-        "Walk to a location by tapping it.",
+        "Walk to a location by tapping it — no confirmation needed.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.height(8.dp))
-    LjCheckboxRow(
-        checked = uiState.floatingMapQuickWalk,
-        onCheckedChange = { onAction(SettingsAction.SetFloatingMapQuickWalk(it)) },
-        title = "Floating map: skip confirmation",
-        description = "Tapping the floating map walks immediately, without showing the action panel.",
-    )
-    Spacer(Modifier.height(8.dp))
-    LjCheckboxRow(
-        checked = uiState.tapToWalkOverlayEnabled,
-        onCheckedChange = { enabled ->
-            if (enabled) showOverlayWarning = true else onAction(SettingsAction.SetTapToWalkOverlayEnabled(false))
-        },
-        title = "Screen tap-to-walk overlay",
-        description = "Adds a crosshair button to the widget. Tap it to intercept your next screen touch and walk to that position.",
-    )
-    if (uiState.tapToWalkOverlayEnabled) {
-        Spacer(Modifier.height(8.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "Enable Tap to Walk",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+        )
+        Switch(
+            checked = enabled,
+            onCheckedChange = { on ->
+                if (on) {
+                    showWarning = true
+                } else {
+                    onAction(SettingsAction.SetFloatingMapQuickWalk(false))
+                    onAction(SettingsAction.SetTapToWalkOverlayEnabled(false))
+                }
+            },
+        )
+    }
+    if (enabled) {
+        Spacer(Modifier.height(12.dp))
         Text(
             "Scale (meters per pixel) — zoom out in the game for better accuracy",
             style = MaterialTheme.typography.bodySmall,
@@ -173,30 +193,28 @@ private fun TapToWalkSection(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
             modifier = Modifier.fillMaxWidth(),
         )
-    }
-    if (uiState.tapToWalkOverlayEnabled) {
         Spacer(Modifier.height(16.dp))
         CompassOrientationSection(uiState, onAction)
     }
-    if (showOverlayWarning) {
+    if (showWarning) {
         AlertDialog(
-            onDismissRequest = { showOverlayWarning = false },
-            title = { Text("Enable screen tap-to-walk?") },
+            onDismissRequest = { showWarning = false },
+            title = { Text("Enable Tap to Walk?") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Anti-cheat risk: a screen overlay that intercepts taps may increase detection chance. Use at your own risk.")
-                    Text("Accuracy: walk targets are estimated from screen position and may not match the exact tapped location.")
-                    Text("Tip: zoom out in the game for better accuracy — a larger area on screen means less positioning error per pixel.")
+                    Text("A screen overlay that intercepts taps may increase detection chance in some games. Use at your own risk.")
+                    Text("Accuracy depends on the scale setting — zoom out in the game for better results.")
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    showOverlayWarning = false
+                    showWarning = false
+                    onAction(SettingsAction.SetFloatingMapQuickWalk(true))
                     onAction(SettingsAction.SetTapToWalkOverlayEnabled(true))
                 }) { Text("Enable anyway") }
             },
             dismissButton = {
-                TextButton(onClick = { showOverlayWarning = false }) { Text("Cancel") }
+                TextButton(onClick = { showWarning = false }) { Text("Cancel") }
             },
         )
     }
@@ -208,15 +226,13 @@ private fun CompassOrientationSection(
     onAction: (SettingsAction) -> Unit,
 ) {
     val context = LocalContext.current
-    var showAdvanced by rememberSaveable { mutableStateOf(false) }
+    var showCalibration by rememberSaveable { mutableStateOf(false) }
 
     Text("Compass orientation", style = MaterialTheme.typography.headlineSmall)
     Spacer(Modifier.height(4.dp))
     Text(
-        "Takes a screenshot when you open the overlay to detect the map's north direction. " +
-            "Corrects the walk target when the game map is rotated. " +
-            "Requires an Accessibility Service. " +
-            "Note: some games detect accessibility services — disable if you encounter issues.",
+        "When enabled, the app detects the map's north direction before each walk to correct the target position. " +
+            "Requires an Accessibility Service. Note: some games detect accessibility services.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -227,19 +243,11 @@ private fun CompassOrientationSection(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            Text("Accessibility Service", style = MaterialTheme.typography.bodyLarge)
             Text(
-                "Accessibility Service",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                if (uiState.isCompassServiceGranted) "Enabled" else "Not enabled — open Android Settings to grant",
+                if (uiState.isCompassServiceGranted) "Enabled" else "Not enabled — tap to open Android Settings",
                 style = MaterialTheme.typography.bodySmall,
-                color =
-                    if (uiState.isCompassServiceGranted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
+                color = if (uiState.isCompassServiceGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         if (!uiState.isCompassServiceGranted) {
@@ -253,43 +261,135 @@ private fun CompassOrientationSection(
             }) { Text("Open Settings") }
         }
     }
-    Spacer(Modifier.height(8.dp))
-    LjCheckboxRow(
-        checked = uiState.compassTrackingEnabled,
-        enabled = uiState.isCompassServiceGranted,
-        onCheckedChange = { onAction(SettingsAction.SetCompassTrackingEnabled(it)) },
-        title = "Detect compass orientation",
-        description = "Reads the red north arrow before each walk to correct the target position.",
-    )
-    Spacer(Modifier.height(8.dp))
-    TextButton(onClick = { showAdvanced = !showAdvanced }) {
-        Text(if (showAdvanced) "Hide advanced" else "Compass region (advanced)")
-    }
-    if (showAdvanced) {
-        Spacer(Modifier.height(4.dp))
-        Text(
-            "Adjust if the compass is not at the default top-right position.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    if (uiState.isCompassServiceGranted) {
         Spacer(Modifier.height(8.dp))
-        Text("Horizontal position: ${"%.2f".format(uiState.compassRegionCxPct)}", style = MaterialTheme.typography.bodySmall)
-        Slider(
-            value = uiState.compassRegionCxPct,
-            onValueChange = { onAction(SettingsAction.SetCompassRegion(it, uiState.compassRegionCyPct, uiState.compassRegionRadiusPct)) },
-            valueRange = 0f..1f,
+        LjCheckboxRow(
+            checked = uiState.compassTrackingEnabled,
+            onCheckedChange = { onAction(SettingsAction.SetCompassTrackingEnabled(it)) },
+            title = "Detect compass orientation",
+            description = "Reads the red north arrow before each walk to correct the target position.",
         )
-        Text("Vertical position: ${"%.2f".format(uiState.compassRegionCyPct)}", style = MaterialTheme.typography.bodySmall)
-        Slider(
-            value = uiState.compassRegionCyPct,
-            onValueChange = { onAction(SettingsAction.SetCompassRegion(uiState.compassRegionCxPct, it, uiState.compassRegionRadiusPct)) },
-            valueRange = 0f..1f,
+        if (uiState.compassTrackingEnabled) {
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { showCalibration = true },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(LjIcons.Settings, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Calibrate compass region")
+            }
+        }
+    }
+    if (showCalibration) {
+        CompassCalibrationDialog(
+            cx = uiState.compassRegionCxPct,
+            cy = uiState.compassRegionCyPct,
+            radius = uiState.compassRegionRadiusPct,
+            onConfirm = { cx, cy, radius ->
+                onAction(SettingsAction.SetCompassRegion(cx, cy, radius))
+                showCalibration = false
+            },
+            onDismiss = { showCalibration = false },
         )
-        Text("Radius: ${"%.3f".format(uiState.compassRegionRadiusPct)}", style = MaterialTheme.typography.bodySmall)
-        Slider(
-            value = uiState.compassRegionRadiusPct,
-            onValueChange = { onAction(SettingsAction.SetCompassRegion(uiState.compassRegionCxPct, uiState.compassRegionCyPct, it)) },
-            valueRange = 0.02f..0.2f,
+    }
+}
+
+@Composable
+private fun CompassCalibrationDialog(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    onConfirm: (Float, Float, Float) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var currentCx by remember { mutableFloatStateOf(cx) }
+    var currentCy by remember { mutableFloatStateOf(cy) }
+    var currentRadius by remember { mutableFloatStateOf(radius) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Calibrate compass region") },
+        text = {
+            Column {
+                Text(
+                    "Drag the circle over where the compass appears on your game screen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(12.dp))
+                PhoneScreenPreview(
+                    cx = currentCx,
+                    cy = currentCy,
+                    radius = currentRadius,
+                    onPositionChange = { newCx, newCy ->
+                        currentCx = newCx
+                        currentCy = newCy
+                    },
+                )
+                Spacer(Modifier.height(8.dp))
+                Text("Circle size", style = MaterialTheme.typography.bodySmall)
+                Slider(
+                    value = currentRadius,
+                    onValueChange = { currentRadius = it },
+                    valueRange = 0.02f..0.2f,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(currentCx, currentCy, currentRadius) }) { Text("Done") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun PhoneScreenPreview(
+    cx: Float,
+    cy: Float,
+    radius: Float,
+    onPositionChange: (Float, Float) -> Unit,
+) {
+    val circleColor = MaterialTheme.colorScheme.primary
+    val bgColor = MaterialTheme.colorScheme.surfaceVariant
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(9f / 16f)
+            .clip(RoundedCornerShape(8.dp))
+            .background(bgColor)
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    onPositionChange(
+                        (down.position.x / size.width).coerceIn(0f, 1f),
+                        (down.position.y / size.height).coerceIn(0f, 1f),
+                    )
+                    drag(down.id) { change ->
+                        change.consume()
+                        onPositionChange(
+                            (change.position.x / size.width).coerceIn(0f, 1f),
+                            (change.position.y / size.height).coerceIn(0f, 1f),
+                        )
+                    }
+                }
+            },
+    ) {
+        val circleCx = cx * size.width
+        val circleCy = cy * size.height
+        val circleRadius = radius * size.minDimension
+        drawCircle(
+            color = circleColor.copy(alpha = 0.25f),
+            center = Offset(circleCx, circleCy),
+            radius = circleRadius,
+        )
+        drawCircle(
+            color = circleColor,
+            center = Offset(circleCx, circleCy),
+            radius = circleRadius,
+            style = Stroke(width = 2.dp.toPx()),
         )
     }
 }
