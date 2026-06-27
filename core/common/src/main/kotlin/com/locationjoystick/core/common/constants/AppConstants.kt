@@ -360,9 +360,9 @@ object AppConstants {
     }
 
     object CompassTrackingConstants {
-        const val DEFAULT_REGION_CX_PCT = 0.88f
-        const val DEFAULT_REGION_CY_PCT = 0.09f
-        const val DEFAULT_REGION_RADIUS_PCT = 0.06f
+        const val DEFAULT_REGION_CX_PCT = 0.92f
+        const val DEFAULT_REGION_CY_PCT = 0.11f
+        const val DEFAULT_REGION_RADIUS_PCT = 0.08f
         const val MIN_RED_PIXELS = 20
     }
 }
