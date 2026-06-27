@@ -102,6 +102,7 @@ fun GroupSyncRoute(
             followerCount = followerCount,
             isSpoofing = spoofToggle.isSpoofing,
             onToggleSpoofing = spoofToggle.onToggle,
+            locationLabel = spoofToggle.locationLabel,
             onOpenDrawer = onOpenDrawer,
             onCreateGroup = viewModel::createGroup,
             onJoinViaQr = { showQrScanner = true },
@@ -123,6 +124,7 @@ internal fun GroupSyncScreen(
     followerCount: Int,
     isSpoofing: Boolean,
     onToggleSpoofing: () -> Unit,
+    locationLabel: String? = null,
     onOpenDrawer: () -> Unit,
     onCreateGroup: () -> Unit,
     onJoinViaQr: () -> Unit,
@@ -136,6 +138,7 @@ internal fun GroupSyncScreen(
         title = "Group Sync",
         isSpoofing = isSpoofing,
         onToggleSpoofing = onToggleSpoofing,
+        locationLabel = locationLabel,
         onNavigationClick = onOpenDrawer,
         snackbarHost = { SnackbarHost(snackbarHostState) { Snackbar(it) } },
     ) { paddingValues ->

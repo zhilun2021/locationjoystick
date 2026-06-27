@@ -79,6 +79,7 @@ fun FavoritesRoute(
         onOpenDrawer = onOpenDrawer,
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         onToggleSort = viewModel::toggleSort,
         onShare = { fav ->
             val url = AppConstants.AppInfo.buildDeepLink(fav.position.latitude, fav.position.longitude)
@@ -123,6 +124,7 @@ internal fun FavoritesScreen(
     onOpenDrawer: () -> Unit = {},
     isSpoofing: Boolean = false,
     onToggleSpoofing: () -> Unit = {},
+    locationLabel: String? = null,
     onToggleSort: () -> Unit = {},
     onShare: (com.locationjoystick.core.model.FavoriteLocation) -> Unit = {},
     getCurrentPosition: () -> com.locationjoystick.core.model.LatLng? = { null },
@@ -139,6 +141,7 @@ internal fun FavoritesScreen(
         title = "Favorites",
         isSpoofing = isSpoofing,
         onToggleSpoofing = onToggleSpoofing,
+        locationLabel = locationLabel,
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         snackbarHost = { SnackbarHost(snackbarHostState) },

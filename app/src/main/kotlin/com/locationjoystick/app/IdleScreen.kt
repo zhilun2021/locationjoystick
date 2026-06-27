@@ -57,6 +57,7 @@ internal fun IdleScreen(
         title = "Home",
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.background,

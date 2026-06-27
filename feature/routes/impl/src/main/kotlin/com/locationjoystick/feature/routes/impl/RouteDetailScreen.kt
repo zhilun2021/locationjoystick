@@ -154,6 +154,7 @@ fun RouteDetailScreen(
         title = "Route Details",
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         actions = {

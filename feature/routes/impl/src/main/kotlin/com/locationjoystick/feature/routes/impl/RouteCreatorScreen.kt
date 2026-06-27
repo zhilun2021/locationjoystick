@@ -88,6 +88,7 @@ fun RouteCreatorRoute(
         onBack = onBack,
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         bottomBar = bottomBar,
     )
 }
@@ -120,6 +121,7 @@ internal fun RouteCreatorScreen(
     onBack: () -> Unit,
     isSpoofing: Boolean = false,
     onToggleSpoofing: () -> Unit = {},
+    locationLabel: String? = null,
     bottomBar: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -172,6 +174,7 @@ internal fun RouteCreatorScreen(
         title = "Create Route",
         isSpoofing = isSpoofing,
         onToggleSpoofing = onToggleSpoofing,
+        locationLabel = locationLabel,
         onNavigationClick = onBack,
         navigationIcon = LjIcons.ArrowBack,
         contentWindowInsets = WindowInsets.safeDrawing,

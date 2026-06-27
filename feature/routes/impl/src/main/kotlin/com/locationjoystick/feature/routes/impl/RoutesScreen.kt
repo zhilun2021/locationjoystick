@@ -81,6 +81,7 @@ fun RoutesRoute(
         onOpenDrawer = onOpenDrawer,
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         onDeleteRoute = viewModel::deleteRoute,
         onExportRoute = { route -> viewModel.exportRouteAsGpx(context, route) },
         onStartReplay = { route, isLooping, isReverse, isReturnToLocation, teleportToStart ->
@@ -131,6 +132,7 @@ internal fun RoutesScreen(
     onStopReplay: () -> Unit,
     isSpoofing: Boolean = false,
     onToggleSpoofing: () -> Unit = {},
+    locationLabel: String? = null,
     onToggleSort: () -> Unit = {},
     bottomBar: @Composable () -> Unit = {},
 ) {
@@ -141,6 +143,7 @@ internal fun RoutesScreen(
         title = "Routes",
         isSpoofing = isSpoofing,
         onToggleSpoofing = onToggleSpoofing,
+        locationLabel = locationLabel,
         onNavigationClick = onOpenDrawer,
         bottomBar = bottomBar,
         snackbarHost = { SnackbarHost(snackbarHostState) },

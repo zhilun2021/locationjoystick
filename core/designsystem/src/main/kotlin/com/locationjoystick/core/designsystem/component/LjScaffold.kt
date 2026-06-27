@@ -28,6 +28,7 @@ fun LjScaffold(
     containerColor: Color = MaterialTheme.colorScheme.background,
     contentWindowInsets: WindowInsets = WindowInsets(0),
     showSpoofToggle: Boolean = true,
+    locationLabel: String? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
@@ -41,6 +42,7 @@ fun LjScaffold(
                 navigationIcon = navigationIcon,
                 actions = actions,
                 showSpoofToggle = showSpoofToggle,
+                locationLabel = locationLabel,
             )
         },
         bottomBar = bottomBar,

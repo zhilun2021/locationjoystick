@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.locationjoystick.core.designsystem.LjError
 import com.locationjoystick.core.designsystem.LjIcons
@@ -37,6 +38,7 @@ fun LjTopBar(
     navigationIcon: ImageVector = LjIcons.Menu,
     actions: @Composable () -> Unit = {},
     showSpoofToggle: Boolean = true,
+    locationLabel: String? = null,
 ) {
     Box(modifier = modifier) {
         CenterAlignedTopAppBar(
@@ -85,8 +87,10 @@ fun LjTopBar(
                         modifier = Modifier.size(16.dp).padding(end = 4.dp),
                     )
                     Text(
-                        text = if (isSpoofing) "Stop" else "Start",
+                        text = if (isSpoofing) "Stop" else if (locationLabel != null) "Start · $locationLabel" else "Start",
                         style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }

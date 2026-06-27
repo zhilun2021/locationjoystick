@@ -97,6 +97,7 @@ fun OnboardingRoute(
         },
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         bottomBar = bottomBar,
     )
 }
@@ -108,6 +109,7 @@ internal fun OnboardingScreen(
     onSetupComplete: () -> Unit,
     isSpoofing: Boolean = false,
     onToggleSpoofing: () -> Unit = {},
+    locationLabel: String? = null,
     bottomBar: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -122,6 +124,7 @@ internal fun OnboardingScreen(
         title = "",
         isSpoofing = isSpoofing,
         onToggleSpoofing = onToggleSpoofing,
+        locationLabel = locationLabel,
         onNavigationClick = null,
         bottomBar = bottomBar,
         containerColor = MaterialTheme.colorScheme.background,

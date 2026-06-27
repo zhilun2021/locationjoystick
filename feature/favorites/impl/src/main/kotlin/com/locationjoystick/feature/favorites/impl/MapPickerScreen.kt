@@ -180,6 +180,7 @@ internal fun MapPickerScreen(
         title = "Pick Location",
         isSpoofing = spoofToggle.isSpoofing,
         onToggleSpoofing = spoofToggle.onToggle,
+        locationLabel = spoofToggle.locationLabel,
         onNavigationClick = onBack,
         navigationIcon = LjIcons.ArrowBack,
         contentWindowInsets = WindowInsets.safeDrawing,
