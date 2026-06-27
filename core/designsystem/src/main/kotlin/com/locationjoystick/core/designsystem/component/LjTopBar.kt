@@ -70,7 +70,7 @@ fun LjTopBar(
                     shape = RoundedCornerShape(50),
                     colors =
                         ButtonDefaults.textButtonColors(
-                            containerColor = if (isSpoofing) LjError.copy(alpha = 0.18f) else LjSuccess.copy(alpha = 0.18f),
+                            containerColor = if (isSpoofing) LjError.copy(alpha = 0.25f) else LjSuccess.copy(alpha = 0.25f),
                             contentColor = if (isSpoofing) LjError else LjSuccess,
                         ),
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
