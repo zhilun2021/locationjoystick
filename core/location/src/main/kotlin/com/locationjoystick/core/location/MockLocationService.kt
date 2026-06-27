@@ -631,11 +631,19 @@ class MockLocationService : Service() {
                 port,
                 groupId,
                 onGroupLost = {
-                    Log.w(TAG, "Group $groupId no longer exists — leaving group")
+                    Log.w(TAG, "Group $groupId lost — attempting NSD re-discovery before giving up")
                     serviceScope.launch {
-                        exitFollowerMode()
-                        groupRepository.leaveGroup()
-                        groupRepository.emitGroupLost()
+                        val resolved = groupNsdManager.discoverByCode(groupId)
+                        if (resolved != null) {
+                            val (newHost, newPort) = resolved
+                            Log.i(TAG, "Re-discovered group $groupId at $newHost:$newPort — reconnecting")
+                            enterFollowerMode(newHost, newPort, groupId)
+                        } else {
+                            Log.w(TAG, "NSD re-discovery failed for group $groupId — leaving group")
+                            exitFollowerMode()
+                            groupRepository.leaveGroup()
+                            groupRepository.emitGroupLost()
+                        }
                     }
                 },
             ) { lat, lon, speedMs, bearing ->
@@ -665,8 +673,16 @@ class MockLocationService : Service() {
                         Log.e(TAG, "Cannot determine local IP — ensure Wi-Fi is connected")
                         return@launch
                     }
-                val port = leaderSyncServer.start(groupId)
-                groupNsdManager.startAdvertising(code = groupId, port = port)
+                val port =
+                    if (!leaderSyncServer.isRunning) {
+                        val newPort = leaderSyncServer.start(groupId)
+                        groupNsdManager.startAdvertising(code = groupId, port = newPort)
+                        newPort
+                    } else {
+                        leaderSyncServer.currentPort
+                    }
+                // Always call createGroup to ensure the VM picks up the current host:port
+                // (covers both fresh start and idempotent re-entry when already running).
                 groupRepository.createGroup(host = host, port = port, groupId = groupId)
                 Log.i(TAG, "Entered LEADER mode: $groupId at $host:$port")
             } catch (e: Exception) {

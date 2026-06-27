@@ -70,11 +70,26 @@ class GroupSyncViewModel
 
         init {
             viewModelScope.launch {
+                var leaderRestoreSent = false
                 groupRepository.groupState.collect { state ->
                     _groupState.value = state
                     val host = state.leaderHost
                     val port = state.leaderPort
                     val id = state.groupId
+                    // On the first emission where we're a leader, check whether the server is
+                    // actually running. After a device reboot the service is dead even though
+                    // DataStore still says LEADER — the persisted host:port are stale. Restart
+                    // the service so it picks a fresh port and writes it back to the repository,
+                    // then generate the QR from that updated state instead of the stale one.
+                    if (state.role == GroupRole.LEADER && id != null && !leaderRestoreSent) {
+                        leaderRestoreSent = true
+                        if (!leaderSyncServer.isRunning) {
+                            sendServiceAction(AppConstants.ServiceConstants.ACTION_START_LEADER) { intent ->
+                                intent.putExtra(AppConstants.ServiceConstants.EXTRA_LEADER_GROUP_ID, id)
+                            }
+                            return@collect
+                        }
+                    }
                     if (state.role == GroupRole.LEADER && _qrBitmap.value == null &&
                         host != null && port != null && id != null
                     ) {

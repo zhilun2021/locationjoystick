@@ -24,6 +24,9 @@ abstract class TokenAuthHttpServer(
     @Volatile private var serverSocket: ServerSocket? = null
     private val executor = Executors.newCachedThreadPool()
 
+    val isRunning: Boolean get() = serverSocket?.isClosed == false
+    val currentPort: Int get() = serverSocket?.localPort ?: 0
+
     /** Starts the server bound to an OS-assigned port and returns it. */
     protected fun startServer(token: String): Int {
         val socket = ServerSocket(0, AppConstants.SyncConstants.SERVER_BACKLOG)
