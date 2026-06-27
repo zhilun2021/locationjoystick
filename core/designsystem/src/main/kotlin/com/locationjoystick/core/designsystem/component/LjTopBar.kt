@@ -87,7 +87,14 @@ fun LjTopBar(
                         modifier = Modifier.size(16.dp).padding(end = 4.dp),
                     )
                     Text(
-                        text = if (isSpoofing) "Stop" else if (locationLabel != null) "Start · $locationLabel" else "Start",
+                        text =
+                            if (isSpoofing) {
+                                "Stop"
+                            } else if (locationLabel != null) {
+                                "Start · $locationLabel"
+                            } else {
+                                "Start"
+                            },
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

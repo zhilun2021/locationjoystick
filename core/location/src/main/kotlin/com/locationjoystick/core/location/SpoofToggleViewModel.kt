@@ -48,12 +48,15 @@ class SpoofToggleViewModel
                 mapController.sharedState
                     .map { it.currentPosition }
                     .distinctUntilChanged { old, new ->
-                        if (old == null && new == null) true
-                        else if (old == null || new == null) false
-                        else Math.round(old.latitude * 100) == Math.round(new.latitude * 100) &&
-                            Math.round(old.longitude * 100) == Math.round(new.longitude * 100)
-                    }
-                    .collect { pos ->
+                        if (old == null && new == null) {
+                            true
+                        } else if (old == null || new == null) {
+                            false
+                        } else {
+                            Math.round(old.latitude * 100) == Math.round(new.latitude * 100) &&
+                                Math.round(old.longitude * 100) == Math.round(new.longitude * 100)
+                        }
+                    }.collect { pos ->
                         if (pos != null) {
                             _locationLabel.value = reverseGeocode(pos.latitude, pos.longitude)
                         }
@@ -85,8 +88,9 @@ class SpoofToggleViewModel
                                 ?: address.optString("village").takeIf { it.isNotEmpty() }
                                 ?: address.optString("municipality").takeIf { it.isNotEmpty() }
                                 ?: return@withContext null
-                        val country = address.optString("country").takeIf { it.isNotEmpty() }
-                            ?: return@withContext locality
+                        val country =
+                            address.optString("country").takeIf { it.isNotEmpty() }
+                                ?: return@withContext locality
                         "$locality, $country"
                     } finally {
                         conn.disconnect()

@@ -354,7 +354,9 @@ object AppConstants {
     }
 
     object TapToWalkConstants {
-        const val DEFAULT_SCALE_MPX = 10
+        // Calibrated for Pokemon Go at max zoom-out (~500m visible radius on an 864px-wide screen).
+        // 500m / 386px ≈ 1.3 m/px → rounded to the integer minimum.
+        const val DEFAULT_SCALE_MPX = 1
         const val MIN_SCALE_MPX = 1
         const val MAX_SCALE_MPX = 50
     }
