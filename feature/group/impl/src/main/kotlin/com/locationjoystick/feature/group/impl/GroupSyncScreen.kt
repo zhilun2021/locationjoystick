@@ -211,7 +211,7 @@ private fun NoGroupContent(
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
-            text = "Sync your spoofed location across multiple devices on the same Wi-Fi network. No account needed.",
+            text = "Sync your fake location across multiple devices on the same Wi-Fi network. No account needed.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -398,7 +398,7 @@ private fun LeaderContent(
 
         SwitchRow(
             label = "Sharing",
-            description = "broadcasts your location to followers",
+            description = "sends your location to followers",
             checked = groupState.sharingEnabled,
             onCheckedChange = onSetSharingEnabled,
         )
@@ -436,9 +436,8 @@ private fun FollowerContent(
         )
 
         Text(
-            text = "Leader: ${groupState.leaderHost ?: "—"}:${groupState.leaderPort ?: "—"}",
+            text = "Connected to group ${groupState.groupId ?: "—"}",
             style = MaterialTheme.typography.bodyMedium,
-            fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -452,7 +451,7 @@ private fun FollowerContent(
 
         SwitchRow(
             label = "Follow leader",
-            description = "mirrors leader's location",
+            description = "copies the leader's location",
             checked = groupState.followerModeEnabled,
             onCheckedChange = onSetFollowerModeEnabled,
         )

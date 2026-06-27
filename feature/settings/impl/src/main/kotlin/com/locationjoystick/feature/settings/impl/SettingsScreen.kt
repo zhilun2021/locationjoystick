@@ -630,7 +630,7 @@ private fun SettingsHubScreen(
             SettingsDestinationCard(
                 icon = LjIcons.LocationOn,
                 title = "GPS Settings",
-                description = "Speed profiles, GPS signal realism, and location jitter.",
+                description = "Movement speed, signal behavior, and location randomness.",
                 onClick = { onNavigate(SettingsSection.GPS) },
             )
             Spacer(modifier = Modifier.height(12.dp))

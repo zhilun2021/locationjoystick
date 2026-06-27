@@ -101,10 +101,10 @@ internal fun GpsJitterSection(
     isMph: Boolean,
     onAction: (SettingsAction) -> Unit,
 ) {
-    Text("GPS Jitter", style = MaterialTheme.typography.headlineSmall)
+    Text("Location Randomness", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
     Text(
-        "Adds noise to each location update. Set 0 to disable.",
+        "Adds small random shifts to your fake location, making it look more natural. Set 0 to disable.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -113,13 +113,13 @@ internal fun GpsJitterSection(
         JitterInput(
             value = if (isMph) uiState.jitterIdleRadiusMeters * 3.28084 else uiState.jitterIdleRadiusMeters,
             onValueChange = { onAction(SettingsAction.SetJitterIdleRadius(if (isMph) it / 3.28084 else it)) },
-            label = if (isMph) "Idle radius (ft)" else "Idle radius (m)",
+            label = if (isMph) "Wobble when still (ft)" else "Wobble when still (m)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterIdleIntervalSeconds,
             onValueChange = { onAction(SettingsAction.SetJitterIdleIntervalSeconds(it)) },
-            label = "Idle interval (s)",
+            label = "How often when still (sec)",
             modifier = Modifier.weight(1f),
         )
     }
@@ -128,13 +128,13 @@ internal fun GpsJitterSection(
         JitterInput(
             value = if (isMph) uiState.jitterMovingRadiusMeters * 3.28084 else uiState.jitterMovingRadiusMeters,
             onValueChange = { onAction(SettingsAction.SetJitterMovingRadius(if (isMph) it / 3.28084 else it)) },
-            label = if (isMph) "Moving radius (ft)" else "Moving radius (m)",
+            label = if (isMph) "Wobble while moving (ft)" else "Wobble while moving (m)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterIntervalSeconds,
             onValueChange = { onAction(SettingsAction.SetJitterIntervalSeconds(it)) },
-            label = "Moving interval (s)",
+            label = "How often while moving (sec)",
             modifier = Modifier.weight(1f),
         )
     }
@@ -143,13 +143,13 @@ internal fun GpsJitterSection(
         JitterInput(
             value = uiState.jitterSpeedIdleVariationPct.toDouble(),
             onValueChange = { onAction(SettingsAction.SetJitterSpeedIdleVariationPct(it.toInt())) },
-            label = "Idle speed variation (%)",
+            label = "Speed wobble when still (%)",
             modifier = Modifier.weight(1f),
         )
         JitterInput(
             value = uiState.jitterSpeedMovingVariationPct.toDouble(),
             onValueChange = { onAction(SettingsAction.SetJitterSpeedMovingVariationPct(it.toInt())) },
-            label = "Moving speed variation (%)",
+            label = "Speed wobble while moving (%)",
             modifier = Modifier.weight(1f),
         )
     }
@@ -161,11 +161,11 @@ internal fun ElevationJitterSection(
     elevationControlsEnabled: Boolean,
     onAction: (SettingsAction) -> Unit,
 ) {
-    Text("Elevation Jitter", style = MaterialTheme.typography.headlineSmall)
+    Text("Tilt Randomness", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
     Text(
         if (elevationControlsEnabled) {
-            "Noise applied to sensor injection each tick. Set 0 to disable."
+            "Adds small random variation to the phone tilt simulation. Set 0 to disable."
         } else {
             "Enable Elevation controls in the Floating Widget section to configure these inputs."
         },
@@ -177,14 +177,14 @@ internal fun ElevationJitterSection(
         JitterInput(
             value = uiState.elevationTiltJitterDegrees.toDouble(),
             onValueChange = { onAction(SettingsAction.SetElevationTiltJitterDegrees(it.toFloat())) },
-            label = "Tilt jitter (°)",
+            label = "Tilt wobble (°)",
             modifier = Modifier.weight(1f),
             enabled = elevationControlsEnabled,
         )
         JitterInput(
             value = uiState.elevationNoiseAmplitudeMs2.toDouble(),
             onValueChange = { onAction(SettingsAction.SetElevationNoiseAmplitudeMs2(it.toFloat())) },
-            label = "Accel noise (m/s²)",
+            label = "Sensor wobble (m/s²)",
             modifier = Modifier.weight(1f),
             enabled = elevationControlsEnabled,
         )
@@ -200,7 +200,7 @@ internal fun GpsRealismSection(
     Text("GPS Realism", style = MaterialTheme.typography.headlineSmall)
     Spacer(modifier = Modifier.height(4.dp))
     Text(
-        "Controls how the spoofed GPS signal behaves. These options add metadata and variation that real GPS chips produce — some apps and games inspect these signals to detect mock providers.",
+        "Controls how the fake GPS signal behaves. These options add metadata and variation that real GPS chips produce — some apps and games inspect these signals to detect fake locations.",
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -226,7 +226,8 @@ internal fun GpsRealismSection(
         onCheckedChange = { onAction(SettingsAction.SetRealismWarmupEnabled(it)) },
         title = "GPS warm-up simulation",
         description =
-            "Starts each session with degraded accuracy (like a cold GPS fix) that converges to normal over ~30 s. " +
+            "Starts each session with slightly inaccurate readings that improve over ~30 seconds, " +
+                "like a real GPS that takes time to lock on. " +
                 "Off by default because it temporarily reduces location precision at session start.",
     )
     LjCheckboxRow(
@@ -240,24 +241,24 @@ internal fun GpsRealismSection(
     LjCheckboxRow(
         checked = uiState.realismSuspendedMockingEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismSuspendedMockingEnabled(it)) },
-        title = "Suspended mocking",
+        title = "Simulate signal dropouts",
         description =
-            "Briefly pauses location updates (~2 s every ~10 s) to mimic real GPS dropouts. " +
-                "Off by default because the pauses cause visible position freezes in many apps. " +
-                "Automatically skipped during route replay.",
+            "Briefly pauses the fake location signal every ~10 seconds, like a real GPS dropping signal momentarily. " +
+                "Off by default — the pauses cause visible freezes in most apps. " +
+                "Skipped automatically during route replay.",
     )
     LjCheckboxRow(
         checked = uiState.realismPedometerMockingEnabled,
         onCheckedChange = { onAction(SettingsAction.SetRealismPedometerMockingEnabled(it)) },
         enabled = isRooted,
-        title = "Mock step counter",
+        title = "Fake step counter",
         description =
             if (isRooted) {
-                "Injects synthetic step counts that match your movement speed. " +
-                    "Some apps cross-check GPS movement against pedometer data to detect spoofing. " +
-                    "Steps are only injected while walking or running (not while using the bike profile)."
+                "Fakes step counts that match your movement speed. " +
+                    "Some apps cross-check GPS movement against step data to detect fake locations. " +
+                    "Steps are only faked while walking or running (not while using the bike profile)."
             } else {
-                "Injects synthetic step counts that match your movement speed. Requires root access (same permission as Elevation controls)."
+                "Fakes step counts that match your movement speed. Requires root access."
             },
     )
 }

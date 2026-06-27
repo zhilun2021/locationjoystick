@@ -83,7 +83,7 @@ internal fun SettingsGpsSubScreen(
                         Text("Location Memory", style = MaterialTheme.typography.headlineSmall)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            "Controls how the app handles location state across restarts.",
+                            "Controls whether the app remembers where you left off when reopened.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -92,7 +92,7 @@ internal fun SettingsGpsSubScreen(
                             checked = uiState.rememberLastLocation,
                             onCheckedChange = { onAction(SettingsAction.SetRememberLastLocation(it)) },
                             title = "Remember last location",
-                            description = "Restores the last spoofed position when the app restarts.",
+                            description = "Restores your last set position when the app restarts.",
                         )
                     }
                 }

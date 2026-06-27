@@ -99,7 +99,7 @@ internal fun IdleScreen(
                     IdleDestinationCard(
                         LjIcons.Map,
                         "Map",
-                        "Spoof your GPS location and control movement on the map.",
+                        "Set a fake GPS location and control your movement on the map.",
                         onNavigateToMap,
                     )
                 }
@@ -117,7 +117,7 @@ internal fun IdleScreen(
                     IdleDestinationCard(
                         LjIcons.Settings,
                         "Settings",
-                        "Configure locationjoystick and spoof preferences.",
+                        "Speed, overlays, and other preferences.",
                         onNavigateToSettings,
                     )
                 }

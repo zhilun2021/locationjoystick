@@ -156,7 +156,7 @@ internal fun RoutesScreen(
                 onDismissRequest = { showAddMenu = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text("from map") },
+                    text = { Text("Draw on map") },
                     onClick = {
                         onNavigateToCreate(RouteType.STRAIGHT)
                         showAddMenu = false
@@ -164,7 +164,7 @@ internal fun RoutesScreen(
                     leadingIcon = { Icon(LjIcons.Map, null) },
                 )
                 DropdownMenuItem(
-                    text = { Text("from map follow roads") },
+                    text = { Text("Draw on map (follow roads)") },
                     onClick = {
                         onNavigateToCreate(RouteType.GUIDED)
                         showAddMenu = false
@@ -172,7 +172,7 @@ internal fun RoutesScreen(
                     leadingIcon = { Icon(LjIcons.Map, null) },
                 )
                 DropdownMenuItem(
-                    text = { Text("from GPX file") },
+                    text = { Text("Import GPX file") },
                     onClick = {
                         onImportGpx()
                         showAddMenu = false
@@ -388,8 +388,13 @@ private fun StartRouteDialog(
         title = { Text("Start route") },
         text = {
             Column {
-                CheckboxRow(label = "Loop", checked = loop, enabled = !returnToLocation, onCheckedChange = { loop = it })
-                CheckboxRow(label = "Reverse", checked = reverse, onCheckedChange = { reverse = it })
+                CheckboxRow(
+                    label = "Loop (restart when done)",
+                    checked = loop,
+                    enabled = !returnToLocation,
+                    onCheckedChange = { loop = it },
+                )
+                CheckboxRow(label = "Reverse (walk backwards)", checked = reverse, onCheckedChange = { reverse = it })
                 CheckboxRow(
                     label = "Return to location",
                     checked = returnToLocation,

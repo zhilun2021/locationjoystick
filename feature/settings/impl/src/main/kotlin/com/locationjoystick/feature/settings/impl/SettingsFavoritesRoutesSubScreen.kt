@@ -222,7 +222,7 @@ private fun RoamingSection(
         checked = roamingDefaults.followRoads,
         onCheckedChange = { onAction(SettingsAction.UpdateRoamingDefaults(roamingDefaults.copy(followRoads = it))) },
         title = "Follow roads",
-        description = "Uses OSRM road routing to stay on walkable paths. Falls back to straight-line if unavailable.",
+        description = "Follows actual roads and paths instead of cutting straight across. May not be available in all areas.",
     )
     LjCheckboxRow(
         checked = roamingDefaults.returnToInitialLocation,

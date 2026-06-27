@@ -241,8 +241,10 @@ internal fun OnboardingScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             OnboardingStepCard(
-                title = "Mock location app",
-                description = "In Developer Options → Select mock location app, choose locationjoystick.",
+                title = "Set as fake GPS app",
+                description =
+                    "In Developer Options, find 'Select mock location app' and choose locationjoystick. " +
+                        "This lets the app replace your real GPS.",
                 isGranted = uiState.mockLocationEnabled,
                 icon = LjIcons.DeveloperMode,
                 actionLabel = "Open Developer Options",

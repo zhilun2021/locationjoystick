@@ -169,7 +169,7 @@ private fun TapToWalkSection(
     if (enabled) {
         Spacer(Modifier.height(12.dp))
         Text(
-            "Scale (meters per pixel) — zoom out in the game for better accuracy",
+            "Map scale — zoom out in the game and increase this value to match",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -448,7 +448,7 @@ private fun featureMeta(feature: AppFeature): FeatureMeta =
         AppFeature.ELEVATION_CONTROLS -> {
             FeatureMeta(
                 "Elevation controls",
-                "Shows a floating overlay to tilt the simulated sensor angle · requires root",
+                "Shows tilt controls in the floating widget · requires root",
                 LjIcons.Layers,
                 isRootGated = true,
             )
