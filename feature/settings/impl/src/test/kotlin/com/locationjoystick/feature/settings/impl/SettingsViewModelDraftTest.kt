@@ -267,9 +267,9 @@ class SettingsViewModelDraftTest {
     fun `setTapToWalkScaleMpx marks dirty and updates state`() =
         runTest(testDispatcher) {
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
-            viewModel.setTapToWalkScaleMpx(25)
+            viewModel.setTapToWalkScaleMpx(0.25)
             assertTrue(viewModel.uiState.value.isDirty)
-            assertEquals(25, viewModel.uiState.value.tapToWalkScaleMpx)
+            assertEquals(0.25, viewModel.uiState.value.tapToWalkScaleMpx, 1e-9)
         }
 
     // -------------------------------------------------------------------------
