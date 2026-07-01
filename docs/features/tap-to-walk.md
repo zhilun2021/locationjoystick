@@ -12,13 +12,13 @@ Both features live in Settings → Menus → Tap to Walk.
 |---|---|---|---|
 | `FLOATING_MAP_QUICK_WALK` | Boolean | `false` | Skip confirmation sheet on floating map taps |
 | `TAP_TO_WALK_OVERLAY_ENABLED` | Boolean | `false` | Show crosshair button in widget panel |
-| `TAP_TO_WALK_SCALE_MPX` | Double | `10.0` | Meters per pixel for pixel→GPS conversion |
+| `TAP_TO_WALK_SCALE_MPX` | Double | `0.23` | Meters per pixel for pixel→GPS conversion (calibrated for fully zoomed-out Pokémon Go) |
 | `COMPASS_TRACKING_ENABLED` | Boolean | `false` | Capture compass heading before each tap |
 | `COMPASS_REGION_CX_PCT` | Float | `0.88` | Compass region center X (0–1 fraction of screen width) |
 | `COMPASS_REGION_CY_PCT` | Float | `0.09` | Compass region center Y (0–1 fraction of screen height) |
 | `COMPASS_REGION_RADIUS_PCT` | Float | `0.06` | Compass region radius (fraction of min screen dimension) |
 
-Scale is clamped to `AppConstants.TapToWalkConstants.MIN_SCALE_MPX`–`MAX_SCALE_MPX` (1–50 m/px) in `applySnapshot()`.
+Scale is clamped to `AppConstants.TapToWalkConstants.MIN_SCALE_MPX`–`MAX_SCALE_MPX` (0.01–1.0 m/px) in `applySnapshot()`.
 
 Compass prefs are live-persisted (written directly to DataStore, not through the save/discard draft).
 

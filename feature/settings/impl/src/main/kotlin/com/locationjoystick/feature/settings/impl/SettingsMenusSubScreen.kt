@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -32,7 +31,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -58,8 +56,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -172,28 +168,23 @@ private fun TapToWalkSection(
     if (enabled) {
         Spacer(Modifier.height(12.dp))
         Text(
-            "Map scale — zoom out in the game and increase this value to match",
+            "Map scale (%.2f m/px) — zoom the game fully out for best accuracy".format(uiState.tapToWalkScaleMpx),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.height(4.dp))
-        OutlinedTextField(
-            value = uiState.tapToWalkScaleMpx.toString(),
-            onValueChange = { raw ->
-                raw.toIntOrNull()?.let { v ->
-                    onAction(
-                        SettingsAction.SetTapToWalkScaleMpx(
-                            v.coerceIn(
-                                AppConstants.TapToWalkConstants.MIN_SCALE_MPX,
-                                AppConstants.TapToWalkConstants.MAX_SCALE_MPX,
-                            ),
+        Slider(
+            value = uiState.tapToWalkScaleMpx.toFloat(),
+            onValueChange = { v ->
+                onAction(
+                    SettingsAction.SetTapToWalkScaleMpx(
+                        v.toDouble().coerceIn(
+                            AppConstants.TapToWalkConstants.MIN_SCALE_MPX,
+                            AppConstants.TapToWalkConstants.MAX_SCALE_MPX,
                         ),
-                    )
-                }
+                    ),
+                )
             },
-            label = { Text("m/px") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            valueRange = AppConstants.TapToWalkConstants.MIN_SCALE_MPX.toFloat()..AppConstants.TapToWalkConstants.MAX_SCALE_MPX.toFloat(),
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))

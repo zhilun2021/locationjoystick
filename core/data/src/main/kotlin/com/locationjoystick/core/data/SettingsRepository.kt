@@ -214,7 +214,7 @@ class SettingsRepository
 
         fun getTapToWalkOverlayEnabled(): Flow<Boolean> = dataSource.getTapToWalkOverlayEnabled()
 
-        fun getTapToWalkScaleMpx(): Flow<Int> = dataSource.getTapToWalkScaleMpx()
+        fun getTapToWalkScaleMpx(): Flow<Double> = dataSource.getTapToWalkScaleMpx()
 
         fun getCompassTrackingEnabled(): Flow<Boolean> = dataSource.getCompassTrackingEnabled()
 

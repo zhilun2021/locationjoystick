@@ -127,7 +127,7 @@ class SettingsViewModel
             val selectedHotRouteIds: Set<String>? = null,
             val floatingMapQuickWalk: Boolean? = null,
             val tapToWalkOverlayEnabled: Boolean? = null,
-            val tapToWalkScaleMpx: Int? = null,
+            val tapToWalkScaleMpx: Double? = null,
         )
 
         private val mutableDraft = MutableStateFlow(DraftState())
@@ -358,7 +358,7 @@ class SettingsViewModel
             mutableDraft.update { it.copy(tapToWalkOverlayEnabled = enabled) }
         }
 
-        fun setTapToWalkScaleMpx(scale: Int) {
+        fun setTapToWalkScaleMpx(scale: Double) {
             mutableDraft.update { it.copy(tapToWalkScaleMpx = scale) }
         }
 

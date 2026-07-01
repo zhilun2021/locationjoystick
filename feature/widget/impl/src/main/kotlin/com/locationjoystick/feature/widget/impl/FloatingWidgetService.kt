@@ -125,7 +125,7 @@ class FloatingWidgetService :
     private val elevationModeFlow = MutableStateFlow<ElevationMode?>(null)
 
     private val isTapToWalkActiveFlow = MutableStateFlow(false)
-    private lateinit var tapToWalkScaleMpx: StateFlow<Int>
+    private lateinit var tapToWalkScaleMpx: StateFlow<Double>
     private lateinit var compassTrackingEnabled: StateFlow<Boolean>
     private lateinit var compassRegionCx: StateFlow<Float>
     private lateinit var compassRegionCy: StateFlow<Float>
@@ -389,7 +389,7 @@ class FloatingWidgetService :
                     savedStateRegistryOwner = this,
                     onWalkTo = { pos -> mapController.walkTo(pos) },
                     getPosition = { mapController.sharedState.value.currentPosition },
-                    getScaleMpx = { tapToWalkScaleMpx.value.toDouble() },
+                    getScaleMpx = { tapToWalkScaleMpx.value },
                     onDismissed = { isTapToWalkActiveFlow.value = false },
                     getHeadingAsync =
                         if (compassTrackingEnabled.value) {

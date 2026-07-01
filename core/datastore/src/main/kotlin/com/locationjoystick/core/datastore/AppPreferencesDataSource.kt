@@ -233,7 +233,7 @@ interface PreferencesDataSource {
     fun getTapToWalkOverlayEnabled(): Flow<Boolean>
 
     /** Gets the scale factor (meters per pixel) for the tap-to-walk overlay coordinate conversion. */
-    fun getTapToWalkScaleMpx(): Flow<Int>
+    fun getTapToWalkScaleMpx(): Flow<Double>
 
     /** Gets whether compass-aware tap-to-walk is enabled. */
     fun getCompassTrackingEnabled(): Flow<Boolean>
@@ -297,7 +297,7 @@ data class SettingsSnapshot(
     val roamingDefaults: RoamingDefaults,
     val floatingMapQuickWalk: Boolean = false,
     val tapToWalkOverlayEnabled: Boolean = false,
-    val tapToWalkScaleMpx: Int = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
+    val tapToWalkScaleMpx: Double = AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX,
 )
 
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
@@ -388,7 +388,7 @@ class AppPreferencesDataSource
             val FEATURE_ORDER = stringPreferencesKey("feature_order")
             val FLOATING_MAP_QUICK_WALK = booleanPreferencesKey("floating_map_quick_walk")
             val TAP_TO_WALK_OVERLAY_ENABLED = booleanPreferencesKey("tap_to_walk_overlay_enabled")
-            val TAP_TO_WALK_SCALE_MPX = intPreferencesKey("tap_to_walk_scale_mpx_int")
+            val TAP_TO_WALK_SCALE_MPX = doublePreferencesKey("tap_to_walk_scale_mpx")
             val COMPASS_TRACKING_ENABLED = booleanPreferencesKey("compass_tracking_enabled")
             val COMPASS_REGION_CX_PCT = floatPreferencesKey("compass_region_cx_pct")
             val COMPASS_REGION_CY_PCT = floatPreferencesKey("compass_region_cy_pct")
@@ -739,7 +739,7 @@ class AppPreferencesDataSource
 
         override fun getTapToWalkOverlayEnabled(): Flow<Boolean> = pref(Keys.TAP_TO_WALK_OVERLAY_ENABLED, false)
 
-        override fun getTapToWalkScaleMpx(): Flow<Int> = pref(Keys.TAP_TO_WALK_SCALE_MPX, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+        override fun getTapToWalkScaleMpx(): Flow<Double> = pref(Keys.TAP_TO_WALK_SCALE_MPX, AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
 
         override fun getCompassTrackingEnabled(): Flow<Boolean> = pref(Keys.COMPASS_TRACKING_ENABLED, false)
 

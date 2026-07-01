@@ -1176,7 +1176,7 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
 
     override fun getTapToWalkOverlayEnabled(): Flow<Boolean> = flowOf(false)
 
-    override fun getTapToWalkScaleMpx(): Flow<Int> = flowOf(AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
+    override fun getTapToWalkScaleMpx(): Flow<Double> = flowOf(AppConstants.TapToWalkConstants.DEFAULT_SCALE_MPX)
 
     override fun getCompassTrackingEnabled(): Flow<Boolean> = flowOf(false)
 

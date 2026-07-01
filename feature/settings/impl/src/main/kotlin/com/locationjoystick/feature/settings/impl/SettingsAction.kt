@@ -142,7 +142,7 @@ internal sealed class SettingsAction {
     ) : SettingsAction()
 
     data class SetTapToWalkScaleMpx(
-        val scale: Int,
+        val scale: Double,
     ) : SettingsAction()
 
     data class SetCompassTrackingEnabled(
