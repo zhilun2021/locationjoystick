@@ -21,7 +21,7 @@ object AppConstants {
         const val RUN_SPEED_MPS = 2.2222
         const val BIKE_SPEED_MPS = 4.1667
         const val DEFAULT_ACTIVE_PROFILE_ID = PROFILE_ID_WALK
-        const val MIN_SPEED_MS = 0.1
+        const val MIN_SPEED_MS = 0.01
         const val MAX_SPEED_MS = 15.0
         const val ANTI_CHEAT_WARNING_THRESHOLD_MS = 8.0
         const val DEFAULT_SPEED_UNIT = "KMH"
