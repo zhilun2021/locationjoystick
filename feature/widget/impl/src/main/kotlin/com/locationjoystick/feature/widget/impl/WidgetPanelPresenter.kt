@@ -211,8 +211,6 @@ internal class WidgetPanelPresenter(
                 speedUnit = shared.speedUnit,
                 recentSearches = shared.recentSearches,
                 ephemeralWaypoints = shared.ephemeralWaypoints.ifEmpty { null },
-                onStartSpoofing = { mapController.startSpoofing() },
-                onStopSpoofing = { mapController.stopSpoofing() },
                 onResumeRoaming = { mapController.resumeRoaming() },
                 onPauseRoaming = { mapController.pauseRoaming() },
                 onGeneratePreviewRoute = { center, radiusMeters, followRoads, speedProfileId ->

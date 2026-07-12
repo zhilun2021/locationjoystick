@@ -50,7 +50,6 @@ import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.data.CooldownState
 import com.locationjoystick.core.designsystem.LjBg
 import com.locationjoystick.core.designsystem.LjIcons
-import com.locationjoystick.core.designsystem.LjMapColors
 import com.locationjoystick.core.designsystem.LjSuccess
 import com.locationjoystick.core.designsystem.LjText
 import com.locationjoystick.core.designsystem.UiConstants
@@ -99,8 +98,6 @@ internal fun MapFloatingView(
     favorites: List<FavoriteLocation>,
     roamingDefaults: RoamingDefaults,
     speedUnit: SpeedUnit,
-    onStartSpoofing: () -> Unit,
-    onStopSpoofing: () -> Unit,
     onResumeRoaming: () -> Unit,
     onPauseRoaming: () -> Unit,
     onGeneratePreviewRoute: suspend (center: LatLng, radiusMeters: Double, followRoads: Boolean, speedProfileId: String) -> List<LatLng>?,
@@ -448,19 +445,6 @@ internal fun MapFloatingView(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 onClick = { showSearch = !showSearch },
-            )
-            val isSpoofing = mockLocationState == MockLocationState.RUNNING
-            LjMapIconButton(
-                icon = if (isSpoofing) LjIcons.Stop else LjIcons.PlayArrow,
-                contentDescription = if (isSpoofing) "Stop spoofing" else "Start spoofing",
-                containerColor =
-                    if (isSpoofing) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        LjMapColors.ActiveButton
-                    },
-                contentColor = if (isSpoofing) MaterialTheme.colorScheme.onError else LjBg,
-                onClick = { if (isSpoofing) onStopSpoofing() else onStartSpoofing() },
             )
         }
 
