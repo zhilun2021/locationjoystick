@@ -18,7 +18,7 @@ class RouteCreatorSmokeTest : BaseSmokeTest() {
         composeRule.navigateFromIdle("Routes")
         composeRule.onNodeWithContentDescription("Add route").performClick()
         composeRule.waitForIdle()
-        composeRule.onNodeWithText("from map").performClick()
+        composeRule.onNodeWithText("Draw on map").performClick()
         composeRule.waitForIdle()
     }
 

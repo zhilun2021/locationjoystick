@@ -27,7 +27,7 @@ class GroupSyncSmokeTest : BaseSmokeTest() {
     fun group_sync_screen_loads() {
         composeRule
             .onNodeWithText(
-                "Sync your spoofed location across multiple devices on the same Wi-Fi network. No account needed.",
+                "Sync your fake location across multiple devices on the same Wi-Fi network. No account needed.",
             ).assertIsDisplayed()
     }
 
