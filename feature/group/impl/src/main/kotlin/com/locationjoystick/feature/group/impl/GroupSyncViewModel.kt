@@ -72,6 +72,7 @@ class GroupSyncViewModel
             viewModelScope.launch {
                 var leaderRestoreSent = false
                 var followerRestoreSent = false
+                var followerExistenceChecked = false
                 groupRepository.groupState.collect { state ->
                     _groupState.value = state
                     val host = state.leaderHost
@@ -96,6 +97,18 @@ class GroupSyncViewModel
                     // failed NSD re-discovery silently (leader not yet advertising) and stayed idle
                     // while DataStore still says followerModeEnabled=true. Re-trigger follow mode so
                     // NSD runs again with more time elapsed and the leader is reachable.
+                    // Check group existence immediately on entering the screen instead of waiting
+                    // for the next poll tick, so a stale/gone group is surfaced right away.
+                    if (state.role == GroupRole.FOLLOWER && !followerExistenceChecked &&
+                        host != null && port != null && id != null
+                    ) {
+                        followerExistenceChecked = true
+                        if (!followerSyncClient.checkGroupExists(host, port, id)) {
+                            Log.w(TAG, "Group $id no longer exists on entry check — leaving group")
+                            leaveGroup()
+                            return@collect
+                        }
+                    }
                     if (state.role == GroupRole.FOLLOWER && state.followerModeEnabled && !followerRestoreSent) {
                         followerRestoreSent = true
                         if (!followerSyncClient.isPolling) {

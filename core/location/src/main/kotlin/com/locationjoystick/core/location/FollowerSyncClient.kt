@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -91,6 +92,20 @@ class FollowerSyncClient
                 }
             Log.i(TAG, "Polling started: $host:$port")
         }
+
+        suspend fun checkGroupExists(
+            host: String,
+            port: Int,
+            groupId: String,
+        ): Boolean =
+            withContext(Dispatchers.IO) {
+                try {
+                    fetchPosition(host, port, groupId) != FetchResult.GroupGone
+                } catch (e: Exception) {
+                    Log.w(TAG, "Group existence check failed", e)
+                    true
+                }
+            }
 
         fun stopPolling() {
             pollJob?.cancel()

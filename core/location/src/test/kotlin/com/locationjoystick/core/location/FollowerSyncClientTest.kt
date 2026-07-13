@@ -2,6 +2,7 @@ package com.locationjoystick.core.location
 
 import com.locationjoystick.core.common.constants.AppConstants
 import com.locationjoystick.core.model.SyncPositionUpdate
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -179,6 +180,32 @@ class FollowerSyncClientTest {
             alternatingServer.stop()
         }
     }
+
+    @Test
+    fun `checkGroupExists returns true for valid group`() =
+        runBlocking {
+            server.push(freshUpdate())
+            assertTrue(client.checkGroupExists("127.0.0.1", serverPort, "test-group"))
+        }
+
+    @Test
+    fun `checkGroupExists returns false for 403 response`() =
+        runBlocking {
+            server.push(freshUpdate())
+            assertFalse(client.checkGroupExists("127.0.0.1", serverPort, "wrong-group"))
+        }
+
+    @Test
+    fun `checkGroupExists returns true on transient network error`() =
+        runBlocking {
+            val errorServer = AlwaysErrorServer()
+            val errorPort = errorServer.start("test-group")
+            try {
+                assertTrue(client.checkGroupExists("127.0.0.1", errorPort, "test-group"))
+            } finally {
+                errorServer.stop()
+            }
+        }
 
     private class AlwaysErrorServer : TokenAuthHttpServer(TAG) {
         fun start(groupId: String): Int = startServer(groupId)
