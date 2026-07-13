@@ -253,7 +253,15 @@ class MockLocationService : Service() {
 
                     MockLocationState.PAUSED -> {
                         updateJobMutex.withLock {
-                            if (updateJob != null) {
+                            if (leaderSharingEnabled) {
+                                // Route replay/roaming stop driving ticks while paused, but a leader
+                                // must keep broadcasting its (frozen) position so followers don't see
+                                // a stale/dead feed — keep the loop alive to push heartbeat updates.
+                                if (updateJob == null) {
+                                    startUpdateLoop()
+                                    Log.i(TAG, "State changed to PAUSED - kept update loop alive for group sync")
+                                }
+                            } else if (updateJob != null) {
                                 updateJob?.cancel()
                                 updateJob = null
                                 Log.i(TAG, "State changed to PAUSED - paused update loop")

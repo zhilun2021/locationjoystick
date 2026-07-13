@@ -91,6 +91,7 @@ Followers apply independent per-device jitter to the received position, preservi
 
 ## Edge Cases
 
+- Leader pauses its route/roaming/walk → broadcasting to followers continues (frozen position, refreshed each tick) instead of going stale. `MockLocationService.observeLocationState` keeps the update loop alive on `PAUSED` when `leaderSharingEnabled` is true.
 - Joining while leading → leader exits first, then joins as follower.
 - Network unavailable → follower silently disconnects; UI shows last known role.
 - QR regeneration: leader can regenerate QR (new port/session) without changing the group code.
