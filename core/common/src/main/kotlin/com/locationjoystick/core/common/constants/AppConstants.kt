@@ -220,6 +220,7 @@ object AppConstants {
         const val EXTRA_NAVIGATE_TO_ROUTE_CREATOR = "navigate_to_route_creator"
         const val ACTION_ENTER_FOLLOWER = "com.locationjoystick.core.location.ACTION_ENTER_FOLLOWER"
         const val ACTION_EXIT_FOLLOWER = "com.locationjoystick.core.location.ACTION_EXIT_FOLLOWER"
+        const val ACTION_FOLLOWER_TELEPORT = "com.locationjoystick.core.location.ACTION_FOLLOWER_TELEPORT"
         const val EXTRA_FOLLOWER_HOST = "extra_follower_host"
         const val EXTRA_FOLLOWER_PORT = "extra_follower_port"
         const val EXTRA_FOLLOWER_GROUP_ID = "extra_follower_group_id"

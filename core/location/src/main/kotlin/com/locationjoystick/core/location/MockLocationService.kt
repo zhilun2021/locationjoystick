@@ -80,6 +80,7 @@ class MockLocationService : Service() {
         const val ACTION_ROUTE_APPEND_WAYPOINT = AppConstants.ServiceConstants.ACTION_ROUTE_APPEND_WAYPOINT
         const val ACTION_ENTER_FOLLOWER = AppConstants.ServiceConstants.ACTION_ENTER_FOLLOWER
         const val ACTION_EXIT_FOLLOWER = AppConstants.ServiceConstants.ACTION_EXIT_FOLLOWER
+        const val ACTION_FOLLOWER_TELEPORT = AppConstants.ServiceConstants.ACTION_FOLLOWER_TELEPORT
 
         const val EXTRA_ROUTE_ID = AppConstants.ServiceConstants.EXTRA_ROUTE_ID
         const val EXTRA_IS_BACKWARD = AppConstants.ServiceConstants.EXTRA_IS_BACKWARD
@@ -142,6 +143,9 @@ class MockLocationService : Service() {
     val state: StateFlow<MockLocationState> = _state.asStateFlow()
 
     private val positionRef = AtomicReference(LatLng(0.0, 0.0))
+
+    /** Latest position received from the leader while in FOLLOWER mode; walked toward per-tick, never snapped to directly. */
+    private val followerTarget = AtomicReference<LatLng?>(null)
 
     @Volatile private var currentSpeedMs: Float = 0.0f
 
@@ -491,6 +495,10 @@ class MockLocationService : Service() {
                 serviceScope.launch { handleReplayCancel() }
             }
 
+            ACTION_FOLLOWER_TELEPORT -> {
+                teleportToLeaderNow()
+            }
+
             ACTION_ROUTE_APPEND_WAYPOINT -> {
                 val lat = intent.getDoubleExtra(EXTRA_WAYPOINT_LAT, 0.0)
                 val lon = intent.getDoubleExtra(EXTRA_WAYPOINT_LON, 0.0)
@@ -654,14 +662,15 @@ class MockLocationService : Service() {
                         }
                     }
                 },
-            ) { lat, lon, speedMs, bearing ->
+            ) { lat, lon, _, _ ->
+                followerTarget.set(LatLng(lat, lon))
                 if (spoofingStarted.compareAndSet(false, true) && _state.value != MockLocationState.RUNNING) {
+                    // Spoofing wasn't active yet — nothing was being reported to other apps, so
+                    // starting straight at the leader's position carries no anti-cheat risk.
+                    // Once already RUNNING, the catch-up walk in pushLocationUpdate() takes over
+                    // instead, so an already-spoofing follower never jumps.
                     serviceScope.launch { startSpoofing(lat, lon) }
                 }
-                writeCurrentPosition(lat, lon)
-                currentSpeedMs = speedMs
-                currentBearing = bearing
-                locationRepository.setPositionInternal(LatLng(lat, lon))
             }
             Log.i(TAG, "Entered FOLLOWER mode for group $groupId at $host:$port")
         }
@@ -669,12 +678,22 @@ class MockLocationService : Service() {
 
     internal fun exitFollowerMode() {
         followerSyncClient.stopPolling()
-        // Follower ticks set currentSpeedMs/currentBearing from the leader's last update;
+        // Follower ticks set currentSpeedMs/currentBearing from the catch-up walk;
         // clear them so a stale nonzero speed doesn't keep broadcasting after we leave the group.
         currentSpeedMs = 0.0f
         currentBearing = 0.0f
+        followerTarget.set(null)
         locationRepository.setMockMode(MockMode.TELEPORT)
         Log.i(TAG, "Exited FOLLOWER mode")
+    }
+
+    /** Manual override: snap straight to the last-known leader position instead of walking there. */
+    internal fun teleportToLeaderNow() {
+        val target = followerTarget.get() ?: return
+        writeCurrentPosition(target.latitude, target.longitude)
+        currentSpeedMs = 0.0f
+        locationRepository.setPositionInternal(target)
+        Log.i(TAG, "Follower teleported to leader at (${target.latitude}, ${target.longitude})")
     }
 
     private fun enterLeaderMode(groupId: String) {
@@ -913,9 +932,39 @@ class MockLocationService : Service() {
         locationManager.setTestProviderLocation(LocationManager.GPS_PROVIDER, loc)
     }
 
+    /**
+     * Walks the follower's position toward [followerTarget] at the currently active speed profile
+     * ([RealismSettingsState.activeProfileSpeedMs]), instead of snapping straight to it. Called
+     * once per tick, before [captureSnapshot] reads [positionRef]. No-ops outside FOLLOWER mode.
+     */
+    private fun advanceFollowerCatchUp() {
+        if (locationRepository.currentMode.value != MockMode.FOLLOWER) return
+        val target = followerTarget.get() ?: return
+        val current = positionRef.get()
+        val distanceM = haversineDistance(current, target)
+        if (distanceM <= AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS) {
+            writeCurrentPosition(target.latitude, target.longitude)
+            currentSpeedMs = 0.0f
+            return
+        }
+        val bearing = calculateBearing(current.latitude, current.longitude, target.latitude, target.longitude)
+        val speedMs = realism.activeProfileSpeedMs
+        val stepM = speedMs * (AppConstants.LocationConstants.UPDATE_INTERVAL_MS / 1000.0)
+        if (stepM >= distanceM) {
+            writeCurrentPosition(target.latitude, target.longitude)
+            currentSpeedMs = 0.0f
+        } else {
+            val (newLat, newLon) = advancePosition(current.latitude, current.longitude, bearing, stepM)
+            writeCurrentPosition(newLat, newLon)
+            currentSpeedMs = speedMs.toFloat()
+            currentBearing = bearing.toFloat()
+        }
+    }
+
     private fun pushLocationUpdate() {
         if (!providerAdded) return
         try {
+            advanceFollowerCatchUp()
             updateSuspendedPhase()
             val nowNanos = SystemClock.elapsedRealtimeNanos()
             val nowMs = nowNanos / 1_000_000L

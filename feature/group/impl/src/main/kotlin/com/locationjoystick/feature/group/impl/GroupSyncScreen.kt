@@ -109,6 +109,7 @@ fun GroupSyncRoute(
             onJoinByCode = viewModel::joinByCode,
             onSetFollowerModeEnabled = viewModel::setFollowerModeEnabled,
             onSetSharingEnabled = viewModel::setSharingEnabled,
+            onTeleportToLeaderNow = viewModel::teleportToLeaderNow,
             onLeaveGroup = viewModel::leaveGroup,
             onRegenerateQr = viewModel::regenerateQr,
         )
@@ -131,6 +132,7 @@ internal fun GroupSyncScreen(
     onJoinByCode: (String) -> Unit,
     onSetFollowerModeEnabled: (Boolean) -> Unit,
     onSetSharingEnabled: (Boolean) -> Unit,
+    onTeleportToLeaderNow: () -> Unit,
     onLeaveGroup: () -> Unit,
     onRegenerateQr: () -> Unit,
 ) {
@@ -179,6 +181,7 @@ internal fun GroupSyncScreen(
                         groupState = groupState,
                         followerCount = followerCount,
                         onSetFollowerModeEnabled = onSetFollowerModeEnabled,
+                        onTeleportToLeaderNow = onTeleportToLeaderNow,
                         onLeaveGroup = onLeaveGroup,
                     )
                 }
@@ -426,6 +429,7 @@ private fun FollowerContent(
     groupState: GroupState,
     followerCount: Int,
     onSetFollowerModeEnabled: (Boolean) -> Unit,
+    onTeleportToLeaderNow: () -> Unit,
     onLeaveGroup: () -> Unit,
 ) {
     Column(
@@ -454,7 +458,7 @@ private fun FollowerContent(
 
         SwitchRow(
             label = "Follow leader",
-            description = "copies the leader's location",
+            description = "walks toward the leader's location",
             checked = groupState.followerModeEnabled,
             onCheckedChange = onSetFollowerModeEnabled,
         )
@@ -464,6 +468,15 @@ private fun FollowerContent(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (groupState.followerModeEnabled) {
+            OutlinedButton(
+                onClick = onTeleportToLeaderNow,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("Teleport to leader now")
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

@@ -85,6 +85,16 @@ All group state changes are sent as `Intent` actions to `MockLocationService`:
 | `ACTION_ENTER_FOLLOWER` | `EXTRA_FOLLOWER_HOST`, `EXTRA_FOLLOWER_PORT`, `EXTRA_FOLLOWER_GROUP_ID` |
 | `ACTION_EXIT_FOLLOWER` | — |
 
+## Follower Catch-Up Walk
+
+Followers never snap straight to the leader's position. `FollowerSyncClient`'s `onPosition` callback only updates `MockLocationService.followerTarget` (an `AtomicReference<LatLng?>`); the actual movement happens once per tick in `advanceFollowerCatchUp()` (called at the top of `pushLocationUpdate()`, before `captureSnapshot()`):
+
+- Distance to `followerTarget` is computed via `haversineDistance`. Within `AppConstants.LocationConstants.WALK_ARRIVAL_THRESHOLD_METERS`, the follower snaps to the exact target (negligible distance) and zeroes speed.
+- Otherwise it advances one step (`advancePosition` along the bearing from `calculateBearing`) at whatever speed profile is currently active (`RealismSettingsState.activeProfileSpeedMs`) — the same profile shown in the floating widget, user-changeable at any time. If the step would overshoot the target, it snaps instead.
+- Because the walk uses the follower's own speed profile — not the leader's — a follower that starts far from the leader may take a long time (or never fully catch up if the leader keeps moving). This is intentional: no distance-based auto-teleport.
+- **Bootstrap exception**: if spoofing wasn't already running when follower mode is enabled, the first position received starts spoofing directly at the leader's coordinates (`startSpoofing(lat, lon)`) — nothing was being reported to other apps yet, so this carries no anti-cheat risk. If spoofing was already active (already being reported), that first position is treated like any other: walked toward, never snapped.
+- **Manual override**: "Teleport to leader now" button (shown on the Follower screen while follow mode is enabled) sends `ACTION_FOLLOWER_TELEPORT` to `MockLocationService`, which calls `teleportToLeaderNow()` — the only path that snaps directly to the last-known leader position.
+
 ## Jitter
 
 Followers apply independent per-device jitter to the received position, preserving the configured jitter profile without cloning the leader's exact coordinates.

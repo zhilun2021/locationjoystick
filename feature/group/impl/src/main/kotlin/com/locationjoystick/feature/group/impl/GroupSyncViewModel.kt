@@ -213,6 +213,11 @@ class GroupSyncViewModel
             }
         }
 
+        fun teleportToLeaderNow() {
+            if (_groupState.value.role != GroupRole.FOLLOWER) return
+            sendServiceAction(AppConstants.ServiceConstants.ACTION_FOLLOWER_TELEPORT)
+        }
+
         fun setSharingEnabled(enabled: Boolean) {
             viewModelScope.launch {
                 groupRepository.setSharingEnabled(enabled)
