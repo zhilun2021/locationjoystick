@@ -217,7 +217,10 @@ internal object GpsJoystickMigrator {
                 val count = bytes[pos + 7].toInt() and 0xff
                 if (count > 0) {
                     val strings = readStringArray(bytes, pos + ARRAY_HEADER_SIZE, count)
-                    if (strings.size == count && strings.none { it in SCHEMA_NAMES }) {
+                    // Only treat as a schema/column-name table if every entry is a known column
+                    // name — a single coincidental match (e.g. a favorite literally named
+                    // "address") must not discard the whole array of real names.
+                    if (strings.size == count && !strings.all { it in SCHEMA_NAMES }) {
                         result.add(strings)
                     }
                 }

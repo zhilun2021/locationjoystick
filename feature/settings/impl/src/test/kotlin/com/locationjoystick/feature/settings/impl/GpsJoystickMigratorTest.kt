@@ -22,6 +22,9 @@ import java.nio.ByteOrder
  *   20251008-1 — 4 favs (default names), 9 routes, 7 total waypoints (duplicate variant)
  *   20260508 — 8 named favs, 9 routes, 37 total waypoints
  *   20260520 — 4 favs (default names), 8 routes, 38 total waypoints
+ *   user_feedback — real user-submitted export (anonymized); pinned regression, see
+ *     testGpsJoystickImportUserFeedback for details: 17 favs (default names), 1 fallback
+ *     route with 232 waypoints
  */
 class GpsJoystickMigratorTest {
     private fun loadFixture(name: String): ByteArray {
@@ -164,6 +167,30 @@ class GpsJoystickMigratorTest {
         assertRoutes(m, expectedCount = 8, totalWaypoints = 38)
     }
 
+    /**
+     * Pinned regression for the real user-submitted export described in ISSUES.md
+     * ("collapses multiple routes/favorites into generic single entries").
+     *
+     * Investigation of this fixture showed the file has never been compacted: its underlying
+     * Realm/TightDB commit history duplicates the coordinate table across ~1400 historical
+     * versions (13 MB on disk vs 12-16 KB for the other fixtures), and — unlike every other
+     * fixture — none of the string arrays recoverable via the current flat 0x0D scan corresponds
+     * to actual favorite/route names; the only string arrays present are schema/column-name
+     * tables. The real per-row names and per-route waypoint boundaries are therefore not
+     * reachable through this parser's flat double/string array heuristics; recovering them would
+     * require parsing Realm's linklist/B+tree structure directly. This test pins the current
+     * (still degraded, but non-crashing) behavior so a future structural fix has a regression
+     * guard, rather than silently reproducing the user's exact symptom.
+     */
+    @Test
+    fun testGpsJoystickImportUserFeedback() {
+        val result = GpsJoystickMigrator.parse(loadFixture("gpsjoystick_user_feedback.db"))
+        assertTrue(result.isSuccess)
+        val m = result.getOrThrow()
+        assertFavorites(m, expectedCount = 17, named = false)
+        assertRoutes(m, expectedCount = 1, totalWaypoints = 232)
+    }
+
     // ── synthetic binary tests (branch coverage) ─────────────────────────────
 
     /** Minimal valid Realm header (T-DB at offset 16) with optional appended blocks. */
@@ -228,6 +255,23 @@ class GpsJoystickMigratorTest {
         assertEquals(1, m.favorites.size)
         assertEquals("Paris", m.favorites[0].name)
         assertTrue(m.routes.isEmpty())
+    }
+
+    @Test
+    fun `string array with one schema-colliding entry still preserves the other names`() {
+        // "address" collides with a SCHEMA_NAMES entry, but the array also contains two real
+        // user-entered names. The whole array must not be discarded because of the one collision.
+        val bytes =
+            buildRealm(
+                stringBlock("Home", "address", "Work"),
+                doubleBlock(48.8566, 51.5074, 40.7128), // lats
+                doubleBlock(2.3522, -0.1278, -74.0060), // lons
+            )
+        val result = GpsJoystickMigrator.parse(bytes)
+        assertTrue(result.isSuccess)
+        val m = result.getOrThrow()
+        assertEquals(3, m.favorites.size)
+        assertEquals(setOf("Home", "address", "Work"), m.favorites.map { it.name }.toSet())
     }
 
     @Test
