@@ -252,6 +252,9 @@ interface PreferencesDataSource {
 
     /** Writes all settings from [snapshot] atomically in a single DataStore transaction. */
     suspend fun applySnapshot(snapshot: SettingsSnapshot)
+
+    /** Clears every preference except [Keys.ONBOARDING_COMPLETE], so the user isn't forced to re-onboard. */
+    suspend fun clearAllExceptOnboarding()
 }
 
 data class SettingsSnapshot(
@@ -776,6 +779,16 @@ class AppPreferencesDataSource
                 prefs[Keys.ROAMING_SPEED_PROFILE_ID] = snapshot.roamingDefaults.speedProfileId
                 prefs[Keys.ROAMING_ROAD_FOLLOWING] = snapshot.roamingDefaults.followRoads
                 prefs[Keys.ROAMING_RETURN_TO_START] = snapshot.roamingDefaults.returnToInitialLocation
+            }
+        }
+
+        override suspend fun clearAllExceptOnboarding() {
+            dataStore.edit { prefs ->
+                val onboardingComplete = prefs[Keys.ONBOARDING_COMPLETE]
+                prefs.clear()
+                if (onboardingComplete != null) {
+                    prefs[Keys.ONBOARDING_COMPLETE] = onboardingComplete
+                }
             }
         }
 

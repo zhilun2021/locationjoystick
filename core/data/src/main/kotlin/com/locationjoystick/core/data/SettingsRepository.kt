@@ -227,4 +227,7 @@ class SettingsRepository
         fun getSettingsSnapshot(): Flow<SettingsSnapshot> = dataSource.getSettingsSnapshot()
 
         suspend fun applySnapshot(snapshot: SettingsSnapshot) = dataSource.applySnapshot(snapshot)
+
+        /** Clears all settings/preferences, preserving onboarding-completion state. */
+        suspend fun resetAllData() = dataSource.clearAllExceptOnboarding()
     }

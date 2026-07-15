@@ -18,6 +18,7 @@ import com.locationjoystick.core.model.ExportData
 import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.RecentSearch
 import com.locationjoystick.core.model.RoamingDefaults
+import com.locationjoystick.core.model.Route
 import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.testing.FakeFavoriteDao
@@ -312,6 +313,26 @@ class SettingsViewModelSaveTest {
             assertEquals(3.0, snapshot.runSpeedMs, 0.001)
             assertEquals(currentBikeSpeed, snapshot.bikeSpeedMs, 0.001)
         }
+
+    @Test
+    fun `resetAllData clears favorites, routes, and preferences, and emits feedback`() =
+        runTest(testDispatcher) {
+            fakeFavoriteRepo.addFavorite(id = "fav1", name = "Home", position = LatLng(1.0, 2.0))
+            fakeRouteRepo.insertRoute(Route(id = "route1", name = "Route 1", waypoints = emptyList()))
+            assertTrue(fakeFavoriteRepo.getFavorites().first().isNotEmpty())
+            assertTrue(fakeRouteRepo.getRoutes().first().isNotEmpty())
+
+            viewModel.userFeedback.test {
+                viewModel.resetAllData()
+                val feedback = awaitItem()
+                assertFalse(feedback.isError)
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            assertTrue(fakeFavoriteRepo.getFavorites().first().isEmpty())
+            assertTrue(fakeRouteRepo.getRoutes().first().isEmpty())
+            assertEquals(1, fakeDataSource.clearAllExceptOnboardingCallCount)
+        }
 }
 
 // ---------------------------------------------------------------------------
@@ -563,4 +584,10 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
     override fun getCompassRegionRadiusPct(): Flow<Float> = flowOf(AppConstants.CompassTrackingConstants.DEFAULT_REGION_RADIUS_PCT)
 
     override suspend fun setCompassRegionRadiusPct(radius: Float) = Unit
+
+    var clearAllExceptOnboardingCallCount = 0
+
+    override suspend fun clearAllExceptOnboarding() {
+        clearAllExceptOnboardingCallCount++
+    }
 }

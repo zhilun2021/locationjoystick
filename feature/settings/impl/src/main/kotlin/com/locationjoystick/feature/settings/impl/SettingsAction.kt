@@ -148,4 +148,6 @@ internal sealed class SettingsAction {
     data object SaveChanges : SettingsAction()
 
     data object DiscardChanges : SettingsAction()
+
+    data object ResetAllData : SettingsAction()
 }

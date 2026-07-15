@@ -843,6 +843,32 @@ class SettingsRepositoryTest {
                 cancelAndIgnoreRemainingEvents()
             }
         }
+
+    // resetAllData
+
+    @Test
+    fun `resetAllData clears preferences but preserves onboarding complete`() =
+        runTest {
+            fakeDataSource.onboardingCompleteFlow.value = true
+            repository.setRememberLastLocation(true)
+            repository.setHotLocationsEnabled(true)
+
+            repository.resetAllData()
+
+            assertEquals(1, fakeDataSource.clearAllExceptOnboardingCallCount)
+            repository.getOnboardingComplete().test {
+                assertTrue(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            repository.getRememberLastLocation().test {
+                assertFalse(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+            repository.getHotLocationsEnabled().test {
+                assertFalse(awaitItem())
+                cancelAndIgnoreRemainingEvents()
+            }
+        }
 }
 
 class FakeAppPreferencesDataSource : PreferencesDataSource {
@@ -1187,5 +1213,25 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
         widgetItemsFlow.value = snapshot.enabledWidgetFeatures.map { it.name.lowercase() }.toSet()
         mapItemsFlow.value = snapshot.enabledMapFeatures.map { it.name.lowercase() }.toSet()
         featureOrderFlow.value = snapshot.featureOrder
+    }
+
+    var clearAllExceptOnboardingCallCount = 0
+
+    override suspend fun clearAllExceptOnboarding() {
+        clearAllExceptOnboardingCallCount++
+        val onboardingComplete = onboardingCompleteFlow.value
+        speedProfilesFlow.value =
+            SpeedProfilePreferences(
+                walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
+                runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
+                bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
+                activeProfileId = AppPreferencesDataSource.DEFAULT_ACTIVE_PROFILE_ID,
+            )
+        widgetItemsFlow.value = AppPreferencesDataSource.DEFAULT_WIDGET_ITEMS
+        mapItemsFlow.value = AppPreferencesDataSource.DEFAULT_MAP_FAB_ITEMS
+        featureOrderFlow.value = AppFeature.DEFAULT_ORDER
+        rememberLastLocationFlow.value = false
+        hotLocationsEnabledFlow.value = false
+        onboardingCompleteFlow.value = onboardingComplete
     }
 }

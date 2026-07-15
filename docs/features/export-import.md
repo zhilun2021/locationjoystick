@@ -49,6 +49,17 @@ Settings screen → Import icon → dropdown menu offers:
 
 All imported routes are saved as `RouteType.STRAIGHT` segments.
 
+## Reset All Data
+
+Settings screen → "Reset all data" icon button (next to Export/Import) → confirmation dialog → clears everything without needing Android's system-level "Clear data & cache".
+
+- Clears all routes (`RouteRepository.deleteAllRoutes()`) and all favorites (`FavoriteRepository.deleteAllFavorites()`).
+- Clears all DataStore preferences via `SettingsRepository.resetAllData()` → `PreferencesDataSource.clearAllExceptOnboarding()`.
+- **Preserves `ONBOARDING_COMPLETE`** — the user doesn't need to redo permission grants, just their data.
+- Irreversible; the confirmation dialog states "All favorites, routes, and settings will be permanently deleted."
+
+Key files: `:feature:settings:impl/SettingsScreen.kt` (`ResetAllDataConfirmDialog`), `:feature:settings:impl/SettingsViewModel.kt` (`resetAllData()`), `:core:data/SettingsRepository.kt` (`resetAllData()`), `:core:datastore/AppPreferencesDataSource.kt` (`clearAllExceptOnboarding()`).
+
 ## Edge Cases
 
 - Malformed JSON → show "Invalid file" error.

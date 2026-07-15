@@ -31,7 +31,7 @@ Here's everything included:
 | **Click-to-Move** | Long-press map → "Walk here" or "Teleport here". Walk advances at current speed; teleport jumps instantly. |
 | **QR Transfer** | Share or import config between devices on the same Wi-Fi network by scanning a single QR code. |
 | **GPS Realism** | Makes spoofed GPS indistinguishable from a real chip. Toggle per-feature: bearing hold when stationary, realistic altitude drift, warm-up accuracy envelope (converges over 30 s), satellite count in fix (7–14), and natural signal dropouts (auto-paused during route replay and walk-to). All off by default; enable selectively in Settings. |
-| **Import/Export** | All data to/from JSON (routes, favorites, speed profiles, widget config, roaming defaults, jitter settings). Route import also supports GPX, GPS Joystick, and YAMLA formats. |
+| **Import/Export** | All data to/from JSON (routes, favorites, speed profiles, widget config, roaming defaults, jitter settings). Route import also supports GPX, GPS Joystick, and YAMLA formats. A "Reset all data" button clears favorites, routes, and settings in one tap, without an OS-level app data clear or re-onboarding. |
 | **Background Service** | Spoofs while minimized or screen off via foreground service. Low-priority notification. |
 | **Onboarding** | Multi-step first-run flow: location permission, overlay permission, mock location enablement. |
 | **Group Sync** | Sync spoofed location across multiple devices on the same Wi-Fi network. No account needed. One device is the leader (shares position via QR-joined session); others are followers (mirror leader's location). |

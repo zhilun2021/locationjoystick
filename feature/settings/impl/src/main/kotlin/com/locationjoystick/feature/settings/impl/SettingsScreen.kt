@@ -94,6 +94,7 @@ fun SettingsRoute(
     var qrExportSession by remember { mutableStateOf<SettingsViewModel.QrExportSession?>(null) }
     var showQrScanner by remember { mutableStateOf(false) }
     var showEnterCodeDialog by remember { mutableStateOf(false) }
+    var showResetConfirm by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -221,6 +222,16 @@ fun SettingsRoute(
                 showEnterCodeDialog = false
                 viewModel.onExportCodeEntered(code)
             },
+        )
+    }
+
+    if (showResetConfirm) {
+        ResetAllDataConfirmDialog(
+            onConfirm = {
+                showResetConfirm = false
+                viewModel.resetAllData()
+            },
+            onDismiss = { showResetConfirm = false },
         )
     }
 
@@ -397,6 +408,10 @@ fun SettingsRoute(
 
                 SettingsAction.DiscardChanges -> {
                     viewModel.discardChanges()
+                }
+
+                SettingsAction.ResetAllData -> {
+                    showResetConfirm = true
                 }
             }
         },
@@ -598,6 +613,13 @@ private fun SettingsHubScreen(
                     )
                 }
             }
+            IconButton(onClick = { onAction(SettingsAction.ResetAllData) }) {
+                Icon(
+                    LjIcons.Delete,
+                    contentDescription = "Reset all data",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
             if (uiState.isDirty) {
                 TextButton(
                     onClick = { onAction(SettingsAction.DiscardChanges) },
@@ -745,6 +767,26 @@ private fun ImportConfirmDialog(
             }
         },
         dismissButton = {},
+    )
+}
+
+@Composable
+private fun ResetAllDataConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Reset all data?") },
+        text = { Text("All favorites, routes, and settings will be permanently deleted. This cannot be undone.") },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("Reset", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
     )
 }
 

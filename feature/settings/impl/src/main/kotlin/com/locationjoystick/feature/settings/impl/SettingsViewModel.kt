@@ -456,6 +456,24 @@ class SettingsViewModel
             mutableDraft.value = DraftState()
         }
 
+        /** Clears all favorites, routes, and settings. Preserves onboarding-completion state. */
+        fun resetAllData() {
+            viewModelScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        favoriteRepository.deleteAllFavorites()
+                        routeRepository.deleteAllRoutes()
+                    }
+                    settingsRepository.resetAllData()
+                    mutableDraft.value = DraftState()
+                    userFeedback.emit(UserFeedback("All data reset"))
+                } catch (e: Exception) {
+                    Log.e(TAG, "Reset all data failed", e)
+                    userFeedback.emit(UserFeedback("Failed to reset data", isError = true))
+                }
+            }
+        }
+
         private fun convertDisplayToMs(
             displaySpeed: Double,
             unit: SpeedUnit,
