@@ -71,7 +71,7 @@ Open locationjoystick → tap **Grant Permission** → find locationjoystick in 
 
 Open locationjoystick → tap map to teleport or use joystick → open target app → locationjoystick keeps running in background.
 
-> **Note:** Some apps detect mock locations. Check the app's community for current workarounds. Root is not required for any core feature — the Elevation Controls widget (experimental) is the only feature that optionally uses root, and it can be ignored entirely.
+> **Note:** Some apps detect mock locations. Check the app's community for current workarounds. Root is not required for any core feature — mock step counter injection (GPS Realism setting, experimental) is the only feature that optionally uses root, and it can be ignored entirely.
 
 ---
 

@@ -100,23 +100,6 @@
       </tbody>
     </table>
 
-    <h3 id="elevation-jitter">Elevation Jitter</h3>
-    <p>Fine-tunes the natural variation applied by Elevation Controls. Only active when Elevation Controls is enabled in the App Features section. Requires root.</p>
-
-    <table class="option-table">
-      <thead><tr><th>Option</th><th>Description</th></tr></thead>
-      <tbody>
-        <tr>
-          <td><strong>Tilt variation (°)</strong></td>
-          <td>Random variation added to the tilt angle with each update. A small value (default ±2.25°) makes the tilt look like a naturally held device rather than a perfectly fixed angle.</td>
-        </tr>
-        <tr>
-          <td><strong>Sensor noise</strong></td>
-          <td>Small random variation added to sensor readings with each update. Mimics the natural noise seen on a real device. Default is a barely perceptible amount.</td>
-        </tr>
-      </tbody>
-    </table>
-
     <h3 id="gps-realism">GPS Realism</h3>
     <p>Independent toggles that make the spoofed GPS signal behave more like a real hardware chip. Some apps and games inspect these fields to detect mock providers — enabling all options reduces the chance of detection.</p>
 
@@ -224,12 +207,7 @@
         <tr>
           <td><strong>Speed cycle</strong></td>
           <td>⚡</td>
-          <td>Widget only. Cycles through Walk → Run → Bike speed profiles with a single tap. The icon changes to reflect the active profile.</td>
-        </tr>
-        <tr>
-          <td><strong>Elevation controls</strong></td>
-          <td>⊞</td>
-          <td>Widget only. Shows a separate floating overlay with three elevation buttons: tilt up (↑), neutral (○), tilt down (↓). Injects synthetic sensor events to make apps see the phone as tilted. <strong>Requires root.</strong> Enabling this option triggers a Magisk root-access prompt.</td>
+          <td>Widget only. Cycles through Slow Walk, Walk, Run, Bike, and Drive speed profiles with a single tap. The icon changes to reflect the active profile.</td>
         </tr>
       </tbody>
     </table>
