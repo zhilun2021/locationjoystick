@@ -670,8 +670,8 @@ class MockLocationService : Service() {
                         }
                     }
                 },
-            ) { lat, lon, _, _ ->
-                followerCatchUp.setTarget(LatLng(lat, lon))
+            ) { lat, lon, _, bearing ->
+                followerCatchUp.setTarget(LatLng(lat, lon), bearing)
                 if (spoofingStarted.compareAndSet(false, true) && _state.value != MockLocationState.RUNNING) {
                     // Spoofing wasn't active yet — nothing was being reported to other apps, so
                     // starting straight at the leader's position carries no anti-cheat risk.

@@ -17,15 +17,26 @@ internal class FollowerCatchUpCoordinator {
 
     @Volatile private var bearing: Float = 0f
 
-    /** Latest position received from the leader; walked toward per-tick, never snapped to directly. */
-    fun setTarget(position: LatLng) {
+    @Volatile private var leaderBearing: Float = 0f
+
+    /**
+     * Latest position received from the leader; walked toward per-tick, never snapped to
+     * directly. [leaderBearing] is the leader's own reported heading, used once the follower
+     * catches up — see [advance].
+     */
+    fun setTarget(
+        position: LatLng,
+        leaderBearing: Float,
+    ) {
         target.set(position)
+        this.leaderBearing = leaderBearing
     }
 
     fun clear() {
         target.set(null)
         speedMs = 0f
         bearing = 0f
+        leaderBearing = 0f
     }
 
     /** Last-known leader position, or null if no position has been received (or FOLLOWER mode is inactive). */
@@ -40,6 +51,7 @@ internal class FollowerCatchUpCoordinator {
     /** Zeroes the reported speed without clearing the target — used after a manual teleport-to-leader. */
     fun markArrived() {
         speedMs = 0f
+        bearing = leaderBearing
     }
 
     /**
@@ -54,7 +66,10 @@ internal class FollowerCatchUpCoordinator {
         val t = target.get() ?: return null
         val result = computeFollowerCatchUp(current, t, activeProfileSpeedMs)
         speedMs = result.speedMs
-        result.bearing?.let { bearing = it }
+        // Null bearing means the step snapped (arrived, or overshot) — report the leader's own
+        // heading instead of freezing whatever direction this follower's catch-up walk last
+        // pointed, which differs per-device and has no relation to the leader's actual bearing.
+        bearing = result.bearing ?: leaderBearing
         return result
     }
 }
