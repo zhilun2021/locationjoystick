@@ -98,11 +98,7 @@ class SettingsViewModel
         internal val userFeedback = MutableSharedFlow<UserFeedback>(extraBufferCapacity = 1)
 
         private data class DraftState(
-            val slowWalkSpeed: Double? = null,
-            val walkSpeed: Double? = null,
-            val runSpeed: Double? = null,
-            val bikeSpeed: Double? = null,
-            val driveSpeed: Double? = null,
+            val speedOverrides: Map<String, Double> = emptyMap(),
             val speedUnit: SpeedUnit? = null,
             val featureOrder: List<AppFeature>? = null,
             val widgetFeatures: Set<AppFeature>? = null,
@@ -173,11 +169,7 @@ class SettingsViewModel
                 val isDirty = draftState != DraftState()
                 SettingsUiState(
                     isLoading = false,
-                    slowWalkSpeed = draftState.slowWalkSpeed ?: snapshot.slowWalkSpeedMs,
-                    walkSpeed = draftState.walkSpeed ?: snapshot.walkSpeedMs,
-                    runSpeed = draftState.runSpeed ?: snapshot.runSpeedMs,
-                    bikeSpeed = draftState.bikeSpeed ?: snapshot.bikeSpeedMs,
-                    driveSpeed = draftState.driveSpeed ?: snapshot.driveSpeedMs,
+                    speeds = snapshotSpeeds(snapshot) + draftState.speedOverrides,
                     speedUnit = draftState.speedUnit ?: snapshot.speedUnit,
                     featureOrder = draftState.featureOrder ?: snapshot.featureOrder,
                     enabledWidgetFeatures = draftState.widgetFeatures ?: snapshot.enabledWidgetFeatures,
@@ -217,24 +209,12 @@ class SettingsViewModel
                 initialValue = SettingsUiState(isLoading = true),
             )
 
-        fun setSlowWalkSpeed(displaySpeed: Double) {
-            mutableDraft.update { it.copy(slowWalkSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
-        }
-
-        fun setWalkSpeed(displaySpeed: Double) {
-            mutableDraft.update { it.copy(walkSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
-        }
-
-        fun setRunSpeed(displaySpeed: Double) {
-            mutableDraft.update { it.copy(runSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
-        }
-
-        fun setBikeSpeed(displaySpeed: Double) {
-            mutableDraft.update { it.copy(bikeSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
-        }
-
-        fun setDriveSpeed(displaySpeed: Double) {
-            mutableDraft.update { it.copy(driveSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
+        fun setSpeed(
+            id: String,
+            displaySpeed: Double,
+        ) {
+            val speedMs = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)
+            mutableDraft.update { it.copy(speedOverrides = it.speedOverrides + (id to speedMs)) }
         }
 
         fun setSpeedUnit(unit: SpeedUnit) {
@@ -415,11 +395,11 @@ class SettingsViewModel
                     val d = mutableDraft.value
                     settingsRepository.applySnapshot(
                         SettingsSnapshot(
-                            slowWalkSpeedMs = state.slowWalkSpeed,
-                            walkSpeedMs = state.walkSpeed,
-                            runSpeedMs = state.runSpeed,
-                            bikeSpeedMs = state.bikeSpeed,
-                            driveSpeedMs = state.driveSpeed,
+                            slowWalkSpeedMs = state.speeds.getValue("slow_walk"),
+                            walkSpeedMs = state.speeds.getValue("walk"),
+                            runSpeedMs = state.speeds.getValue("run"),
+                            bikeSpeedMs = state.speeds.getValue("bike"),
+                            driveSpeedMs = state.speeds.getValue("drive"),
                             speedUnit = state.speedUnit,
                             featureOrder = state.featureOrder,
                             enabledWidgetFeatures = state.enabledWidgetFeatures,
@@ -504,16 +484,20 @@ class SettingsViewModel
                 SpeedUnit.MPH -> displaySpeed / 2.237
             }
 
+        /** Maps [SettingsSnapshot]'s fixed per-profile fields to a keyed map for [SettingsUiState.speeds]. */
+        private fun snapshotSpeeds(snapshot: SettingsSnapshot): Map<String, Double> =
+            mapOf(
+                "slow_walk" to snapshot.slowWalkSpeedMs,
+                "walk" to snapshot.walkSpeedMs,
+                "run" to snapshot.runSpeedMs,
+                "bike" to snapshot.bikeSpeedMs,
+                "drive" to snapshot.driveSpeedMs,
+            )
+
         private suspend fun buildCurrentExportData(): ExportData {
             val state = uiState.value
             val speedProfiles =
-                listOf(
-                    SpeedProfile(id = "slow_walk", name = "Slow Walk", speedMetersPerSecond = state.slowWalkSpeed),
-                    SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = state.walkSpeed),
-                    SpeedProfile(id = "run", name = "Run", speedMetersPerSecond = state.runSpeed),
-                    SpeedProfile(id = "bike", name = "Bike", speedMetersPerSecond = state.bikeSpeed),
-                    SpeedProfile(id = "drive", name = "Drive", speedMetersPerSecond = state.driveSpeed),
-                )
+                SpeedProfile.defaultProfiles().map { it.copy(speedMetersPerSecond = state.speeds.getValue(it.id)) }
             val settings =
                 AppSettings(
                     speedUnit = state.speedUnit,

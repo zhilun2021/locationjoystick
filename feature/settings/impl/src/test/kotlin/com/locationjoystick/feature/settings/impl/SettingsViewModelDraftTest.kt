@@ -80,21 +80,31 @@ class SettingsViewModelDraftTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `setRunSpeed marks dirty and stores speed in ms`() =
+    fun `setSpeed marks dirty and stores speed in ms`() =
         runTest(testDispatcher) {
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
-            viewModel.setRunSpeed(3.6) // 3.6 km/h = 1.0 m/s
+            viewModel.setSpeed("run", 3.6) // 3.6 km/h = 1.0 m/s
             assertTrue(viewModel.uiState.value.isDirty)
-            assertEquals(1.0, viewModel.uiState.value.runSpeed, 0.01)
+            assertEquals(
+                1.0,
+                viewModel.uiState.value.speeds
+                    .getValue("run"),
+                0.01,
+            )
         }
 
     @Test
-    fun `setBikeSpeed marks dirty and stores speed in ms`() =
+    fun `setSpeed for a second profile marks dirty and stores speed in ms`() =
         runTest(testDispatcher) {
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
-            viewModel.setBikeSpeed(18.0) // 18 km/h = 5.0 m/s
+            viewModel.setSpeed("bike", 18.0) // 18 km/h = 5.0 m/s
             assertTrue(viewModel.uiState.value.isDirty)
-            assertEquals(5.0, viewModel.uiState.value.bikeSpeed, 0.01)
+            assertEquals(
+                5.0,
+                viewModel.uiState.value.speeds
+                    .getValue("bike"),
+                0.01,
+            )
         }
 
     @Test
@@ -267,7 +277,7 @@ class SettingsViewModelDraftTest {
     fun `discardChanges clears dirty state`() =
         runTest(testDispatcher) {
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
-            viewModel.setRunSpeed(5.0)
+            viewModel.setSpeed("run", 5.0)
             viewModel.setSpeedUnit(SpeedUnit.MPH)
             assertTrue(viewModel.uiState.value.isDirty)
 

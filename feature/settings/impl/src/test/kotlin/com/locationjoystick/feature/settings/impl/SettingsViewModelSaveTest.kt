@@ -87,7 +87,7 @@ class SettingsViewModelSaveTest {
     @Test
     fun `saveChanges triggers exactly one applySnapshot call`() =
         runTest(testDispatcher) {
-            viewModel.setWalkSpeed(2.0)
+            viewModel.setSpeed("walk", 2.0)
 
             viewModel.saveChanges()
 
@@ -100,7 +100,7 @@ class SettingsViewModelSaveTest {
             // Subscribe to uiState so WhileSubscribed flows activate
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
             viewModel.userFeedback.test {
-                viewModel.setWalkSpeed(2.0)
+                viewModel.setSpeed("walk", 2.0)
                 assertTrue(viewModel.uiState.value.isDirty)
 
                 viewModel.saveChanges()
@@ -120,7 +120,7 @@ class SettingsViewModelSaveTest {
             backgroundScope.launch(testDispatcher) { viewModel.uiState.collect {} }
             viewModel.userFeedback.test {
                 fakeDataSource.shouldThrowOnApplySnapshot = true
-                viewModel.setWalkSpeed(2.0)
+                viewModel.setSpeed("walk", 2.0)
                 assertTrue(viewModel.uiState.value.isDirty)
 
                 viewModel.saveChanges()

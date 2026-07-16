@@ -141,7 +141,7 @@ class MockLocationService : Service() {
 
     private val positionRef = AtomicReference(LatLng(0.0, 0.0))
 
-    private val followerCatchUp = FollowerCatchUpCoordinator()
+    internal val followerCatchUp = FollowerCatchUpCoordinator()
 
     @Volatile private var currentSpeedMs: Float = 0.0f
 
@@ -240,20 +240,18 @@ class MockLocationService : Service() {
                     MockLocationState.IDLE, MockLocationState.ERROR -> {
                         updateJobMutex.withLock {
                             when (computeIdleOrErrorLoopAction(state, leaderSharingEnabled, updateJob != null)) {
-                                LocationLoopAction.KEEP_ALIVE -> {
+                                IdleOrErrorLoopAction.KEEP_ALIVE -> {
                                     Log.i(TAG, "State changed to $state - leader sharing active, keeping test provider alive")
                                 }
 
-                                LocationLoopAction.TEAR_DOWN -> {
+                                IdleOrErrorLoopAction.TEAR_DOWN -> {
                                     updateJob?.cancel()
                                     updateJob = null
                                     removeTestProvider()
                                     Log.i(TAG, "State changed to $state - stopped update loop")
                                 }
 
-                                LocationLoopAction.START_UP, LocationLoopAction.NO_OP -> {
-                                    // START_UP never occurs on this branch — computeIdleOrErrorLoopAction
-                                    // only returns KEEP_ALIVE/TEAR_DOWN/NO_OP. Branch required for exhaustiveness.
+                                IdleOrErrorLoopAction.NO_OP -> {
                                     Unit
                                 }
                             }
@@ -266,22 +264,22 @@ class MockLocationService : Service() {
                     MockLocationState.PAUSED -> {
                         updateJobMutex.withLock {
                             when (computePausedLoopAction(leaderSharingEnabled, updateJob != null)) {
-                                LocationLoopAction.START_UP -> {
+                                PausedLoopAction.START_UP -> {
                                     startUpdateLoop()
                                     Log.i(TAG, "State changed to PAUSED - kept update loop alive for group sync")
                                 }
 
-                                LocationLoopAction.KEEP_ALIVE -> {
+                                PausedLoopAction.KEEP_ALIVE -> {
                                     Log.i(TAG, "State changed to PAUSED - leader sharing active, keeping update loop alive")
                                 }
 
-                                LocationLoopAction.TEAR_DOWN -> {
+                                PausedLoopAction.TEAR_DOWN -> {
                                     updateJob?.cancel()
                                     updateJob = null
                                     Log.i(TAG, "State changed to PAUSED - paused update loop")
                                 }
 
-                                LocationLoopAction.NO_OP -> {
+                                PausedLoopAction.NO_OP -> {
                                     Unit
                                 }
                             }
@@ -688,10 +686,6 @@ class MockLocationService : Service() {
 
     internal fun exitFollowerMode() {
         followerSyncClient.stopPolling()
-        // Follower ticks set currentSpeedMs/currentBearing from the catch-up walk;
-        // clear them so a stale nonzero speed doesn't keep broadcasting after we leave the group.
-        currentSpeedMs = 0.0f
-        currentBearing = 0.0f
         followerCatchUp.clear()
         locationRepository.setMockMode(MockMode.TELEPORT)
         Log.i(TAG, "Exited FOLLOWER mode")
@@ -701,7 +695,7 @@ class MockLocationService : Service() {
     internal fun teleportToLeaderNow() {
         val target = followerCatchUp.currentTarget() ?: return
         writeCurrentPosition(target.latitude, target.longitude)
-        currentSpeedMs = 0.0f
+        followerCatchUp.markArrived()
         locationRepository.setPositionInternal(target)
         Log.i(TAG, "Follower teleported to leader at (${target.latitude}, ${target.longitude})")
     }
@@ -883,11 +877,13 @@ class MockLocationService : Service() {
         }
 
         val currentPos = positionRef.get()
+        val speedMs = if (mode == MockMode.FOLLOWER) followerCatchUp.currentSpeedMs() else currentSpeedMs
+        val bearing = if (mode == MockMode.FOLLOWER) followerCatchUp.currentBearing() else currentBearing
         return LocationSnapshot(
             latitude = currentPos.latitude,
             longitude = currentPos.longitude,
-            speedMs = currentSpeedMs,
-            bearing = currentBearing,
+            speedMs = speedMs,
+            bearing = bearing,
             lastNonZeroBearing = lastNonZeroBearing,
             mode = mode,
             jitterIdleRadiusMeters = realism.jitterIdleRadiusMeters,
@@ -950,8 +946,6 @@ class MockLocationService : Service() {
         if (locationRepository.currentMode.value != MockMode.FOLLOWER) return
         val result = followerCatchUp.advance(positionRef.get(), realism.activeProfileSpeedMs) ?: return
         writeCurrentPosition(result.latitude, result.longitude)
-        currentSpeedMs = result.speedMs
-        result.bearing?.let { currentBearing = it }
     }
 
     private fun pushLocationUpdate() {

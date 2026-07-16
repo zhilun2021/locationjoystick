@@ -237,8 +237,9 @@ internal fun FavoritesScreen(
                     }
 
                     else -> {
-                        val grouped = filteredFavorites.groupBy { it.category }
-                        val orderedKeys = grouped.keys.sortedWith(compareBy({ it == null }, { it ?: "" }))
+                        val grouped = remember(filteredFavorites) { filteredFavorites.groupBy { it.category } }
+                        val orderedKeys =
+                            remember(grouped) { grouped.keys.sortedWith(compareBy({ it == null }, { it ?: "" })) }
 
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),

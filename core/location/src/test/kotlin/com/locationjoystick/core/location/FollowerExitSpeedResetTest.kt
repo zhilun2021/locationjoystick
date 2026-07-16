@@ -1,10 +1,12 @@
 package com.locationjoystick.core.location
 
 import com.locationjoystick.core.data.LocationRepository
+import com.locationjoystick.core.model.LatLng
 import com.locationjoystick.core.model.MockMode
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -25,16 +27,19 @@ class FollowerExitSpeedResetTest {
 
         // Simulate the leader's last-reported speed (e.g. Run profile) still being live, then
         // entering FOLLOWER mode as the real follower tick path does (mode set before ticks arrive).
-        service.updatePositionWithVector(lat = 1.0, lon = 2.0, speedMs = 3.5f, bearing = 90f)
         service.locationRepository.setMockMode(MockMode.FOLLOWER)
-        assertEquals(3.5f, service.captureSnapshot(nowMs = 0L).speedMs)
+        service.followerCatchUp.setTarget(LatLng(1.0, 2.0))
+        service.followerCatchUp.advance(current = LatLng(0.0, 0.0), activeProfileSpeedMs = 3.5)
+        assertTrue(service.captureSnapshot(nowMs = 0L).speedMs > 0f)
 
         service.exitFollowerMode()
+        assertEquals(MockMode.TELEPORT, service.locationRepository.currentMode.value)
 
+        // Re-entering FOLLOWER without a fresh target must not resurrect the previous session's speed.
+        service.locationRepository.setMockMode(MockMode.FOLLOWER)
         val snapshot = service.captureSnapshot(nowMs = 0L)
         assertEquals(0.0f, snapshot.speedMs)
         assertEquals(0.0f, snapshot.bearing)
-        assertEquals(MockMode.TELEPORT, service.locationRepository.currentMode.value)
     }
 
     @Test

@@ -75,7 +75,7 @@ class SpeedProfileInputTest {
             viewModel.uiState.test {
                 awaitItem() // consume initial loading state
                 viewModel.userFeedback.test {
-                    viewModel.setWalkSpeed(50.0) // 50 km/h — was rejected by old 0.1..15.0 range
+                    viewModel.setSpeed("walk", 50.0) // 50 km/h — was rejected by old 0.1..15.0 range
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 
@@ -93,7 +93,7 @@ class SpeedProfileInputTest {
             viewModel.uiState.test {
                 awaitItem() // consume initial loading state
                 viewModel.userFeedback.test {
-                    viewModel.setBikeSpeed(100.0) // 100 km/h ≈ 27.8 m/s
+                    viewModel.setSpeed("bike", 100.0) // 100 km/h ≈ 27.8 m/s
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 
@@ -111,7 +111,7 @@ class SpeedProfileInputTest {
             viewModel.uiState.test {
                 awaitItem() // consume initial loading state
                 viewModel.userFeedback.test {
-                    viewModel.setRunSpeed(20.0) // 20 km/h — also above old 15.0 cap
+                    viewModel.setSpeed("run", 20.0) // 20 km/h — also above old 15.0 cap
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 
@@ -134,7 +134,7 @@ class SpeedProfileInputTest {
                 awaitItem() // consume initial loading state
                 viewModel.userFeedback.test {
                     // 40 km/h = 11.1 m/s > ANTI_CHEAT_WARNING_THRESHOLD_MS (8.0 m/s)
-                    viewModel.setWalkSpeed(40.0)
+                    viewModel.setSpeed("walk", 40.0)
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 
@@ -153,7 +153,7 @@ class SpeedProfileInputTest {
                 awaitItem() // consume initial loading state
                 viewModel.userFeedback.test {
                     // 10 km/h = 2.78 m/s < ANTI_CHEAT_WARNING_THRESHOLD_MS (8.0 m/s)
-                    viewModel.setWalkSpeed(10.0)
+                    viewModel.setSpeed("walk", 10.0)
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 
@@ -173,7 +173,7 @@ class SpeedProfileInputTest {
                 viewModel.userFeedback.test {
                     // Threshold is 8.0 m/s = 28.8 km/h — strict > so boundary value must NOT trigger
                     val thresholdKmh = AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS * 3.6
-                    viewModel.setBikeSpeed(thresholdKmh)
+                    viewModel.setSpeed("bike", thresholdKmh)
                     viewModel.saveChanges()
                     awaitItem() // wait for "Settings saved" feedback
 

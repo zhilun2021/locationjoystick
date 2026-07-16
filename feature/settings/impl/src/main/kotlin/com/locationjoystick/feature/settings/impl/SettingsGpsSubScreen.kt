@@ -32,6 +32,7 @@ import com.locationjoystick.core.designsystem.component.LjCheckboxRow
 import com.locationjoystick.core.designsystem.component.LjScaffold
 import com.locationjoystick.core.designsystem.component.LjSegmentedControl
 import com.locationjoystick.core.model.AppFeature
+import com.locationjoystick.core.model.SpeedProfile
 import com.locationjoystick.core.model.SpeedUnit
 
 @Composable
@@ -128,53 +129,18 @@ private fun SpeedProfilesSection(
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    SpeedProfileInput(
-        label = "Slow Walk",
-        displaySpeed = convertMsToDisplay(uiState.slowWalkSpeed, uiState.speedUnit),
-        onSpeedChange = { onAction(SettingsAction.SetSlowWalkSpeed(it)) },
-        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
-    )
-    if (uiState.slowWalkSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    SpeedProfileInput(
-        label = "Walk",
-        displaySpeed = convertMsToDisplay(uiState.walkSpeed, uiState.speedUnit),
-        onSpeedChange = { onAction(SettingsAction.SetWalkSpeed(it)) },
-        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
-    )
-    if (uiState.walkSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    SpeedProfileInput(
-        label = "Run",
-        displaySpeed = convertMsToDisplay(uiState.runSpeed, uiState.speedUnit),
-        onSpeedChange = { onAction(SettingsAction.SetRunSpeed(it)) },
-        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
-    )
-    if (uiState.runSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    SpeedProfileInput(
-        label = "Bike",
-        displaySpeed = convertMsToDisplay(uiState.bikeSpeed, uiState.speedUnit),
-        onSpeedChange = { onAction(SettingsAction.SetBikeSpeed(it)) },
-        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
-    )
-    if (uiState.bikeSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    SpeedProfileInput(
-        label = "Drive",
-        displaySpeed = convertMsToDisplay(uiState.driveSpeed, uiState.speedUnit),
-        onSpeedChange = { onAction(SettingsAction.SetDriveSpeed(it)) },
-        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
-    )
-    if (uiState.driveSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
+    val profiles = SpeedProfile.defaultProfiles()
+    profiles.forEachIndexed { index, profile ->
+        val speedMs = uiState.speeds.getValue(profile.id)
+        SpeedProfileInput(
+            label = profile.name,
+            displaySpeed = convertMsToDisplay(speedMs, uiState.speedUnit),
+            onSpeedChange = { onAction(SettingsAction.SetSpeed(profile.id, it)) },
+            unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
+        )
+        if (speedMs > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
+        if (index != profiles.lastIndex) Spacer(modifier = Modifier.height(8.dp))
+    }
 }
 
 @Composable

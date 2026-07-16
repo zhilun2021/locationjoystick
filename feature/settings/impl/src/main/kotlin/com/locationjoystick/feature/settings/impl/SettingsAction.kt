@@ -6,23 +6,8 @@ import com.locationjoystick.core.model.SpeedUnit
 import com.locationjoystick.core.model.ThemeMode
 
 internal sealed class SettingsAction {
-    data class SetSlowWalkSpeed(
-        val displaySpeed: Double,
-    ) : SettingsAction()
-
-    data class SetWalkSpeed(
-        val displaySpeed: Double,
-    ) : SettingsAction()
-
-    data class SetRunSpeed(
-        val displaySpeed: Double,
-    ) : SettingsAction()
-
-    data class SetBikeSpeed(
-        val displaySpeed: Double,
-    ) : SettingsAction()
-
-    data class SetDriveSpeed(
+    data class SetSpeed(
+        val id: String,
         val displaySpeed: Double,
     ) : SettingsAction()
 
