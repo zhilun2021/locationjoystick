@@ -5,6 +5,10 @@ import com.locationjoystick.core.model.RoamingDefaults
 import com.locationjoystick.core.model.SpeedUnit
 
 internal sealed class SettingsAction {
+    data class SetSlowWalkSpeed(
+        val displaySpeed: Double,
+    ) : SettingsAction()
+
     data class SetWalkSpeed(
         val displaySpeed: Double,
     ) : SettingsAction()
@@ -14,6 +18,10 @@ internal sealed class SettingsAction {
     ) : SettingsAction()
 
     data class SetBikeSpeed(
+        val displaySpeed: Double,
+    ) : SettingsAction()
+
+    data class SetDriveSpeed(
         val displaySpeed: Double,
     ) : SettingsAction()
 

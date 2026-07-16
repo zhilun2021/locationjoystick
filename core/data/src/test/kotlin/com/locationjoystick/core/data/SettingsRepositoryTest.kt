@@ -41,25 +41,31 @@ class SettingsRepositoryTest {
     // getSpeedProfiles
 
     @Test
-    fun `getSpeedProfiles returns walk, run, bike from preferences`() =
+    fun `getSpeedProfiles returns slow_walk, walk, run, bike, drive from preferences`() =
         runTest {
             fakeDataSource.speedProfilesFlow.value =
                 SpeedProfilePreferences(
+                    slowWalkSpeedMs = 0.3,
                     walkSpeedMs = 1.4,
                     runSpeedMs = 3.0,
                     bikeSpeedMs = 5.0,
+                    driveSpeedMs = 15.0,
                     activeProfileId = "walk",
                 )
 
             repository.getSpeedProfiles().test {
                 val profiles = awaitItem()
-                assertEquals(3, profiles.size)
-                assertEquals("walk", profiles[0].id)
-                assertEquals(1.4, profiles[0].speedMetersPerSecond, 0.001)
-                assertEquals("run", profiles[1].id)
-                assertEquals(3.0, profiles[1].speedMetersPerSecond, 0.001)
-                assertEquals("bike", profiles[2].id)
-                assertEquals(5.0, profiles[2].speedMetersPerSecond, 0.001)
+                assertEquals(5, profiles.size)
+                assertEquals("slow_walk", profiles[0].id)
+                assertEquals(0.3, profiles[0].speedMetersPerSecond, 0.001)
+                assertEquals("walk", profiles[1].id)
+                assertEquals(1.4, profiles[1].speedMetersPerSecond, 0.001)
+                assertEquals("run", profiles[2].id)
+                assertEquals(3.0, profiles[2].speedMetersPerSecond, 0.001)
+                assertEquals("bike", profiles[3].id)
+                assertEquals(5.0, profiles[3].speedMetersPerSecond, 0.001)
+                assertEquals("drive", profiles[4].id)
+                assertEquals(15.0, profiles[4].speedMetersPerSecond, 0.001)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -79,7 +85,7 @@ class SettingsRepositoryTest {
                     )
 
                 val profiles = awaitItem()
-                assertEquals(2.0, profiles[0].speedMetersPerSecond, 0.001)
+                assertEquals(2.0, profiles[1].speedMetersPerSecond, 0.001)
                 cancelAndIgnoreRemainingEvents()
             }
         }
@@ -921,6 +927,13 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
 
     override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> = speedProfilesFlow
 
+    override suspend fun setSlowWalkSpeed(ms: Double) {
+        speedProfilesFlow.value =
+            speedProfilesFlow.value.copy(
+                slowWalkSpeedMs = ms.coerceAtLeast(AppPreferencesDataSource.MIN_SPEED_MS),
+            )
+    }
+
     override suspend fun setWalkSpeed(ms: Double) {
         speedProfilesFlow.value =
             speedProfilesFlow.value.copy(
@@ -939,6 +952,13 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
         speedProfilesFlow.value =
             speedProfilesFlow.value.copy(
                 bikeSpeedMs = ms.coerceAtLeast(AppPreferencesDataSource.MIN_SPEED_MS),
+            )
+    }
+
+    override suspend fun setDriveSpeed(ms: Double) {
+        speedProfilesFlow.value =
+            speedProfilesFlow.value.copy(
+                driveSpeedMs = ms.coerceAtLeast(AppPreferencesDataSource.MIN_SPEED_MS),
             )
     }
 
@@ -1174,9 +1194,11 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
     override fun getSettingsSnapshot(): Flow<SettingsSnapshot> =
         flowOf(
             SettingsSnapshot(
+                slowWalkSpeedMs = AppPreferencesDataSource.DEFAULT_SLOW_WALK_SPEED_MS,
                 walkSpeedMs = AppPreferencesDataSource.DEFAULT_WALK_SPEED_MS,
                 runSpeedMs = AppPreferencesDataSource.DEFAULT_RUN_SPEED_MS,
                 bikeSpeedMs = AppPreferencesDataSource.DEFAULT_BIKE_SPEED_MS,
+                driveSpeedMs = AppPreferencesDataSource.DEFAULT_DRIVE_SPEED_MS,
                 speedUnit = SpeedUnit.KMH,
                 featureOrder = featureOrderFlow.value,
                 enabledWidgetFeatures = AppPreferencesDataSource.DEFAULT_WIDGET_ITEMS.mapNotNull { it.toAppFeature() }.toSet(),
@@ -1206,9 +1228,11 @@ class FakeAppPreferencesDataSource : PreferencesDataSource {
     override suspend fun applySnapshot(snapshot: SettingsSnapshot) {
         speedProfilesFlow.value =
             speedProfilesFlow.value.copy(
+                slowWalkSpeedMs = snapshot.slowWalkSpeedMs,
                 walkSpeedMs = snapshot.walkSpeedMs,
                 runSpeedMs = snapshot.runSpeedMs,
                 bikeSpeedMs = snapshot.bikeSpeedMs,
+                driveSpeedMs = snapshot.driveSpeedMs,
             )
         widgetItemsFlow.value = snapshot.enabledWidgetFeatures.map { it.name.lowercase() }.toSet()
         mapItemsFlow.value = snapshot.enabledMapFeatures.map { it.name.lowercase() }.toSet()

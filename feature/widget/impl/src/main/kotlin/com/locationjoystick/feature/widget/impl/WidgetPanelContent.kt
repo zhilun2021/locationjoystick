@@ -597,6 +597,7 @@ private fun featureIconAndState(
                 when (activeProfileId) {
                     AppConstants.ProfileConstants.PROFILE_ID_RUN -> LjIcons.DirectionsRun
                     AppConstants.ProfileConstants.PROFILE_ID_BIKE -> LjIcons.DirectionsBike
+                    AppConstants.ProfileConstants.PROFILE_ID_DRIVE -> LjIcons.DirectionsCar
                     else -> LjIcons.DirectionsWalk
                 },
                 true,

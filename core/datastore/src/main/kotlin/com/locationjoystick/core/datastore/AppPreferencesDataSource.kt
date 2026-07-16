@@ -37,8 +37,11 @@ import javax.inject.Singleton
  * Keys are defined in [AppConstants.DataStoreConstants].
  */
 interface PreferencesDataSource {
-    /** Gets the current speed profiles (walk/run/bike speeds and active profile ID). */
+    /** Gets the current speed profiles (slow walk/walk/run/bike/drive speeds and active profile ID). */
     fun getSpeedProfiles(): Flow<SpeedProfilePreferences>
+
+    /** Sets the slow walk speed in meters per second. */
+    suspend fun setSlowWalkSpeed(ms: Double)
 
     /** Sets the walk speed in meters per second. */
     suspend fun setWalkSpeed(ms: Double)
@@ -49,7 +52,10 @@ interface PreferencesDataSource {
     /** Sets the bike speed in meters per second. */
     suspend fun setBikeSpeed(ms: Double)
 
-    /** Sets the active speed profile ID (walk/run/bike). */
+    /** Sets the drive speed in meters per second. */
+    suspend fun setDriveSpeed(ms: Double)
+
+    /** Sets the active speed profile ID (slow_walk/walk/run/bike/drive). */
     suspend fun setActiveProfileId(profileId: String)
 
     /** Gets the set of enabled widget feature keys. */
@@ -258,9 +264,11 @@ interface PreferencesDataSource {
 }
 
 data class SettingsSnapshot(
+    val slowWalkSpeedMs: Double,
     val walkSpeedMs: Double,
     val runSpeedMs: Double,
     val bikeSpeedMs: Double,
+    val driveSpeedMs: Double,
     val speedUnit: SpeedUnit,
     val featureOrder: List<AppFeature>,
     val enabledWidgetFeatures: Set<AppFeature>,
@@ -292,14 +300,21 @@ data class SettingsSnapshot(
 fun SpeedProfilePreferences.toActiveSpeedProfile(): SpeedProfile {
     val speedMs =
         when (activeProfileId) {
+            "slow_walk" -> slowWalkSpeedMs
             "walk" -> walkSpeedMs
             "run" -> runSpeedMs
             "bike" -> bikeSpeedMs
+            "drive" -> driveSpeedMs
             else -> walkSpeedMs
+        }
+    val name =
+        when (activeProfileId) {
+            "slow_walk" -> "Slow Walk"
+            else -> activeProfileId.replaceFirstChar { it.uppercaseChar() }
         }
     return SpeedProfile(
         id = activeProfileId,
-        name = activeProfileId.replaceFirstChar { it.uppercaseChar() },
+        name = name,
         speedMetersPerSecond = speedMs,
     )
 }
@@ -334,9 +349,11 @@ class AppPreferencesDataSource
         private val dataStore: DataStore<Preferences>,
     ) : PreferencesDataSource {
         private object Keys {
+            val SLOW_WALK_SPEED_MS = doublePreferencesKey("slow_walk_speed_ms")
             val WALK_SPEED_MS = doublePreferencesKey("walk_speed_ms")
             val RUN_SPEED_MS = doublePreferencesKey("run_speed_ms")
             val BIKE_SPEED_MS = doublePreferencesKey("bike_speed_ms")
+            val DRIVE_SPEED_MS = doublePreferencesKey("drive_speed_ms")
             val ACTIVE_PROFILE_ID = stringPreferencesKey("active_profile_id")
             val WIDGET_ITEMS = stringSetPreferencesKey("widget_items")
             val ROAMING_RADIUS_METERS = doublePreferencesKey("roaming_radius_meters")
@@ -393,12 +410,18 @@ class AppPreferencesDataSource
                     }
                 }.map { prefs ->
                     SpeedProfilePreferences(
+                        slowWalkSpeedMs = prefs[Keys.SLOW_WALK_SPEED_MS] ?: DEFAULT_SLOW_WALK_SPEED_MS,
                         walkSpeedMs = prefs[Keys.WALK_SPEED_MS] ?: DEFAULT_WALK_SPEED_MS,
                         runSpeedMs = prefs[Keys.RUN_SPEED_MS] ?: DEFAULT_RUN_SPEED_MS,
                         bikeSpeedMs = prefs[Keys.BIKE_SPEED_MS] ?: DEFAULT_BIKE_SPEED_MS,
+                        driveSpeedMs = prefs[Keys.DRIVE_SPEED_MS] ?: DEFAULT_DRIVE_SPEED_MS,
                         activeProfileId = prefs[Keys.ACTIVE_PROFILE_ID] ?: DEFAULT_ACTIVE_PROFILE_ID,
                     )
                 }
+
+        override suspend fun setSlowWalkSpeed(ms: Double) {
+            dataStore.edit { prefs -> prefs[Keys.SLOW_WALK_SPEED_MS] = ms.coerceAtLeast(MIN_SPEED_MS) }
+        }
 
         override suspend fun setWalkSpeed(ms: Double) {
             dataStore.edit { prefs -> prefs[Keys.WALK_SPEED_MS] = ms.coerceAtLeast(MIN_SPEED_MS) }
@@ -410,6 +433,10 @@ class AppPreferencesDataSource
 
         override suspend fun setBikeSpeed(ms: Double) {
             dataStore.edit { prefs -> prefs[Keys.BIKE_SPEED_MS] = ms.coerceAtLeast(MIN_SPEED_MS) }
+        }
+
+        override suspend fun setDriveSpeed(ms: Double) {
+            dataStore.edit { prefs -> prefs[Keys.DRIVE_SPEED_MS] = ms.coerceAtLeast(MIN_SPEED_MS) }
         }
 
         override suspend fun setActiveProfileId(profileId: String) {
@@ -732,9 +759,11 @@ class AppPreferencesDataSource
 
         override suspend fun applySnapshot(snapshot: SettingsSnapshot) {
             dataStore.edit { prefs ->
+                prefs[Keys.SLOW_WALK_SPEED_MS] = snapshot.slowWalkSpeedMs.coerceAtLeast(MIN_SPEED_MS)
                 prefs[Keys.WALK_SPEED_MS] = snapshot.walkSpeedMs.coerceAtLeast(MIN_SPEED_MS)
                 prefs[Keys.RUN_SPEED_MS] = snapshot.runSpeedMs.coerceAtLeast(MIN_SPEED_MS)
                 prefs[Keys.BIKE_SPEED_MS] = snapshot.bikeSpeedMs.coerceAtLeast(MIN_SPEED_MS)
+                prefs[Keys.DRIVE_SPEED_MS] = snapshot.driveSpeedMs.coerceAtLeast(MIN_SPEED_MS)
                 prefs[Keys.SPEED_UNIT] = snapshot.speedUnit.name
                 prefs[Keys.WIDGET_ITEMS] = snapshot.enabledWidgetFeatures.map { it.name.lowercase() }.toSet()
                 prefs[Keys.MAP_FAB_ITEMS] = snapshot.enabledMapFeatures.map { it.name.lowercase() }.toSet()
@@ -812,9 +841,11 @@ class AppPreferencesDataSource
                     val widgetItems = prefs[Keys.WIDGET_ITEMS] ?: DEFAULT_WIDGET_ITEMS
                     val mapItems = prefs[Keys.MAP_FAB_ITEMS] ?: DEFAULT_MAP_FAB_ITEMS
                     SettingsSnapshot(
+                        slowWalkSpeedMs = prefs[Keys.SLOW_WALK_SPEED_MS] ?: DEFAULT_SLOW_WALK_SPEED_MS,
                         walkSpeedMs = prefs[Keys.WALK_SPEED_MS] ?: DEFAULT_WALK_SPEED_MS,
                         runSpeedMs = prefs[Keys.RUN_SPEED_MS] ?: DEFAULT_RUN_SPEED_MS,
                         bikeSpeedMs = prefs[Keys.BIKE_SPEED_MS] ?: DEFAULT_BIKE_SPEED_MS,
+                        driveSpeedMs = prefs[Keys.DRIVE_SPEED_MS] ?: DEFAULT_DRIVE_SPEED_MS,
                         speedUnit = speedUnit,
                         featureOrder = parseFeatureOrder(prefs[Keys.FEATURE_ORDER]),
                         enabledWidgetFeatures = widgetItems.mapNotNull { it.toAppFeature() }.toSet(),
@@ -862,9 +893,11 @@ class AppPreferencesDataSource
         companion object {
             const val DATASTORE_FILE_NAME = AppConstants.DataStoreConstants.FILE_NAME
 
+            const val DEFAULT_SLOW_WALK_SPEED_MS = AppConstants.ProfileConstants.SLOW_WALK_SPEED_MPS
             const val DEFAULT_WALK_SPEED_MS = AppConstants.ProfileConstants.WALK_SPEED_MPS
             const val DEFAULT_RUN_SPEED_MS = AppConstants.ProfileConstants.RUN_SPEED_MPS
             const val DEFAULT_BIKE_SPEED_MS = AppConstants.ProfileConstants.BIKE_SPEED_MPS
+            const val DEFAULT_DRIVE_SPEED_MS = AppConstants.ProfileConstants.DRIVE_SPEED_MPS
             const val DEFAULT_ACTIVE_PROFILE_ID = AppConstants.ProfileConstants.DEFAULT_ACTIVE_PROFILE_ID
 
             const val MIN_SPEED_MS = AppConstants.ProfileConstants.MIN_SPEED_MS
@@ -934,4 +967,6 @@ data class SpeedProfilePreferences(
     val runSpeedMs: Double,
     val bikeSpeedMs: Double,
     val activeProfileId: String,
+    val slowWalkSpeedMs: Double = AppConstants.ProfileConstants.SLOW_WALK_SPEED_MPS,
+    val driveSpeedMs: Double = AppConstants.ProfileConstants.DRIVE_SPEED_MPS,
 )

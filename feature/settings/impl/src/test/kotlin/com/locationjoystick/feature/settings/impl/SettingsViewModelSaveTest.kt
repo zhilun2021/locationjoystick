@@ -370,9 +370,11 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
     override fun getSettingsSnapshot(): Flow<SettingsSnapshot> =
         MutableStateFlow(
             SettingsSnapshot(
+                slowWalkSpeedMs = speedProfilesFlow.value.slowWalkSpeedMs,
                 walkSpeedMs = speedProfilesFlow.value.walkSpeedMs,
                 runSpeedMs = speedProfilesFlow.value.runSpeedMs,
                 bikeSpeedMs = speedProfilesFlow.value.bikeSpeedMs,
+                driveSpeedMs = speedProfilesFlow.value.driveSpeedMs,
                 speedUnit = SpeedUnit.KMH,
                 featureOrder = featureOrderFlow.value,
                 enabledWidgetFeatures = widgetItemsFlow.value.mapNotNull { it.toAppFeature() }.toSet(),
@@ -405,9 +407,11 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
         lastAppliedSnapshot = snapshot
         speedProfilesFlow.value =
             speedProfilesFlow.value.copy(
+                slowWalkSpeedMs = snapshot.slowWalkSpeedMs,
                 walkSpeedMs = snapshot.walkSpeedMs,
                 runSpeedMs = snapshot.runSpeedMs,
                 bikeSpeedMs = snapshot.bikeSpeedMs,
+                driveSpeedMs = snapshot.driveSpeedMs,
             )
         widgetItemsFlow.value = snapshot.enabledWidgetFeatures.map { it.name.lowercase() }.toSet()
         mapItemsFlow.value = snapshot.enabledMapFeatures.map { it.name.lowercase() }.toSet()
@@ -419,6 +423,10 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
 
     override fun getSpeedProfiles(): Flow<SpeedProfilePreferences> = speedProfilesFlow
 
+    override suspend fun setSlowWalkSpeed(ms: Double) {
+        speedProfilesFlow.value = speedProfilesFlow.value.copy(slowWalkSpeedMs = ms)
+    }
+
     override suspend fun setWalkSpeed(ms: Double) {
         speedProfilesFlow.value = speedProfilesFlow.value.copy(walkSpeedMs = ms)
     }
@@ -429,6 +437,10 @@ internal class SaveTestPreferencesDataSource : PreferencesDataSource {
 
     override suspend fun setBikeSpeed(ms: Double) {
         speedProfilesFlow.value = speedProfilesFlow.value.copy(bikeSpeedMs = ms)
+    }
+
+    override suspend fun setDriveSpeed(ms: Double) {
+        speedProfilesFlow.value = speedProfilesFlow.value.copy(driveSpeedMs = ms)
     }
 
     override suspend fun setActiveProfileId(profileId: String) {

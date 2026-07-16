@@ -452,7 +452,7 @@ private fun featureMeta(feature: AppFeature): FeatureMeta =
         }
 
         AppFeature.SPEED_CYCLE -> {
-            FeatureMeta("Speed cycle", "Cycles through Walk, Run, and Bike speed profiles with a single tap.", LjIcons.Speed)
+            FeatureMeta("Speed cycle", "Cycles through all speed profiles with a single tap.", LjIcons.Speed)
         }
     }
 

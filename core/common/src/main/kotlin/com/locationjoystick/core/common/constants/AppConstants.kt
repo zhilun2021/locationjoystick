@@ -14,12 +14,16 @@ object AppConstants {
     }
 
     object ProfileConstants {
+        const val PROFILE_ID_SLOW_WALK = "slow_walk"
         const val PROFILE_ID_WALK = "walk"
         const val PROFILE_ID_RUN = "run"
         const val PROFILE_ID_BIKE = "bike"
+        const val PROFILE_ID_DRIVE = "drive"
+        const val SLOW_WALK_SPEED_MPS = 0.3
         const val WALK_SPEED_MPS = 0.5556
         const val RUN_SPEED_MPS = 2.2222
         const val BIKE_SPEED_MPS = 4.1667
+        const val DRIVE_SPEED_MPS = 15.0
         const val DEFAULT_ACTIVE_PROFILE_ID = PROFILE_ID_WALK
         const val MIN_SPEED_MS = 0.01
         const val MAX_SPEED_MS = 15.0

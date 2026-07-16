@@ -129,6 +129,16 @@ private fun SpeedProfilesSection(
     Spacer(modifier = Modifier.height(16.dp))
 
     SpeedProfileInput(
+        label = "Slow Walk",
+        displaySpeed = convertMsToDisplay(uiState.slowWalkSpeed, uiState.speedUnit),
+        onSpeedChange = { onAction(SettingsAction.SetSlowWalkSpeed(it)) },
+        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
+    )
+    if (uiState.slowWalkSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    SpeedProfileInput(
         label = "Walk",
         displaySpeed = convertMsToDisplay(uiState.walkSpeed, uiState.speedUnit),
         onSpeedChange = { onAction(SettingsAction.SetWalkSpeed(it)) },
@@ -155,6 +165,16 @@ private fun SpeedProfilesSection(
         unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
     )
     if (uiState.bikeSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
+
+    Spacer(modifier = Modifier.height(8.dp))
+
+    SpeedProfileInput(
+        label = "Drive",
+        displaySpeed = convertMsToDisplay(uiState.driveSpeed, uiState.speedUnit),
+        onSpeedChange = { onAction(SettingsAction.SetDriveSpeed(it)) },
+        unit = if (uiState.speedUnit == SpeedUnit.KMH) "km/h" else "mph",
+    )
+    if (uiState.driveSpeed > AppConstants.ProfileConstants.ANTI_CHEAT_WARNING_THRESHOLD_MS) AntiCheatWarning()
 }
 
 @Composable

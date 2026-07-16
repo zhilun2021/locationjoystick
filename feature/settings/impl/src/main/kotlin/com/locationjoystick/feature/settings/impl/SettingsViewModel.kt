@@ -97,9 +97,11 @@ class SettingsViewModel
         internal val userFeedback = MutableSharedFlow<UserFeedback>(extraBufferCapacity = 1)
 
         private data class DraftState(
+            val slowWalkSpeed: Double? = null,
             val walkSpeed: Double? = null,
             val runSpeed: Double? = null,
             val bikeSpeed: Double? = null,
+            val driveSpeed: Double? = null,
             val speedUnit: SpeedUnit? = null,
             val featureOrder: List<AppFeature>? = null,
             val widgetFeatures: Set<AppFeature>? = null,
@@ -169,9 +171,11 @@ class SettingsViewModel
                 val isDirty = draftState != DraftState()
                 SettingsUiState(
                     isLoading = false,
+                    slowWalkSpeed = draftState.slowWalkSpeed ?: snapshot.slowWalkSpeedMs,
                     walkSpeed = draftState.walkSpeed ?: snapshot.walkSpeedMs,
                     runSpeed = draftState.runSpeed ?: snapshot.runSpeedMs,
                     bikeSpeed = draftState.bikeSpeed ?: snapshot.bikeSpeedMs,
+                    driveSpeed = draftState.driveSpeed ?: snapshot.driveSpeedMs,
                     speedUnit = draftState.speedUnit ?: snapshot.speedUnit,
                     featureOrder = draftState.featureOrder ?: snapshot.featureOrder,
                     enabledWidgetFeatures = draftState.widgetFeatures ?: snapshot.enabledWidgetFeatures,
@@ -210,6 +214,10 @@ class SettingsViewModel
                 initialValue = SettingsUiState(isLoading = true),
             )
 
+        fun setSlowWalkSpeed(displaySpeed: Double) {
+            mutableDraft.update { it.copy(slowWalkSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
+        }
+
         fun setWalkSpeed(displaySpeed: Double) {
             mutableDraft.update { it.copy(walkSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
         }
@@ -220,6 +228,10 @@ class SettingsViewModel
 
         fun setBikeSpeed(displaySpeed: Double) {
             mutableDraft.update { it.copy(bikeSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
+        }
+
+        fun setDriveSpeed(displaySpeed: Double) {
+            mutableDraft.update { it.copy(driveSpeed = convertDisplayToMs(displaySpeed, uiState.value.speedUnit)) }
         }
 
         fun setSpeedUnit(unit: SpeedUnit) {
@@ -396,9 +408,11 @@ class SettingsViewModel
                     val d = mutableDraft.value
                     settingsRepository.applySnapshot(
                         SettingsSnapshot(
+                            slowWalkSpeedMs = state.slowWalkSpeed,
                             walkSpeedMs = state.walkSpeed,
                             runSpeedMs = state.runSpeed,
                             bikeSpeedMs = state.bikeSpeed,
+                            driveSpeedMs = state.driveSpeed,
                             speedUnit = state.speedUnit,
                             featureOrder = state.featureOrder,
                             enabledWidgetFeatures = state.enabledWidgetFeatures,
@@ -487,9 +501,11 @@ class SettingsViewModel
             val state = uiState.value
             val speedProfiles =
                 listOf(
+                    SpeedProfile(id = "slow_walk", name = "Slow Walk", speedMetersPerSecond = state.slowWalkSpeed),
                     SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = state.walkSpeed),
                     SpeedProfile(id = "run", name = "Run", speedMetersPerSecond = state.runSpeed),
                     SpeedProfile(id = "bike", name = "Bike", speedMetersPerSecond = state.bikeSpeed),
+                    SpeedProfile(id = "drive", name = "Drive", speedMetersPerSecond = state.driveSpeed),
                 )
             val settings =
                 AppSettings(
@@ -682,9 +698,11 @@ class SettingsViewModel
             val profileById = data.speedProfiles.associateBy { it.id }
             settingsRepository.applySnapshot(
                 currentSnapshot.copy(
+                    slowWalkSpeedMs = profileById["slow_walk"]?.speedMetersPerSecond ?: currentSnapshot.slowWalkSpeedMs,
                     walkSpeedMs = profileById["walk"]?.speedMetersPerSecond ?: currentSnapshot.walkSpeedMs,
                     runSpeedMs = profileById["run"]?.speedMetersPerSecond ?: currentSnapshot.runSpeedMs,
                     bikeSpeedMs = profileById["bike"]?.speedMetersPerSecond ?: currentSnapshot.bikeSpeedMs,
+                    driveSpeedMs = profileById["drive"]?.speedMetersPerSecond ?: currentSnapshot.driveSpeedMs,
                     speedUnit = data.settings.speedUnit,
                     featureOrder = data.settings.featureOrder,
                     enabledWidgetFeatures = data.settings.enabledWidgetFeatures,

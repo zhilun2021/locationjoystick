@@ -147,7 +147,14 @@ private fun RoamingSection(
     Text("Speed profile", style = MaterialTheme.typography.labelLarge)
     Spacer(modifier = Modifier.height(4.dp))
     LjSegmentedControl(
-        options = listOf("walk" to "Walk", "run" to "Run", "bike" to "Bike"),
+        options =
+            listOf(
+                "slow_walk" to "Slow Walk",
+                "walk" to "Walk",
+                "run" to "Run",
+                "bike" to "Bike",
+                "drive" to "Drive",
+            ),
         selected = roamingDefaults.speedProfileId,
         onSelect = { onAction(SettingsAction.UpdateRoamingDefaults(roamingDefaults.copy(speedProfileId = it))) },
         modifier = Modifier.fillMaxWidth(),

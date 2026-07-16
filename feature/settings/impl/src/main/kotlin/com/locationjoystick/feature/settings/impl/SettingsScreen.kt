@@ -248,6 +248,10 @@ fun SettingsRoute(
         onCheckCompassService = { viewModel.checkCompassServiceGranted() },
         onAction = { action ->
             when (action) {
+                is SettingsAction.SetSlowWalkSpeed -> {
+                    viewModel.setSlowWalkSpeed(action.displaySpeed)
+                }
+
                 is SettingsAction.SetWalkSpeed -> {
                     viewModel.setWalkSpeed(action.displaySpeed)
                 }
@@ -258,6 +262,10 @@ fun SettingsRoute(
 
                 is SettingsAction.SetBikeSpeed -> {
                     viewModel.setBikeSpeed(action.displaySpeed)
+                }
+
+                is SettingsAction.SetDriveSpeed -> {
+                    viewModel.setDriveSpeed(action.displaySpeed)
                 }
 
                 is SettingsAction.SetSpeedUnit -> {

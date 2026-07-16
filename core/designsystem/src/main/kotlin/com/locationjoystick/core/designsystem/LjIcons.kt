@@ -20,6 +20,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeveloperMode
 import androidx.compose.material.icons.rounded.Directions
+import androidx.compose.material.icons.rounded.DirectionsCar
 import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Favorite
@@ -59,6 +60,7 @@ object LjIcons {
     val Delete = Icons.Outlined.DeleteOutline
     val DeveloperMode = Icons.Rounded.DeveloperMode
     val DirectionsBike = Icons.AutoMirrored.Rounded.DirectionsBike
+    val DirectionsCar = Icons.Rounded.DirectionsCar
     val DirectionsRun = Icons.AutoMirrored.Rounded.DirectionsRun
     val DirectionsWalk = Icons.AutoMirrored.Rounded.DirectionsWalk
     val Directions = Icons.Rounded.Directions

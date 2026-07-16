@@ -22,7 +22,7 @@ import javax.inject.Singleton
  * Repository for all user settings and preferences.
  *
  * Acts as the single source of truth for:
- * - Speed profiles (walk/run/bike speeds)
+ * - Speed profiles (slow walk/walk/run/bike/drive speeds)
  * - Active speed profile
  * - Widget features configuration
  * - Onboarding state
@@ -41,17 +41,23 @@ class SettingsRepository
         fun getSpeedProfiles(): Flow<List<SpeedProfile>> =
             dataSource.getSpeedProfiles().map { prefs ->
                 listOf(
+                    SpeedProfile(id = "slow_walk", name = "Slow Walk", speedMetersPerSecond = prefs.slowWalkSpeedMs),
                     SpeedProfile(id = "walk", name = "Walk", speedMetersPerSecond = prefs.walkSpeedMs),
                     SpeedProfile(id = "run", name = "Run", speedMetersPerSecond = prefs.runSpeedMs),
                     SpeedProfile(id = "bike", name = "Bike", speedMetersPerSecond = prefs.bikeSpeedMs),
+                    SpeedProfile(id = "drive", name = "Drive", speedMetersPerSecond = prefs.driveSpeedMs),
                 )
             }
+
+        fun getSlowWalkSpeed(): Flow<Double> = dataSource.getSpeedProfiles().map { it.slowWalkSpeedMs }
 
         fun getWalkSpeed(): Flow<Double> = dataSource.getSpeedProfiles().map { it.walkSpeedMs }
 
         fun getRunSpeed(): Flow<Double> = dataSource.getSpeedProfiles().map { it.runSpeedMs }
 
         fun getBikeSpeed(): Flow<Double> = dataSource.getSpeedProfiles().map { it.bikeSpeedMs }
+
+        fun getDriveSpeed(): Flow<Double> = dataSource.getSpeedProfiles().map { it.driveSpeedMs }
 
         fun getActiveSpeedProfile(): Flow<SpeedProfile> =
             dataSource.getSpeedProfiles().map { prefs ->
@@ -87,11 +93,15 @@ class SettingsRepository
 
         suspend fun updateRoamingDefaults(defaults: RoamingDefaults) = dataSource.updateRoamingDefaults(defaults)
 
+        suspend fun setSlowWalkSpeed(ms: Double) = dataSource.setSlowWalkSpeed(ms)
+
         suspend fun setWalkSpeed(ms: Double) = dataSource.setWalkSpeed(ms)
 
         suspend fun setRunSpeed(ms: Double) = dataSource.setRunSpeed(ms)
 
         suspend fun setBikeSpeed(ms: Double) = dataSource.setBikeSpeed(ms)
+
+        suspend fun setDriveSpeed(ms: Double) = dataSource.setDriveSpeed(ms)
 
         suspend fun setActiveProfileId(profileId: String) = dataSource.setActiveProfileId(profileId)
 

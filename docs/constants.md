@@ -7,7 +7,7 @@ All constants → `:core:common/constants/AppConstants.kt`.
 | Object | Contents |
 |--------|----------|
 | `LocationConstants` | Update interval, earth radius, walk threshold, RDP epsilon |
-| `ProfileConstants` | Walk/Run/Bike speed presets, min/max speed, anti-cheat threshold |
+| `ProfileConstants` | Slow Walk/Walk/Run/Bike/Drive speed presets, min/max speed, anti-cheat threshold |
 | `JitterConstants` | Accuracy min/max, jitter radii, intervals, speed variation percentages |
 | `RealismConstants` | Altitude sigma/drift/clamp, warmup duration, satellite interval, suspended push/pause durations, pedometer mocking enabled default |
 | `PedometerConstants` | Max walking speed, stride base, stride speed factor, stride jitter percentage |

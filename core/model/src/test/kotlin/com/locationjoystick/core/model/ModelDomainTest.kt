@@ -229,7 +229,7 @@ class ModelDomainTest {
 
         assertEquals(1, export.schemaVersion)
         assertEquals(1000L, export.exportedAt)
-        assertEquals(3, export.speedProfiles.size)
+        assertEquals(5, export.speedProfiles.size)
         assertTrue(export.routes.isEmpty())
         assertTrue(export.favoriteLocations.isEmpty())
     }

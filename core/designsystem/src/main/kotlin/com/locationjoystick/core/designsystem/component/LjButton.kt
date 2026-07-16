@@ -1,11 +1,13 @@
 package com.locationjoystick.core.designsystem.component
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -92,12 +94,12 @@ fun <T> LjSegmentedControl(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier = modifier) {
+    Row(modifier = modifier.horizontalScroll(rememberScrollState())) {
         options.forEach { (value, label) ->
             val isSelected = value == selected
             Button(
                 onClick = { onSelect(value) },
-                modifier = Modifier.weight(1f).padding(horizontal = 2.dp).defaultMinSize(minHeight = 40.dp),
+                modifier = Modifier.padding(horizontal = 2.dp).defaultMinSize(minHeight = 40.dp),
                 colors =
                     ButtonDefaults.buttonColors(
                         containerColor = if (isSelected) LjAccent else MaterialTheme.colorScheme.surfaceVariant,

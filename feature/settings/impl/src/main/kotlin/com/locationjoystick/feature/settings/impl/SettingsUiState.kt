@@ -7,9 +7,11 @@ import com.locationjoystick.core.model.SpeedUnit
 
 data class SettingsUiState(
     val isLoading: Boolean = true,
+    val slowWalkSpeed: Double = SpeedProfile.SLOW_WALK_SPEED_MPS,
     val walkSpeed: Double = SpeedProfile.WALK_SPEED_MPS,
     val runSpeed: Double = SpeedProfile.RUN_SPEED_MPS,
     val bikeSpeed: Double = SpeedProfile.BIKE_SPEED_MPS,
+    val driveSpeed: Double = SpeedProfile.DRIVE_SPEED_MPS,
     val speedUnit: SpeedUnit = SpeedUnit.KMH,
     val featureOrder: List<AppFeature> = AppFeature.DEFAULT_ORDER,
     val enabledWidgetFeatures: Set<AppFeature> = AppFeature.DEFAULT_WIDGET_ENABLED,
