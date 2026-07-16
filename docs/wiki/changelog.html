@@ -15,6 +15,30 @@
     <h2 id="changelog">Changelog</h2>
     <p>What's new in each release. Download the latest APK from <a href="https://github.com/shortcuts/locationjoystick/releases/latest" target="_blank" rel="noopener">GitHub Releases</a>.</p>
 
+    <h3 id="v0140"><a href="https://github.com/shortcuts/locationjoystick/releases/tag/v0.14.0" target="_blank" rel="noopener">0.14.0</a> — July 16, 2026</h3>
+    <ul>
+      <li>New: Light mode — a high-contrast light theme option, alongside the existing dark theme.</li>
+      <li>New: "Reset all data" button in Settings — clears all favorites, routes, and settings without needing Android's system-level app data reset.</li>
+      <li>New: two more speed profiles, Slow Walk and Drive.</li>
+      <li>Favorites now has a search bar to filter by name, and hot locations are grouped under category headers.</li>
+      <li>The search bar now accepts raw coordinates (e.g. "35.6762, 139.6503") typed directly, no need to search by name.</li>
+      <li>Group Sync: followers now walk toward the leader's position instead of teleporting instantly, and reconnect more reliably after repeated network hiccups.</li>
+      <li>Fixed a regression that broke importing routes from GPS Joystick.</li>
+      <li>Various fixes to the floating map's route controls and walk/replay handling.</li>
+    </ul>
+
+    <h3 id="v0130"><a href="https://github.com/shortcuts/locationjoystick/releases/tag/v0.13.0" target="_blank" rel="noopener">0.13.0</a> — July 4, 2026</h3>
+    <ul>
+      <li>New: Tap to Walk — quick-walk on the floating map with one tap, plus an optional screen overlay to tap-to-walk over other apps.</li>
+      <li>New: compass-aware tap-to-walk orientation, calibrated for Pokémon Go.</li>
+      <li>The Start/Stop button now shows the name of the location you're spoofing to.</li>
+      <li>Group Sync: followers now reconnect automatically after a disconnect, including after a device or app restart.</li>
+      <li>GPX import now supports bare waypoint files with no track or route wrapper.</li>
+      <li>Lowered the minimum speed floor to allow sub-0.1 mph values.</li>
+      <li>Removed the elevation controls feature.</li>
+      <li>Fixed a bug where finishing one walk could wipe the path of a different, newer walk.</li>
+    </ul>
+
     <h3 id="v0120"><a href="https://github.com/shortcuts/locationjoystick/releases/tag/v0.12.0" target="_blank" rel="noopener">0.12.0</a> — June 24, 2026</h3>
     <ul>
       <li>Settings → Menus now has one combined "App Features" list with drag-to-reorder, replacing the separate widget and map sections — toggle each feature for the widget, the map, or both from the same place.</li>
