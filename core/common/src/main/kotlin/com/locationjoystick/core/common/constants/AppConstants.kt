@@ -342,8 +342,18 @@ object AppConstants {
         const val NSD_SERVICE_TYPE = "_ljsync._tcp."
         const val NSD_DISCOVERY_TIMEOUT_MS = 10_000L
         const val GROUP_CODE_LENGTH = 6
-        const val MAX_CONSECUTIVE_POLL_FAILURES = 5
+
+        /**
+         * At [POLL_INTERVAL_MS] (1s) + up to [POLL_TIMEOUT_MS] per attempt, 5 failures gave up
+         * within ~5-9s — too tight for a brief Wi-Fi reassociation or Doze-deferred network access
+         * on a background service. Widened to give the leader more real-world chances before the
+         * follower attempts NSD re-discovery.
+         */
+        const val MAX_CONSECUTIVE_POLL_FAILURES = 15
         const val EXPORT_FETCH_TIMEOUT_MS = 8000L
+
+        /** NSD re-discovery attempts after poll failures exhaust, before actually leaving the group. */
+        const val NSD_REDISCOVERY_RETRY_COUNT = 2
     }
 
     object TapToWalkConstants {

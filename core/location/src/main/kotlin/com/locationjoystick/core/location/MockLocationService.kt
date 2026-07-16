@@ -652,13 +652,18 @@ class MockLocationService : Service() {
                 onGroupLost = {
                     Log.w(TAG, "Group $groupId lost — attempting NSD re-discovery before giving up")
                     serviceScope.launch {
-                        val resolved = groupNsdManager.discoverByCode(groupId)
+                        var resolved: Pair<String, Int>? = null
+                        for (attempt in 0..AppConstants.SyncConstants.NSD_REDISCOVERY_RETRY_COUNT) {
+                            resolved = groupNsdManager.discoverByCode(groupId)
+                            if (resolved != null) break
+                            Log.w(TAG, "NSD re-discovery attempt $attempt failed for group $groupId")
+                        }
                         if (resolved != null) {
                             val (newHost, newPort) = resolved
                             Log.i(TAG, "Re-discovered group $groupId at $newHost:$newPort — reconnecting")
                             enterFollowerMode(newHost, newPort, groupId)
                         } else {
-                            Log.w(TAG, "NSD re-discovery failed for group $groupId — leaving group")
+                            Log.w(TAG, "NSD re-discovery exhausted for group $groupId — leaving group")
                             exitFollowerMode()
                             groupRepository.leaveGroup()
                             groupRepository.emitGroupLost()
