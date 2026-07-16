@@ -129,6 +129,7 @@ internal object SettingsExportCodec {
             obj.put("lat", fav.position.latitude)
             obj.put("lon", fav.position.longitude)
             obj.put("createdAt", fav.createdAt)
+            obj.put("category", fav.category ?: JSONObject.NULL)
             favsArray.put(obj)
         }
         root.put("favoriteLocations", favsArray)
@@ -301,6 +302,7 @@ internal object SettingsExportCodec {
                                 longitude = obj.getDouble("lon"),
                             ),
                         createdAt = obj.optLong("createdAt", 0),
+                        category = if (obj.isNull("category")) null else obj.optString("category").ifEmpty { null },
                     ),
                 )
             }

@@ -7,7 +7,7 @@ All in `:core:model`. Pure Kotlin — no Android, no Room. Room entities in `:co
 | `LatLng` | `latitude: Double`, `longitude: Double` |
 | `Waypoint` | `id: String`, `position: LatLng`, `orderIndex: Int` |
 | `Route` | `id: String`, `name: String`, `waypoints: List<Waypoint>`, `isLooping: Boolean`, `routeType: RouteType`, `createdAt: Long`, `updatedAt: Long` |
-| `FavoriteLocation` | `id: String`, `name: String`, `position: LatLng`, `createdAt: Long` |
+| `FavoriteLocation` | `id: String`, `name: String`, `position: LatLng`, `createdAt: Long`, `category: String?` |
 | `RouteType` | enum: `STRAIGHT`, `GUIDED` |
 | `SpeedProfile` | `id: String`, `name: String`, `speedMetersPerSecond: Double` |
 | `RoamingConfig` | `centerPosition: LatLng`, `radiusMeters: Double`, `durationSeconds: Long`, `useRoadSnapping: Boolean` |

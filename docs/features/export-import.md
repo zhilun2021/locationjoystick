@@ -10,6 +10,8 @@ Covers: routes, favorites, speed profiles, widget/map feature config + shared di
 
 `AppSettings.featureOrder`/`enabledWidgetFeatures`/`enabledMapFeatures` (`AppFeature` enum) round-trip through `enabledWidgetFeatures`/`enabledMapFeatures`/`featureOrder` JSON arrays. Old exports from before the `WidgetFeature`/`MapFabFeature` merge still import correctly — `SettingsExportCodec` aliases the legacy `ROUTES_FLOATING`/`FAVORITES_FLOATING` names to `AppFeature.ROUTES`/`AppFeature.FAVORITES`, and missing `enabledMapFeatures`/`featureOrder` fields fall back to defaults.
 
+Each entry in `favoriteLocations` includes the optional `category` field (`FavoriteLocation.category`). Old exports without it import cleanly — a missing or `null` `category` defaults to `null`.
+
 Schema version: `AppConstants.ExportConstants.SCHEMA_VERSION`.
 
 ## Export Flow

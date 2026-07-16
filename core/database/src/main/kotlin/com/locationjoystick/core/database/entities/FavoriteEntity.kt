@@ -1,5 +1,6 @@
 package com.locationjoystick.core.database.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.locationjoystick.core.model.FavoriteLocation
@@ -13,6 +14,8 @@ data class FavoriteEntity(
     val latitude: Double,
     val longitude: Double,
     val createdAt: Long,
+    @ColumnInfo(name = "category")
+    val category: String? = null,
 )
 
 fun FavoriteEntity.toDomain(): FavoriteLocation =
@@ -21,6 +24,7 @@ fun FavoriteEntity.toDomain(): FavoriteLocation =
         name = name,
         position = LatLng(latitude = latitude, longitude = longitude),
         createdAt = createdAt,
+        category = category,
     )
 
 fun FavoriteLocation.toEntity(): FavoriteEntity =
@@ -30,4 +34,5 @@ fun FavoriteLocation.toEntity(): FavoriteEntity =
         latitude = position.latitude,
         longitude = position.longitude,
         createdAt = createdAt,
+        category = category,
     )

@@ -4,6 +4,14 @@ Save named locations. Tap from list to instantly teleport spoofed position. Rena
 
 Key files: `:feature:favorites:impl/FavoritesScreen.kt`, `:feature:favorites:impl/FavoritesViewModel.kt`, `:core:database/FavoriteDao.kt`
 
+## Search
+
+A search field at the top of the Favorites screen filters the list by name (case-insensitive substring match), updating live as the user types. Hidden when there are no favorites at all. If the query matches nothing, a "No favorites match your search" placeholder is shown instead of the list.
+
+## Categories
+
+`FavoriteLocation.category` is an optional label (`String?`, `null` for most user-added favorites). When set, the Favorites list groups entries under a header for their category; uncategorized favorites are shown last, without a header. Hot locations get their category populated automatically (see below) — user-added favorites have no category unless imported from a source that sets one.
+
 ## Add Flows
 
 Two ways to add a favorite:
@@ -29,10 +37,12 @@ Settings → Favorites → "Show hot locations" toggle (default off). When enabl
 
 Key files: `:core:data/FavoriteRepository.kt` (list + upsert/remove logic), `:core:datastore/AppPreferencesDataSource.kt` (`hot_locations_enabled` key)
 
-**Upsert rule**: match by name. If a favorite with the same name already exists, its coordinates are updated and its original ID is preserved. New entries get IDs prefixed with `hot_`.
+**Upsert rule**: match by name + city (via `idForLocation`). If a favorite with the same derived ID already exists, its coordinates and `category` are updated and its original ID is preserved. New entries get IDs prefixed with `hot_`.
 
 **Remove rule**: delete all favorites whose ID starts with `hot_`. User favorites that happened to share a name with a hot location (and thus had their coords updated) are kept — their ID was never changed to `hot_`.
 
-**Export/import**: `hotLocationsEnabled` field in `ExportData`. Importing a backup with it `true` re-applies the upsert.
+**Export/import**: `hotLocationsEnabled` field in `ExportData`. Importing a backup with it `true` re-applies the upsert. The per-favorite `category` field also round-trips as part of `favoriteLocations` — old exports without it import cleanly (missing field defaults to `null`).
 
-The 26 locations live in `FavoriteRepository.HOT_LOCATIONS` as `List<Triple<String, Double, Double>>` (name, lat, lon).
+**Categories**: each `HotLocation` entry carries `country` and `city` fields, used both for the grouped picker UI in Settings and — since this feature — for the `FavoriteLocation.category` field once added as a favorite (set to `country`, e.g. "Pago Pago" gets category "American Samoa").
+
+The 48 locations live in `FavoriteRepository.HOT_LOCATIONS` as a `List<HotLocation>` (`name`, `lat`, `lon`, `country`, `city`).

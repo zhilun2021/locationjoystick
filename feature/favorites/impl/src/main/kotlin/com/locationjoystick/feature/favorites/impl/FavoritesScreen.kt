@@ -136,6 +136,7 @@ internal fun FavoritesScreen(
     var editingFavorite by remember { mutableStateOf<com.locationjoystick.core.model.FavoriteLocation?>(null) }
 
     var showAddMenu by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     LjScaffold(
         title = "Favorites",
@@ -188,45 +189,88 @@ internal fun FavoritesScreen(
             }
         },
     ) { scaffoldPadding ->
-        Box(
+        Column(
             modifier =
                 Modifier
                     .fillMaxSize()
                     .padding(scaffoldPadding),
         ) {
-            when {
-                uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            if (uiState.favorites.isNotEmpty()) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search favorites") },
+                    leadingIcon = { Icon(LjIcons.Search, contentDescription = null) },
+                    singleLine = true,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+
+            val filteredFavorites =
+                remember(uiState.favorites, searchQuery) {
+                    uiState.favorites.filter { it.name.contains(searchQuery, ignoreCase = true) }
                 }
 
-                uiState.favorites.isEmpty() -> {
-                    EmptyState(
-                        icon = LjIcons.LocationOn,
-                        message = "No saved locations yet",
-                        modifier = Modifier.align(Alignment.Center),
-                    )
-                }
+            Box(modifier = Modifier.fillMaxSize()) {
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    }
 
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        items(
-                            items = uiState.favorites,
-                            key = { it.id },
-                        ) { favorite ->
-                            FavoriteCard(
-                                modifier = Modifier.animateItem(),
-                                favorite = favorite,
-                                cooldownState = cooldownStates[favorite.id] ?: CooldownState.Ready,
-                                currentPosition = getCurrentPosition(),
-                                onRowClick = { onTeleport(favorite) },
-                                onEdit = { editingFavorite = it },
-                                onDelete = { onSetPendingDeleteId(it.id) },
-                                onShare = onShare,
-                            )
+                    uiState.favorites.isEmpty() -> {
+                        EmptyState(
+                            icon = LjIcons.LocationOn,
+                            message = "No saved locations yet",
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    filteredFavorites.isEmpty() -> {
+                        EmptyState(
+                            icon = LjIcons.Search,
+                            message = "No favorites match your search",
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+
+                    else -> {
+                        val grouped = filteredFavorites.groupBy { it.category }
+                        val orderedKeys = grouped.keys.sortedWith(compareBy({ it == null }, { it ?: "" }))
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            orderedKeys.forEach { category ->
+                                if (category != null) {
+                                    item(key = "header_$category") {
+                                        Text(
+                                            text = category,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            color = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                }
+                                items(
+                                    items = grouped.getValue(category),
+                                    key = { it.id },
+                                ) { favorite ->
+                                    FavoriteCard(
+                                        modifier = Modifier.animateItem(),
+                                        favorite = favorite,
+                                        cooldownState = cooldownStates[favorite.id] ?: CooldownState.Ready,
+                                        currentPosition = getCurrentPosition(),
+                                        onRowClick = { onTeleport(favorite) },
+                                        onEdit = { editingFavorite = it },
+                                        onDelete = { onSetPendingDeleteId(it.id) },
+                                        onShare = onShare,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

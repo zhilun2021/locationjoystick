@@ -142,7 +142,13 @@ class FavoriteRepository
                         if (id in selectedIds) {
                             val existing = favoriteDao.getById(id)
                             if (existing != null) {
-                                favoriteDao.update(existing.copy(latitude = location.lat, longitude = location.lon))
+                                favoriteDao.update(
+                                    existing.copy(
+                                        latitude = location.lat,
+                                        longitude = location.lon,
+                                        category = location.country,
+                                    ),
+                                )
                             } else {
                                 favoriteDao.insert(
                                     FavoriteEntity(
@@ -151,6 +157,7 @@ class FavoriteRepository
                                         latitude = location.lat,
                                         longitude = location.lon,
                                         createdAt = System.currentTimeMillis(),
+                                        category = location.country,
                                     ),
                                 )
                             }
