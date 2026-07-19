@@ -24,6 +24,9 @@
     <h2 id="camera-permission">Camera Permission</h2>
     <p>Camera access is used solely for scanning QR codes during device-to-device data transfer. No images are stored or transmitted.</p>
 
+    <h2 id="accessibility-service">Accessibility Service</h2>
+    <p>locationjoystick includes an optional, off-by-default "Compass tracking" feature (Settings → Menus → Tap to Walk) that uses Android's Accessibility Service API to take a screenshot of the screen immediately before you tap a location, in order to detect the on-screen compass direction of the app you're using. This lets the tap be converted into a correctly-oriented location update instead of assuming the screen is always oriented north-up. The screenshot is processed entirely on your device to read the compass heading and is never stored or transmitted anywhere. This feature is not an accessibility tool for users with disabilities — it is disabled by default and only active if you explicitly enable it.</p>
+
     <h2 id="contact">Contact</h2>
     <p>Questions or requests: <a href="https://github.com/shortcuts/locationjoystick/issues/new?template=bug_report.yml" target="_blank" rel="noopener">report a bug</a> or <a href="https://github.com/shortcuts/locationjoystick/issues/new?template=feature_request.md" target="_blank" rel="noopener">request a feature</a> on GitHub.</p>
   </main>

@@ -12,7 +12,7 @@ Both features live in Settings → Menus → Tap to Walk.
 |---|---|---|---|
 | `FLOATING_MAP_QUICK_WALK` | Boolean | `false` | Skip confirmation sheet on floating map taps |
 | `TAP_TO_WALK_OVERLAY_ENABLED` | Boolean | `false` | Show crosshair button in widget panel |
-| `TAP_TO_WALK_SCALE_MPX` | Double | `0.23` | Meters per pixel for pixel→GPS conversion (calibrated for fully zoomed-out Pokémon Go) |
+| `TAP_TO_WALK_SCALE_MPX` | Double | `0.23` | Meters per pixel for pixel→GPS conversion (calibrated for a fully zoomed-out AR game map) |
 | `COMPASS_TRACKING_ENABLED` | Boolean | `false` | Capture compass heading before each tap |
 | `COMPASS_REGION_CX_PCT` | Float | `0.88` | Compass region center X (0–1 fraction of screen width) |
 | `COMPASS_REGION_CY_PCT` | Float | `0.09` | Compass region center Y (0–1 fraction of screen height) |

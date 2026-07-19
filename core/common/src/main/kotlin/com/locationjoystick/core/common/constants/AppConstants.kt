@@ -357,7 +357,7 @@ object AppConstants {
     }
 
     object TapToWalkConstants {
-        // Calibrated for Pokémon Go fully zoomed out: two pokéstops ~40.5 m apart spanning ~173 px → 0.23 m/px.
+        // Calibrated for a fully zoomed-out AR game map: two known landmarks ~40.5 m apart spanning ~173 px → 0.23 m/px.
         const val DEFAULT_SCALE_MPX = 0.23
         const val MIN_SCALE_MPX = 0.01
         const val MAX_SCALE_MPX = 1.0

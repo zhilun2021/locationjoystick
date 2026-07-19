@@ -231,7 +231,7 @@ class FavoriteRepository
                     HotLocation("Bryant Park", 40.7537, -73.9835, "United States", "New York City"),
                     HotLocation("Central Park", 40.785091, -73.968285, "United States", "New York City"),
                     HotLocation("Times Square", 40.7589, -73.9851, "United States", "New York City"),
-                    HotLocation("Niantic HQ", 37.789464, -122.401621, "United States", "San Francisco"),
+                    HotLocation("Ferry Building", 37.789464, -122.401621, "United States", "San Francisco"),
                     HotLocation("Pier 39", 37.808673, -122.409821, "United States", "San Francisco"),
                     HotLocation("Union Square", 37.787993, -122.407437, "United States", "San Francisco"),
                 )
