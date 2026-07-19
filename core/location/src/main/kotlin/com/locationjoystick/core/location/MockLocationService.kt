@@ -136,6 +136,9 @@ class MockLocationService : Service() {
 
     @Volatile private var updateJob: Job? = null
 
+    /** Async job for follower restoration with NSD discovery retries on device boot. */
+    private var followerRestorationJob: Job? = null
+
     private val _state = MutableStateFlow(MockLocationState.IDLE)
     val state: StateFlow<MockLocationState> = _state.asStateFlow()
 
@@ -410,16 +413,11 @@ class MockLocationService : Service() {
                     }
                     if (groupState.role == GroupRole.FOLLOWER && groupState.followerModeEnabled) {
                         val id = groupState.groupId ?: return@launch
-                        // Leader may have restarted with a new OS-assigned port — re-resolve via NSD
-                        // rather than trusting the stale host:port persisted in DataStore.
-                        val resolved = groupNsdManager.discoverByCode(id)
-                        if (resolved == null) {
-                            Log.w(TAG, "OS restart: NSD re-discovery failed for group $id — staying idle")
-                            return@launch
-                        }
-                        val (host, port) = resolved
-                        Log.i(TAG, "OS restart: resuming follower mode for group $id at $host:$port")
-                        enterFollowerMode(host, port, id)
+                        // Leader may have restarted with a new OS-assigned port — start async restoration
+                        // with retries rather than a synchronous NSD call that may timeout if the leader
+                        // hasn't advertised yet. Don't block onStartCommand.
+                        Log.i(TAG, "OS restart: starting async follower restoration for group $id")
+                        startFollowerRestoration(id)
                         return@launch
                     }
                     val remember = settingsRepository.getRememberLastLocation().first()
@@ -526,6 +524,7 @@ class MockLocationService : Service() {
             val pos = positionRef.get()
             CoroutineScope(NonCancellable + Dispatchers.IO).launch { settingsRepository.setLastLocation(pos) }
         }
+        stopFollowerRestoration()
         leaderSyncServer.stop()
         followerSyncClient.stopPolling()
         locationRepository.stopSpoofing()
@@ -690,6 +689,7 @@ class MockLocationService : Service() {
     }
 
     internal fun exitFollowerMode() {
+        stopFollowerRestoration()
         followerSyncClient.stopPolling()
         followerCatchUp.clear()
         locationRepository.setMockMode(MockMode.TELEPORT)
@@ -736,6 +736,51 @@ class MockLocationService : Service() {
         groupNsdManager.stopAdvertising()
         leaderSharingEnabled = false
         Log.i(TAG, "Exited LEADER mode")
+    }
+
+    /**
+     * Starts an async follower restoration job with exponential backoff + jitter.
+     * On device boot (START_STICKY), the leader may not have advertised yet, so this job
+     * retries NSD discovery over a ~60-second window rather than giving up immediately.
+     * Automatically stops on success, exhaustion, or [stopFollowerRestoration].
+     */
+    private fun startFollowerRestoration(groupId: String) {
+        stopFollowerRestoration()
+        followerRestorationJob =
+            serviceScope.launch {
+                val maxAttempts = AppConstants.FollowerRestorationConstants.MAX_RETRY_ATTEMPTS
+                var delayMs = AppConstants.FollowerRestorationConstants.INITIAL_RETRY_DELAY_MS
+                val maxDelayMs = AppConstants.FollowerRestorationConstants.MAX_RETRY_DELAY_MS
+                val jitterRangeMs = AppConstants.FollowerRestorationConstants.RETRY_JITTER_MS
+
+                for (attempt in 0..maxAttempts) {
+                    if (!isActive) return@launch
+                    try {
+                        val resolved = groupNsdManager.discoverByCode(groupId)
+                        if (resolved != null) {
+                            val (host, port) = resolved
+                            Log.i(TAG, "Follower restoration succeeded on attempt $attempt for group $groupId at $host:$port")
+                            enterFollowerMode(host, port, groupId)
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Follower restoration attempt $attempt failed for group $groupId", e)
+                    }
+
+                    if (attempt < maxAttempts) {
+                        val jitterMs = Random.nextLong(-jitterRangeMs, jitterRangeMs)
+                        delay(delayMs + jitterMs)
+                        delayMs = minOf(delayMs * 2, maxDelayMs)
+                    }
+                }
+                Log.w(TAG, "Follower restoration exhausted after $maxAttempts attempts for group $groupId — staying idle")
+            }
+    }
+
+    /** Cancels any in-flight follower restoration job. */
+    private fun stopFollowerRestoration() {
+        followerRestorationJob?.cancel()
+        followerRestorationJob = null
     }
 
     private fun observeGroupState() {

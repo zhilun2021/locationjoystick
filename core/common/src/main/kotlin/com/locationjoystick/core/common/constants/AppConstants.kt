@@ -369,4 +369,18 @@ object AppConstants {
         const val DEFAULT_REGION_RADIUS_PCT = 0.08f
         const val MIN_RED_PIXELS = 20
     }
+
+    object FollowerRestorationConstants {
+        /** Initial retry delay in milliseconds */
+        const val INITIAL_RETRY_DELAY_MS = 500L
+
+        /** Maximum retry delay in milliseconds (exponential backoff caps here) */
+        const val MAX_RETRY_DELAY_MS = 30_000L
+
+        /** Maximum number of NSD discovery attempts before giving up */
+        const val MAX_RETRY_ATTEMPTS = 5
+
+        /** Random jitter range in milliseconds (±) to avoid thundering herd */
+        const val RETRY_JITTER_MS = 100L
+    }
 }

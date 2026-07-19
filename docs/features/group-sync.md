@@ -102,11 +102,28 @@ This logic was extracted from `MockLocationService` into a dedicated `FollowerCa
 
 Followers apply independent per-device jitter to the received position, preserving the configured jitter profile without cloning the leader's exact coordinates.
 
+## Follower Boot Sequence
+
+After a device restart, a follower that was previously synced automatically rejoin the group in the background without requiring user intervention.
+
+1. **Service startup**: `MockLocationService` is started by Android via `START_STICKY` recovery.
+2. **Async restoration**: If the follower was in `FOLLOWER` mode with `followerModeEnabled = true`, the service launches a background async job to re-discover the leader via NSD.
+3. **Exponential backoff retries**: The discovery job retries up to 5 times with exponential backoff (500 ms, 1 s, 2 s, 4 s, 8 s + random jitter ±100 ms), accounting for the leader not having advertised yet if both devices rebooted simultaneously.
+4. **Success**: Once the leader is found, the follower enters sync mode and begins following.
+5. **Exhaustion**: If discovery fails after all retries (e.g., both devices on different Wi-Fi networks, or group deleted), the follower stays idle. If the follower app is opened, `GroupSyncViewModel` re-triggers discovery as a final safety net.
+
+### Boot timing scenarios
+
+- **Leader boots first**: Follower discovers it on first or second attempt.
+- **Follower boots first**: Follower retries until leader advertises (within ~30 seconds of startup).
+- **Simultaneous boot**: Exponential backoff with jitter prevents thundering herd; most followers reconnect within 10–15 seconds.
+- **Wi-Fi disconnected at boot**: Restoration retries continue; once Wi-Fi reconnects, discovery succeeds on the next attempt.
+
 ## Edge Cases
 
 - Leader pauses its route/roaming/walk → broadcasting to followers continues (frozen position, refreshed each tick) instead of going stale. `MockLocationService.observeLocationState` keeps the update loop alive on `PAUSED` when `leaderSharingEnabled` is true.
 - Joining while leading → leader exits first, then joins as follower.
-- Network unavailable → follower silently disconnects; UI shows last known role.
+- Network unavailable → follower's boot restoration fails, but retries are queued. Once network is available, restoration succeeds. UI shows last known role until sync resumes.
 - QR regeneration: leader can regenerate QR (new port/session) without changing the group code.
 - Code discovery timeout (10 s) → error snackbar shown, user can retry.
 - NSD registration failure → logged; QR still works as fallback.
