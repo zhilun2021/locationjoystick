@@ -51,6 +51,9 @@ coverage-open:
 screenshot:
 	./scripts/screenshot-gallery.sh --auto
 
+screenshot-playstore:
+	./scripts/screenshot-gallery.sh --playstore-only
+
 wiki-serve:
 	lsof -ti:8080 | xargs kill -9 || true
 	python3 -m http.server 8080 --directory docs/wiki

@@ -11,6 +11,8 @@
 #   ./scripts/screenshot-gallery.sh --steps 16,17
 #   ./scripts/screenshot-gallery.sh --steps 14-17
 #   ./scripts/screenshot-gallery.sh --auto --steps 16-17
+#   ./scripts/screenshot-gallery.sh --playstore-only   (no device needed — regenerates
+#                                                        *_playstore.png from existing screenshots)
 #
 # Prerequisites:
 #   - adb in PATH, device connected with USB debugging on
@@ -50,15 +52,17 @@ ADB_DEVICE=""
 AUTO=false
 STEPS_FILTER=""  # Comma-separated or range, e.g. "16,17" or "14-17"
 ENABLED_STEPS=" "  # Space-separated list of enabled step numbers (01 02 03 etc)
+PLAYSTORE_ONLY=false
 
 # ── Arg parsing ──────────────────────────────────────────────────────────────
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --output)  OUTPUT_DIR="$2"; shift 2 ;;
-    --device)  ADB_DEVICE="-s $2"; shift 2 ;;
-    --auto)    AUTO=true; shift ;;
-    --steps)   STEPS_FILTER="$2"; shift 2 ;;
+    --output)          OUTPUT_DIR="$2"; shift 2 ;;
+    --device)          ADB_DEVICE="-s $2"; shift 2 ;;
+    --auto)            AUTO=true; shift ;;
+    --steps)           STEPS_FILTER="$2"; shift 2 ;;
+    --playstore-only)  PLAYSTORE_ONLY=true; shift ;;
     *) echo "Unknown arg: $1"; exit 1 ;;
   esac
 done
@@ -69,15 +73,15 @@ if [[ -n "$STEPS_FILTER" ]]; then
   for part in $(echo "$STEPS_FILTER" | tr ',' '\n'); do
     if [[ "$part" =~ ^([0-9]+)-([0-9]+)$ ]]; then
       # Range: e.g. "14-17"
-      start=${BASH_REMATCH[1]}
-      end=${BASH_REMATCH[2]}
+      start=$((10#${BASH_REMATCH[1]}))
+      end=$((10#${BASH_REMATCH[2]}))
       for (( i=start; i<=end; i++ )); do
-        step_num=$(printf "%02d" $i)
+        step_num=$(printf "%02d" "$i")
         ENABLED_STEPS="${ENABLED_STEPS}${step_num} "
       done
     elif [[ "$part" =~ ^[0-9]+$ ]]; then
       # Single number: e.g. "16"
-      step_num=$(printf "%02d" $part)
+      step_num=$(printf "%02d" "$((10#$part))")
       ENABLED_STEPS="${ENABLED_STEPS}${step_num} "
     else
       echo "Invalid --steps format: $part (expected '16' or '14-17')"
@@ -86,7 +90,7 @@ if [[ -n "$STEPS_FILTER" ]]; then
   done
 else
   # No filter: enable all steps
-  for i in {01..17}; do ENABLED_STEPS="${ENABLED_STEPS}$(printf '%02d' $i) "; done
+  for i in $(seq 1 17); do ENABLED_STEPS="${ENABLED_STEPS}$(printf '%02d' "$i") "; done
 fi
 
 # Helper to check if a step should run (e.g. should_run_step "16")
@@ -280,7 +284,7 @@ seed_route_if_needed() {
     wait_s 2 "Routes loading"
     tap_text "Add route"
     wait_s 1 "Add menu opening"
-    tap_text "from map"
+    tap_text "Draw on map"
     wait_s 4 "Route creator loading"
     # Need ≥2 waypoints before Save FAB appears.
     $ADB shell input tap "$cx" "$y1"
@@ -441,6 +445,11 @@ collapse_widget_panel() {
 # on a 1024×500 canvas with Material dark surface background (#1C1B1F).
 generate_playstore_variants() {
   log "Generating Play Store variants..."
+  if ! python3 -c "import PIL" >/dev/null 2>&1; then
+    warn "Pillow not installed — skipping Play Store variants."
+    warn "Install with: python3 -m pip install --user --break-system-packages Pillow"
+    return 0
+  fi
   python3 << 'PYTHON_EOF'
 from PIL import Image
 import os
@@ -512,6 +521,14 @@ go_idle() {
   $ADB shell am start -n "${PACKAGE}/${ACTIVITY}" >/dev/null
   wait_s 4 "App starting"
 }
+
+# ── Playstore-only mode: skip device entirely ─────────────────────────────────
+
+if [[ "$PLAYSTORE_ONLY" == true ]]; then
+  mkdir -p "$OUTPUT_DIR"
+  generate_playstore_variants
+  exit 0
+fi
 
 # ── Setup ────────────────────────────────────────────────────────────────────
 
@@ -716,7 +733,7 @@ if should_run_step "09"; then
   wait_s 2 "Routes loading"
   tap_text "Add route"
   wait_s 1 "Add menu opening"
-  tap_text "from map"
+  tap_text "Draw on map"
   wait_s 3 "Route creator loading"
   screenshot "09_route_creator"
   back
