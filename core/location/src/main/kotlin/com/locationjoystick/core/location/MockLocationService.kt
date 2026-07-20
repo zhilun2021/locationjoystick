@@ -633,6 +633,7 @@ class MockLocationService : Service() {
         port: Int,
         groupId: String,
     ) {
+        stopFollowerRestoration()
         serviceScope.launch {
             // Await both cancellations before activating follower mode to avoid a race where
             // a completing replay/roam tick sets the mode back after we set FOLLOWER.
@@ -706,6 +707,7 @@ class MockLocationService : Service() {
     }
 
     private fun enterLeaderMode(groupId: String) {
+        stopFollowerRestoration()
         serviceScope.launch {
             try {
                 val host =
