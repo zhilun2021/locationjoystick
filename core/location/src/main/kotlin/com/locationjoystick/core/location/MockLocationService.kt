@@ -755,7 +755,7 @@ class MockLocationService : Service() {
                 val maxDelayMs = AppConstants.FollowerRestorationConstants.MAX_RETRY_DELAY_MS
                 val jitterRangeMs = AppConstants.FollowerRestorationConstants.RETRY_JITTER_MS
 
-                for (attempt in 0..maxAttempts) {
+                for (attempt in 0 until maxAttempts) {
                     if (!isActive) return@launch
                     try {
                         val resolved = groupNsdManager.discoverByCode(groupId)
@@ -769,7 +769,7 @@ class MockLocationService : Service() {
                         Log.w(TAG, "Follower restoration attempt $attempt failed for group $groupId", e)
                     }
 
-                    if (attempt < maxAttempts) {
+                    if (attempt < maxAttempts - 1) {
                         val jitterMs = Random.nextLong(-jitterRangeMs, jitterRangeMs)
                         delay(delayMs + jitterMs)
                         delayMs = minOf(delayMs * 2, maxDelayMs)
