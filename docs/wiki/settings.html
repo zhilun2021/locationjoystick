@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings — locationjoystick</title>
+  <title>Settings - locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -13,23 +13,23 @@
 
   <main>
     <h2 id="settings">Settings</h2>
-    <p>Configure speed profiles, GPS realism, widget controls, roaming defaults, and data export/import. The Settings hub organizes configuration into four sub-screens: Movement & GPS, Menus, Favorites & Routes, and Roaming.</p>
+    <p>This is where you set movement speeds, adjust how realistic the simulated GPS signal looks, choose which controls appear in the widget, set roaming defaults, and back up or restore your data. Settings is split into four screens: Movement & GPS, Menus, Favorites & Routes, and Roaming.</p>
 
     <div class="feature-section" id="settings-main">
       <img class="phone-shot" src="screenshots/05_settings.png" alt="Settings screen">
       <ul class="section-bullets">
-        <li><strong>Movement & GPS:</strong> Edit Slow Walk, Walk, Run, Bike, and Drive speed presets used by the joystick, routes, and roaming. Toggle GPS realism features independently: bearing hold, altitude drift, warm-up envelope, satellite count, signal dropouts.</li>
-        <li><strong>Menus:</strong> Choose which features appear in the floating widget and on the map, and drag to reorder them.</li>
-        <li><strong>Favorites & Routes:</strong> Enable curated hot locations and routes for quick access.</li>
-        <li><strong>Roaming:</strong> Configure default area, distance, speed profile, road-following, and auto-return behavior for roaming sessions.</li>
+        <li>Movement & GPS lets you edit the Slow Walk, Walk, Run, Bike, and Drive speed presets used by the joystick, routes, and roaming, and turn GPS realism features on or off one by one: bearing hold, altitude drift, warm-up, satellite count, and signal dropouts.</li>
+        <li>Menus lets you choose which features appear in the floating widget and on the map, and drag to reorder them.</li>
+        <li>Favorites & Routes lets you turn on curated locations and routes for quick access.</li>
+        <li>Roaming lets you set the default area, distance, speed, road-following, and auto-return behavior for roaming sessions.</li>
       </ul>
     </div>
 
     <h2 id="speed-profiles">Movement & GPS</h2>
-    <p>Combines speed profile configuration with GPS realism settings. Configure the movement speeds and customize how the spoofed signal behaves.</p>
+    <p>This screen combines speed settings with GPS realism controls. Set your movement speeds here, and adjust how the simulated signal behaves.</p>
 
-    <h3 id="speed-profiles">Speed Profiles</h3>
-    <p>Five presets set the movement speed for the joystick, route replay, and roaming. Edit any of them; changes apply immediately. A <strong>km/h ↔ mph</strong> switch at the top converts every field in the app at once.</p>
+    <h3 id="speed-profiles">Speed profiles</h3>
+    <p>Five presets control movement speed for the joystick, route playback, and roaming. Edit any of them, and the change applies right away. A <strong>km/h ↔ mph</strong> switch at the top converts every speed shown in the app at once.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -48,35 +48,35 @@
         <tr>
           <td>Run</td>
           <td class="default-cell">8.0 km/h</td>
-          <td>Jogging — follows footpaths when road-following is on</td>
+          <td>Jogging, follows footpaths when road-following is on</td>
         </tr>
         <tr>
           <td>Bike</td>
           <td class="default-cell">15.0 km/h</td>
-          <td>Cycling — follows bike lanes when road-following is on</td>
+          <td>Cycling, follows bike lanes when road-following is on</td>
         </tr>
         <tr>
           <td>Drive</td>
           <td class="default-cell">54.0 km/h</td>
-          <td>Driving — well above the anti-cheat threshold below</td>
+          <td>Driving, well above the anti-cheat threshold below</td>
         </tr>
       </tbody>
     </table>
     </div>
 
-    <p>There's no upper limit — type any speed you want. Values only get floored, never capped: anything entered below <strong>0.04 km/h</strong> snaps up to it, since a true 0 would mean the simulated device never moves at all.</p>
+    <p>There's no upper limit, so you can type any speed you want. The only floor is <strong>0.04 km/h</strong>: anything entered below that gets raised to it automatically, since a true zero would mean the simulated device never moves at all.</p>
 
-    <p>Each profile also has a checkbox controlling whether it's included when the widget's <a href="#menus">Speed cycle</a> button cycles through presets — <strong>Walk, Run, and Bike</strong> are on by default; Slow Walk and Drive are opt-in. This only affects cycling — all five stay editable here regardless.</p>
+    <p>Each profile also has a checkbox that controls whether the widget's <a href="#menus">Speed cycle</a> button includes it. <strong>Walk, Run, and Bike</strong> are on by default, while Slow Walk and Drive are off unless you turn them on. This only affects cycling: all five speeds stay editable here no matter what.</p>
 
     <h2 id="anti-cheat-warning">Anti-cheat warning</h2>
     <p>Set any profile above <strong>28.8 km/h (17.9 mph)</strong> and a warning appears inline below that field:</p>
-    <blockquote><em>"Speed exceeds 8 m/s — may trigger anti-cheat in some games"</em></blockquote>
+    <blockquote><em>"Speed exceeds 8 m/s, may trigger anti-cheat in some games"</em></blockquote>
     <p>
-      It's advisory only — nothing is blocked, capped, or sent anywhere. The threshold sits just above any realistic human pace on foot, which is what many location-aware games watch for. Each profile is checked independently; lower it below the threshold to clear the warning, or ignore it if that's not a concern for what you're using it with.
+      It's just a heads-up: nothing gets blocked, capped, or sent anywhere. The threshold sits just above any realistic human walking or running pace, which is what many location-aware games watch for. Each profile is checked on its own, so lower it below the threshold to clear the warning, or ignore it if that's not something you need to worry about.
     </p>
 
-    <h3 id="gps-jitter">Location Randomness</h3>
-    <p>Adds small random variations to each location update to simulate natural GPS drift. Set any value to 0 to disable that dimension of variation.</p>
+    <h3 id="gps-jitter">Location randomness</h3>
+    <p>Adds small random variation to each location update, mimicking the natural drift of a real GPS chip. Set any value to 0 to turn off that particular variation.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -85,39 +85,39 @@
         <tr>
           <td>Idle radius</td>
           <td>Stationary</td>
-          <td>Max random offset while standing still. 1–3 m reads as a real chip drifting in place.</td>
+          <td>The largest random offset while you're standing still. 1 to 3 m looks like a real chip drifting slightly in place.</td>
         </tr>
         <tr>
           <td>Idle interval</td>
           <td>Stationary</td>
-          <td>Seconds between new offsets while still. Shorter = jitterier trace.</td>
+          <td>How many seconds pass between new offsets while you're still. A shorter interval makes the trace look jitterier.</td>
         </tr>
         <tr>
           <td>Moving radius</td>
           <td>Moving</td>
-          <td>Max random offset while moving. Keep below idle radius to avoid unnatural jumps.</td>
+          <td>The largest random offset while moving. Keep it below the idle radius to avoid unnatural-looking jumps.</td>
         </tr>
         <tr>
           <td>Moving interval</td>
           <td>Moving</td>
-          <td>Seconds between new offsets while moving.</td>
+          <td>How many seconds pass between new offsets while moving.</td>
         </tr>
         <tr>
           <td>Idle speed variation</td>
           <td>Stationary</td>
-          <td>Random ±% on reported speed at rest. 5–10% mimics measurement noise; 0 reads as perfectly still.</td>
+          <td>A random percentage added to or subtracted from the reported speed at rest. 5 to 10% mimics normal measurement noise, while 0 reads as perfectly still.</td>
         </tr>
         <tr>
           <td>Moving speed variation</td>
           <td>Moving</td>
-          <td>Random ±% on reported speed while moving, so it doesn't read as a flat constant.</td>
+          <td>A random percentage added to or subtracted from the reported speed while moving, so it doesn't look like a flat, constant number.</td>
         </tr>
       </tbody>
     </table>
     </div>
 
-    <h3 id="gps-realism">GPS Realism</h3>
-    <p>Independent toggles that make the spoofed GPS signal behave more like a real hardware chip. Some apps and games inspect these fields to detect mock providers — enabling all options reduces the chance of detection.</p>
+    <h3 id="gps-realism">GPS realism</h3>
+    <p>These toggles work independently to make the spoofed GPS signal behave more like a real hardware chip. Some apps and games check these details to spot fake locations, so turning on all the options lowers the chance of being detected.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -126,7 +126,7 @@
         <tr>
           <td>Hold bearing when stationary</td>
           <td class="default-cell">On</td>
-          <td>Keeps the last heading instead of snapping to north on stop — a sudden reset is a common tell.</td>
+          <td>Keeps reporting your last direction instead of snapping back to north when you stop. A sudden reset to north is a common giveaway.</td>
         </tr>
         <tr>
           <td>Vary altitude</td>
@@ -136,24 +136,24 @@
         <tr>
           <td>GPS warm-up simulation</td>
           <td class="default-cell">Off</td>
-          <td>Starts each session with degraded accuracy that sharpens over ~30 s, like a cold GPS fix.</td>
+          <td>Starts each session with lower accuracy that sharpens over about 30 seconds, like a phone getting its first GPS fix.</td>
         </tr>
         <tr>
           <td>Realistic satellite count</td>
           <td class="default-cell">On</td>
-          <td>Reports 7–14 visible satellites, 6–12 in use. Zero satellites is a spoofing tell some apps check for.</td>
+          <td>Reports 7 to 14 visible satellites, with 6 to 12 actually in use. Zero satellites is a giveaway some apps check for.</td>
         </tr>
         <tr>
           <td>Suspended mocking</td>
           <td class="default-cell">Off</td>
-          <td>Briefly drops updates (~2 s every ~10 s) to mimic real signal dropouts. Off automatically during route replay.</td>
+          <td>Briefly stops sending updates, about 2 seconds out of every 10, to mimic real signal dropouts. Turns off automatically during route playback.</td>
         </tr>
       </tbody>
     </table>
     </div>
 
     <h2 id="map">Map</h2>
-    <p>Controls how the in-app map behaves while spoofing is active.</p>
+    <p>Controls how the map inside the app behaves while spoofing is active.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -161,11 +161,11 @@
       <tbody>
         <tr>
           <td><strong>Remember last location</strong></td>
-          <td>Restores the most recently spoofed position on app restart so you do not have to re-enter coordinates. The position is saved to local storage after every update.</td>
+          <td>Brings back your most recent spoofed position when you reopen the app, so you don't have to re-enter coordinates. Your position is saved on your device after every update.</td>
         </tr>
         <tr>
           <td><strong>Follow location on map</strong></td>
-          <td>Keeps the map camera centred on the spoofed position as it moves. Panning the map manually disables follow until you tap the re-centre button.</td>
+          <td>Keeps the map centered on your spoofed position as it moves. Panning the map by hand turns this off until you tap the re-center button.</td>
         </tr>
       </tbody>
     </table>
@@ -180,7 +180,7 @@
       <tbody>
         <tr>
           <td><strong>Show hot locations</strong></td>
-          <td>Upserts a curated list of popular locations (cities, parks, landmarks) into your favorites. Off by default. When disabled, only the entries added by this feature are removed — your own favorites are never deleted. See <a href="favorites.html#hot-locations">Favorites → Hot locations</a> for the full list and upsert behaviour.</td>
+          <td>Adds a curated list of popular locations, like cities, parks, and landmarks, into your favorites. Off by default. Turning it off removes only the entries this feature added; your own favorites are never touched. See <a href="favorites.html#hot-locations">Favorites → Hot locations</a> for the full list and how updates work.</td>
         </tr>
       </tbody>
     </table>
@@ -189,9 +189,9 @@
     <h2 id="menus">Menus</h2>
 
     <h3 id="appearance">Appearance</h3>
-    <p>A <strong>Light mode</strong> switch lets you flip the whole app to a bright, high-contrast theme instead of the default dark orange-on-black look — handy for reading the screen outdoors in direct sunlight. The change applies immediately everywhere in the app.</p>
+    <p>A <strong>Light mode</strong> switch lets you flip the whole app to a bright, high-contrast look instead of the default dark orange-on-black theme, handy for reading the screen outdoors in bright sunlight. The change applies immediately, everywhere in the app.</p>
 
-    <p>Selects which quick-access features appear in the floating widget overlay and on the map screen, and in what order. Each feature has its own checkbox for the widget and for the map — turn either on independently — plus a drag handle on the left so you can reorder the whole list by dragging. Both surfaces follow the same order, so reordering once keeps everything consistent.</p>
+    <p>This is where you choose which quick-access features appear in the floating widget and on the map screen, and in what order. Each feature has its own checkbox for the widget and for the map, so you can turn either on independently, plus a drag handle on the left so you can reorder the whole list. Both surfaces follow the same order, so reordering once keeps everything consistent between them.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -200,42 +200,42 @@
         <tr>
           <td><strong>Map shortcut</strong></td>
           <td>📍</td>
-          <td>Widget only. Opens a compact full-screen map overlay without switching back to the main app. Supports walk-to, teleport, and roaming controls from the overlay.</td>
+          <td>Only available in the widget. Opens a compact map that fills the screen without switching back to the main app. Supports walk-to, teleport, and roaming controls right there.</td>
         </tr>
         <tr>
           <td><strong>Show/hide joystick</strong></td>
           <td>👁</td>
-          <td>Widget only. Toggles the floating joystick overlay on or off without opening the app. The joystick must already be running via the main screen.</td>
+          <td>Only available in the widget. Turns the floating joystick on or off without opening the app. The joystick needs to already be running from the main screen.</td>
         </tr>
         <tr>
           <td><strong>Lock joystick</strong></td>
           <td>🔒</td>
-          <td>Widget only. Holds the joystick direction after you release your finger, so the simulated device keeps moving without continuous input. Tap again to unlock.</td>
+          <td>Only available in the widget. Holds the joystick's direction after you let go, so the simulated device keeps moving without you touching the screen. Tap again to unlock.</td>
         </tr>
         <tr>
           <td><strong>Favorites</strong></td>
           <td>❤️</td>
-          <td>Widget and map. Lists saved favorite locations with one-tap teleport and walk shortcuts. From the widget, also lets you save the current spoofed position as a new favorite.</td>
+          <td>Available in both the widget and the map. Lists your saved favorite locations with one-tap teleport and walk shortcuts. From the widget, you can also save your current spoofed position as a new favorite.</td>
         </tr>
         <tr>
           <td><strong>Routes</strong></td>
           <td>🗺</td>
-          <td>Widget and map. Lists all saved routes with start, loop, reverse, and return options. While a route is replaying, the button expands to show pause and stop controls inline.</td>
+          <td>Available in both the widget and the map. Lists all your saved routes, with options to start, loop, reverse, or return them. While a route is playing, the button expands to show pause and stop controls.</td>
         </tr>
         <tr>
           <td><strong>Roaming</strong></td>
           <td>🧭</td>
-          <td>Map only. Opens the roaming setup sheet to configure and start a random walk.</td>
+          <td>Only available on the map. Opens the roaming setup screen so you can configure and start a random walk.</td>
         </tr>
         <tr>
           <td><strong>Search</strong></td>
           <td>🔍</td>
-          <td>Map only. Opens the location search bar to find and jump to a place by name.</td>
+          <td>Only available on the map. Opens the search bar so you can find and jump to a place by name.</td>
         </tr>
         <tr>
           <td><strong>Speed cycle</strong></td>
           <td>⚡</td>
-          <td>Widget only. Cycles through your enabled speed profiles with a single tap — pick which ones below. The icon changes to reflect the active profile.</td>
+          <td>Only available in the widget. Cycles through your enabled speed profiles with a single tap; you choose which ones below. The icon changes to show the active profile.</td>
         </tr>
       </tbody>
     </table>
@@ -243,10 +243,10 @@
     <p>Starting and stopping location simulation is always available from the bar at the top of every screen, so it isn't one of the configurable features above.</p>
 
     <h2 id="favorites-routes">Favorites & Routes</h2>
-    <p>Enables curated hot locations and routes for quick access.</p>
+    <p>Turns on curated locations and routes for quick access.</p>
 
     <h2 id="roaming">Roaming</h2>
-    <p>Configure default area, distance, speed profile, road-following, and auto-return behavior for roaming sessions.</p>
+    <p>Set the default area, distance, speed, road-following, and auto-return behavior for roaming sessions.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -254,19 +254,19 @@
       <tbody>
         <tr>
           <td><strong>Radius</strong></td>
-          <td>Maximum distance from the starting point that random waypoints can be placed. Larger values spread movement further from the centre.</td>
+          <td>The farthest distance from the starting point that random waypoints can land. Larger values spread movement further from the center.</td>
         </tr>
         <tr>
           <td><strong>Route distance</strong></td>
-          <td>Total distance to walk before the roaming session ends. The session stops once the cumulative distance reaches this value.</td>
+          <td>The total distance to walk before the roaming session ends. It stops once the distance walked adds up to this value.</td>
         </tr>
         <tr>
           <td><strong>Speed profile</strong></td>
-          <td>Which speed preset (Walk / Run / Bike) is used for roaming movement. Bike also selects the cycling profile in OSRM road routing.</td>
+          <td>Which speed preset, Walk, Run, or Bike, is used for roaming movement. Bike also switches to the cycling option for road-following routes.</td>
         </tr>
         <tr>
           <td><strong>Follow roads</strong></td>
-          <td>Routes each leg through OSRM so movement follows real walkable paths instead of straight lines. Falls back to straight-line if OSRM is unavailable.</td>
+          <td>Routes each leg through a road-mapping service so movement follows real walkable paths instead of straight lines. Falls back to a straight line if that service isn't available.</td>
         </tr>
         <tr>
           <td><strong>Return to start</strong></td>
@@ -277,7 +277,7 @@
     </div>
 
     <h2 id="external-services">External services</h2>
-    <p>locationjoystick is offline-first. It does not require an account and sends no analytics or telemetry. However, two optional network features make outbound requests:</p>
+    <p>locationjoystick works offline by default. It doesn't need an account, and it doesn't send any usage data or tracking information anywhere. That said, two optional features do reach out over the network:</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -285,41 +285,41 @@
       <tbody>
         <tr>
           <td><strong>OSRM</strong><br><small><a href="https://router.project-osrm.org" target="_blank" rel="noopener">router.project-osrm.org</a></small></td>
-          <td>Road-following routes, roaming with "Follow roads" enabled, guided route creation. Only contacted when you explicitly choose road-following.</td>
-          <td>A list of latitude/longitude coordinate pairs (your waypoints or random roaming targets). No device identifiers, no account data. The public OSRM demo server is operated by the OSRM project.</td>
+          <td>Road-following routes, roaming with Follow roads turned on, and guided route creation. This service is only contacted when you specifically choose road-following.</td>
+          <td>A list of latitude and longitude pairs, your waypoints or random roaming targets. No device identifiers and no account data are sent. The public demo server used for this is run by the OSRM project.</td>
         </tr>
         <tr>
           <td><strong>Nominatim</strong><br><small><a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">nominatim.openstreetmap.org</a></small></td>
           <td>Place-name search in the route creator and the favorites map picker. Only contacted when you type a search query.</td>
-          <td>The search string you type (place name or address). No GPS coordinates, no identifiers. The public Nominatim instance is operated by the OpenStreetMap Foundation.</td>
+          <td>Whatever text you type into the search box, a place name or address. No GPS coordinates and no identifiers are sent. The public search service used for this is run by the OpenStreetMap Foundation.</td>
         </tr>
       </tbody>
     </table>
     </div>
     <p>
-      Map tiles (OpenStreetMap via MapLibre) are fetched from <a href="https://tile.openstreetmap.org" target="_blank" rel="noopener">tile.openstreetmap.org</a> as you pan and zoom the map. Each tile request includes the tile coordinates (zoom level, x, y) but no personal data.
+      Map images come from OpenStreetMap and are fetched from <a href="https://tile.openstreetmap.org" target="_blank" rel="noopener">tile.openstreetmap.org</a> as you pan and zoom the map. Each request includes only the map tile's position, its zoom level and grid coordinates, and no personal data.
     </p>
     <p>
-      All three services are used only as needed by the feature you are actively using and can be avoided entirely by not using road-following, place search, or the map (e.g. by entering coordinates directly in Favorites).
+      All three services are contacted only when the feature that needs them is in use, and you can avoid all of them entirely by not using road-following, place search, or the map itself, for example by entering coordinates directly into Favorites.
     </p>
 
     <h2 id="qr-transfer">QR transfer</h2>
     <p>
-      Share your entire configuration between devices by scanning a single QR code —
-      no cables, no accounts, no cloud.
+      Share your whole configuration between two devices by scanning a single QR code,
+      without a cable, an account, or any cloud service involved.
     </p>
 
     <div class="feature-section" id="qr-share">
       <img class="phone-shot" src="screenshots/12_qr_share.png" alt="QR share dialog">
       <ul class="section-bullets">
         <li>Both devices need to be on the same Wi-Fi network.</li>
-        <li>The sending device shows one QR code (and a short code as a backup); the receiving device scans it, or types the code, and imports right away.</li>
-        <li>No cloud involved — the data travels directly between the two devices over the network.</li>
+        <li>The sending device shows a QR code, plus a short backup code. The receiving device scans the code, or types it in, and imports right away.</li>
+        <li>No cloud is involved. The data travels directly between the two devices over the network.</li>
       </ul>
     </div>
 
-    <h2 id="export-import">Export / Import</h2>
-    <p>Back up or restore all app data — routes, favorites, speed profiles, widget config, jitter settings, and roaming defaults.</p>
+    <h2 id="export-import">Export / import</h2>
+    <p>Back up or restore all of your app data: routes, favorites, speed profiles, widget setup, location randomness settings, and roaming defaults.</p>
 
     <div class="table-wrap">
     <table class="option-table">
@@ -331,19 +331,19 @@
         </tr>
         <tr>
           <td><strong>Export settings</strong></td>
-          <td>Writes a JSON backup file to device storage, which you can share or keep manually.</td>
+          <td>Saves a backup file to your device, which you can share or keep as you like.</td>
         </tr>
         <tr>
           <td><strong>Import from QR code</strong></td>
-          <td>Opens the camera to scan a code shown on another device (same Wi-Fi network), then prompts to Add (merge) or Replace existing data.</td>
+          <td>Opens the camera to scan a code shown on another device on the same Wi-Fi network, then asks whether to add it to your existing data or replace everything.</td>
         </tr>
         <tr>
           <td><strong>Import via code</strong></td>
-          <td>Type the short code shown on the sending device instead of scanning — same Wi-Fi network required.</td>
+          <td>Type in the short code shown on the sending device instead of scanning. Both devices still need to be on the same Wi-Fi network.</td>
         </tr>
         <tr>
           <td><strong>Import from file</strong></td>
-          <td>Opens a file picker for a previously exported JSON backup. Prompts to Add or Replace.</td>
+          <td>Opens a file picker so you can choose a previously exported backup file. Asks whether to add it or replace everything.</td>
         </tr>
         <tr>
           <td><strong>Import from GPS Joystick</strong></td>
@@ -351,13 +351,13 @@
         </tr>
         <tr>
           <td><strong>Import from YAMLA</strong></td>
-          <td>Migrates favorites and speed settings from a YAMLA JSON export.</td>
+          <td>Migrates favorites and speed settings from a YAMLA export file.</td>
         </tr>
       </tbody>
     </table>
     </div>
 
-    <p>Next to the export/import buttons is a <strong>Reset all data</strong> button. It asks you to confirm, then permanently deletes all favorites, routes, and settings — without needing to clear the app's data through your phone's system settings. Your permission grants are kept, so you won't need to go through setup again.</p>
+    <p>Next to the export and import buttons is a <strong>Reset all data</strong> button. It asks you to confirm first, then permanently deletes all your favorites, routes, and settings, without you needing to clear the app's data through your phone's own settings. Your permission grants stay in place, so you won't have to go through setup again.</p>
 
   </main>
 

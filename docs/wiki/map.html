@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Map — locationjoystick</title>
+  <title>Map, locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -14,107 +14,110 @@
   <main>
     <h2 id="map">Map</h2>
     <p>
-      OpenStreetMap displayed on an interactive map. Your spoofed location appears as a live marker that updates in real time.
-      Use the map to set your position directly or launch routes, favorites, and roaming from the floating action buttons.
+      The main screen shows an interactive map. Your current location appears as a live marker
+      that moves as you move. Tap the map to set your position directly, or open routes,
+      favorites, and roaming from the buttons floating over the map.
     </p>
     <p>
-      Map tiles are fetched from <a href="https://tile.openstreetmap.org" target="_blank" rel="noopener">tile.openstreetmap.org</a> as you pan and zoom. Tiles are cached on-device after the first load; previously viewed areas work without a network connection.
+      Map imagery loads from <a href="https://tile.openstreetmap.org" target="_blank" rel="noopener">tile.openstreetmap.org</a> as you pan and zoom. Once an area has
+      loaded, it's stored on your device, so it still works the next time you're offline.
     </p>
 
     <div class="feature-section" id="map-main">
       <img class="phone-shot" src="screenshots/02_map.png" alt="Map screen">
       <ul class="section-bullets">
         <li>Long-press anywhere on the map to open a sheet with "Walk here" or "Teleport here".</li>
-        <li>Tap the start button to begin spoofing from the current map position.</li>
-        <li>Use the re-center FAB to re-lock the camera to your moving position after panning away.</li>
-        <li>Tap the search FAB to find a location by name and jump the map there.</li>
+        <li>Tap the start button to begin from the current map position.</li>
+        <li>Use the re-center button to snap the camera back to your position after you've panned away.</li>
+        <li>Tap the search button to find a location by name and jump the map there.</li>
       </ul>
     </div>
 
     <h2 id="location-search">Location search</h2>
     <p>
-      Tap the search button (magnifier icon) to open a search bar powered by
-      <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">Nominatim</a>.
-      Type a place name, address, or landmark — results appear as you type. Selecting a result
-      drops a marker on the map and centres the camera there. Only the text you type is sent to
-      Nominatim; no GPS coordinates or identifiers are transmitted.
+      Tap the search button (the magnifying glass) to open a search bar powered by
+      an <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">open location search service</a>.
+      Type a place name, address, or landmark, and matching results appear as you type. Picking a result drops a
+      marker on the map and centers the view there. Only the text you type gets sent to the
+      search service, never your coordinates or any identifying information.
     </p>
     <ul class="section-bullets">
-      <li>Recent searches are saved on-device and shown as suggestions before you start typing.</li>
-      <li>Selecting a search result does not move your spoofed position — long-press the marker to walk or teleport there.</li>
-      <li>Typing coordinates directly (e.g. <code>35.6762, 139.6503</code>) jumps straight to that point instead of searching Nominatim — a quick way to enter an exact location.</li>
+      <li>Recent searches are saved on your device and shown as suggestions before you start typing.</li>
+      <li>Picking a search result does not move your location. Long-press the marker to walk or teleport there.</li>
+      <li>Typing coordinates directly, such as <code>35.6762, 139.6503</code>, jumps straight to that point instead of running a search. It's a quick way to enter an exact spot.</li>
     </ul>
 
-    <h2 id="click-to-move">Click-to-move</h2>
-    <p>Long-pressing any point on the map opens a bottom sheet. The options shown depend on current state:</p>
+    <h2 id="click-to-move">Tap to move</h2>
+    <p>Long-pressing any point on the map opens a sheet of options. What you see depends on what's happening at the time:</p>
     <div class="table-wrap">
     <table class="option-table">
-      <thead><tr><th>Action</th><th>Behaviour</th></tr></thead>
+      <thead><tr><th>Action</th><th>What it does</th></tr></thead>
       <tbody>
         <tr>
           <td><strong>Teleport here</strong></td>
-          <td>Position jumps instantly to the tapped point in the next GPS update. No movement interpolation is applied.</td>
+          <td>Your position jumps straight to the tapped point on the next update. There's no walking animation in between.</td>
         </tr>
         <tr>
           <td><strong>Walk here</strong></td>
-          <td>The simulated device moves from the current position to the tapped point at the active speed profile, along a straight line.</td>
+          <td>You move from where you are now to the tapped point at your current speed, in a straight line.</td>
         </tr>
         <tr>
           <td><strong>Walk here via roads</strong></td>
-          <td>Fetches a real road route from OSRM and walks along it segment by segment at the active speed profile. Falls back to straight-line walk silently if OSRM is unreachable.</td>
+          <td>Fetches a real road route and walks it a step at a time at your current speed. If the road route can't be fetched, it quietly falls back to a straight-line walk instead.</td>
         </tr>
         <tr>
           <td><strong>Add next point</strong></td>
-          <td>Visible only while a walk-to is active. Chains a new destination onto the current walk without saving a route. The first tap turns the active walk into a multi-point sequence (current position → current target → new point); subsequent taps add more points to the end. If the current walk was "via roads", the new leg also follows roads.</td>
+          <td>Only shown while you're already walking somewhere. It adds another stop to the walk instead of starting a new one. The first tap turns your walk into a chain of stops: where you started, where you were headed, then the new point. Later taps just add more stops to the end. If the walk was following roads, the new stretch follows roads too.</td>
         </tr>
         <tr>
           <td><strong>Share this location</strong></td>
-          <td>Fires the system share sheet with a deep-link URL for the tapped coordinate. See <a href="share.html">Share &amp; Deep Links</a> for details.</td>
+          <td>Opens your phone's share menu with a link to the tapped spot. See <a href="share.html">Share &amp; Deep Links</a> for details.</td>
         </tr>
       </tbody>
     </table>
     </div>
-    <p>When a route replay is in progress, the sheet shows different actions instead: <strong>Stop route and teleport</strong>, <strong>Stop route and walk here</strong>, and <strong>Finish route and walk here</strong> (adds the point to the end of the active route rather than stopping it).</p>
+    <p>While a saved route is playing, the sheet shows different choices instead: <strong>Stop route and teleport</strong>, <strong>Stop route and walk here</strong>, and <strong>Finish route and walk here</strong>, which adds the tapped point to the end of the route instead of stopping it.</p>
 
     <h2 id="routes-sheet">Routes sheet</h2>
-    <p>Open your saved routes and start replaying one directly from the map.</p>
+    <p>Open your saved routes and start one straight from the map, no need to switch screens.</p>
 
     <div class="feature-section" id="map-routes-sheet">
       <img class="phone-shot" src="screenshots/06_map_routes_sheet.png" alt="Map routes bottom sheet">
       <ul class="section-bullets">
-        <li>Tap a route to preview its polyline on the map.</li>
+        <li>Tap a route to preview its path on the map.</li>
         <li>Start, loop, or reverse the route without leaving the map screen.</li>
-        <li>Active route progress is shown on the map as the position marker advances along the polyline.</li>
+        <li>While a route is running, you can watch your marker move along the path on the map.</li>
       </ul>
     </div>
 
     <h2 id="favorites-sheet">Favorites sheet</h2>
-    <p>Jump to any saved favorite location without navigating to the Favorites screen.</p>
+    <p>Jump to any saved favorite location without leaving the map for the Favorites screen.</p>
 
     <div class="feature-section" id="map-favorites-sheet">
       <img class="phone-shot" src="screenshots/07_map_favorites_sheet.png" alt="Map favorites bottom sheet">
       <ul class="section-bullets">
-        <li>Tap a favorite to expand its detail panel with three movement options: <strong>Set location</strong> (teleport), <strong>Walk to location</strong> (straight line), and <strong>Walk via roads</strong> (OSRM road-following).</li>
-        <li>Saved favorites appear with their name and distance from the current spoofed position.</li>
-        <li>Distance is calculated as straight-line distance, not road distance.</li>
-        <li>Tap <strong>Save current location</strong> to add your current spoofed position as a new favorite directly from this sheet.</li>
+        <li>Tap a favorite to open its detail panel with three ways to get there: <strong>Set location</strong> (teleport), <strong>Walk to location</strong> (straight line), and <strong>Walk via roads</strong> (follows real roads).</li>
+        <li>Each saved favorite shows its name and how far it is from where you are now.</li>
+        <li>That distance is measured as a straight line, not the distance you'd actually travel by road.</li>
+        <li>Tap <strong>Save current location</strong> to add where you are right now as a new favorite, without leaving this sheet.</li>
       </ul>
     </div>
 
     <h2 id="roaming-sheet">Roaming sheet</h2>
     <p>
-      Configure and start automatic roaming — locationjoystick picks random waypoints within a radius and walks between them for you.
-      Useful for apps that require continuous movement without manual input.
+      Set up automatic roaming and locationjoystick picks random spots within an area and walks
+      between them on its own. This is handy for apps that expect you to keep moving without
+      you having to steer it yourself.
     </p>
 
     <div class="feature-section" id="map-roaming-sheet">
       <img class="phone-shot" src="screenshots/08_map_roaming_sheet.png" alt="Map roaming bottom sheet">
       <ul class="section-bullets">
-        <li>Set a center point (defaults to current spoofed position), radius, and total distance to cover.</li>
-        <li>Enable road-following to route each leg through OSRM, so movement stays on real walkable paths. Falls back to straight-line if OSRM is unreachable.</li>
-        <li>Optionally return to the starting position when the distance quota is reached.</li>
-        <li>The roaming engine picks a new random waypoint within the radius each time the previous one is reached. Waypoints are chosen uniformly at random within the circle — there is no bias toward the centre.</li>
-        <li>Roaming runs inside the background service and continues while the screen is off.</li>
+        <li>Set a center point (your current position by default), a radius, and a total distance to cover.</li>
+        <li>Turn on road-following so each leg sticks to real walkable paths. If a road route can't be found, that leg falls back to a straight line.</li>
+        <li>Optionally have it walk back to the starting position once the distance is covered.</li>
+        <li>Each time it reaches a spot, it picks a new random one within the radius. Spots are chosen at random across the whole circle, not clustered near the center.</li>
+        <li>Roaming keeps running in the background, even with the screen off.</li>
       </ul>
     </div>
   </main>

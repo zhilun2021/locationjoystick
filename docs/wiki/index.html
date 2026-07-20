@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Getting Started — locationjoystick</title>
+  <title>Getting started, locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -14,27 +14,27 @@
   <main>
     <p class="page-title">locationjoystick</p>
     <p>
-      Spoof your GPS location on Android.
-      Use a floating joystick, saved routes, or automatic roaming to move your location
-      anywhere while your other apps run normally.
+      Change the location your phone reports on Android. Move a floating joystick,
+      replay a saved route, or let the app wander for you, and your other apps keep
+      working like nothing changed.
     </p>
     <p>
-      Uses Android's official mock location API. Enable Developer Options, select
-      locationjoystick as your mock location provider, and every app on the device
-      sees the location you choose.
+      The app plugs into a location setting built into Android. Turn on Developer
+      Options, pick locationjoystick as the app allowed to set your location, and
+      every app on your phone sees the position you choose.
     </p>
 
     <h2 id="install">Install</h2>
     <ol class="quickstart">
       <li><a href="https://github.com/shortcuts/locationjoystick/releases/latest" target="_blank" rel="noopener">Download the latest APK</a> from GitHub Releases.</li>
-      <li>Open the downloaded file. If prompted <em>"Allow installs from unknown sources"</em>, enable it in Settings for your browser or file manager, then return and retry.</li>
-      <li>You may see <em>"App scan recommended"</em> from Google Play Protect — this is a standard warning shown for any APK installed outside the Play Store. Tap <strong>Install without scanning</strong> or scan first; either works.</li>
+      <li>Open the downloaded file. If you see a prompt to <em>"Allow installs from unknown sources"</em>, turn it on in Settings for your browser or file manager, then come back and try again.</li>
+      <li>You may see an <em>"App scan recommended"</em> message from Google Play Protect. This warning shows up for any app installed outside the Play Store, and it's nothing to worry about. Tap <strong>Install without scanning</strong>, or scan first if you'd rather. Both work fine.</li>
     </ol>
 
     <h2 id="first-run-setup">First-run setup</h2>
     <p>
-      The onboarding flow runs once when you first open the app. It walks you through
-      the three permissions locationjoystick needs to work.
+      The first time you open the app, it walks you through three permissions it
+      needs before it can work.
     </p>
 
     <ul class="step-list">
@@ -42,8 +42,8 @@
         <div>
           <strong>Location permission</strong>
           <p>
-            Grant <strong>Precise location</strong> so the map can center on your position
-            and route recording works correctly.
+            Grant <strong>Precise location</strong> so the map can center on where you are
+            and route recording works properly.
           </p>
         </div>
       </li>
@@ -51,9 +51,9 @@
         <div>
           <strong>Overlay permission</strong>
           <p>
-            Grant <strong>Display over other apps</strong> to enable the floating joystick
-            and widget. The app opens the system settings page directly — toggle locationjoystick
-            in the list and return to the app.
+            Grant <strong>Display over other apps</strong> to turn on the floating joystick
+            and widget. The app opens the system settings page for you. Turn on locationjoystick
+            in the list, then go back to the app.
           </p>
         </div>
       </li>
@@ -61,10 +61,11 @@
         <div>
           <strong>Mock location provider</strong>
           <p>
-            Enable <strong>Developer Options</strong> on your device (Settings → About phone →
-            tap Build number seven times), then go to Settings → Developer Options →
-            <strong>Select mock location app</strong> and choose locationjoystick.
-            Tap <strong>Check again</strong> in the app — it verifies the setting and advances automatically.
+            Turn on <strong>Developer Options</strong> on your device (go to Settings, then About
+            phone, then tap Build number seven times), then go to Settings, then Developer Options,
+            then <strong>Select mock location app</strong> and choose locationjoystick.
+            Tap <strong>Check again</strong> in the app. It checks the setting and moves you forward
+            automatically once it's correct.
           </p>
         </div>
       </li>
@@ -72,34 +73,34 @@
         <div>
           <strong>All done</strong>
           <p>
-            Onboarding completes and you land on the Map screen ready to start spoofing.
-            You won't see this flow again unless you clear app data.
+            Setup finishes and you land on the Map screen, ready to go. You won't see
+            this flow again unless you clear the app's data.
           </p>
         </div>
       </li>
     </ul>
 
-    <h2 id="start-spoofing">Start spoofing</h2>
-    <p>Tap <strong>Map</strong>, tap the start button, then long-press the map to walk or teleport anywhere. Use the floating widget or joystick overlay to control your location while other apps are in the foreground.</p>
+    <h2 id="start-spoofing">Start changing your location</h2>
+    <p>Tap <strong>Map</strong>, tap the start button, then long-press anywhere on the map to walk or teleport there. Use the floating widget or joystick to control your location while you're in another app.</p>
 
     <h2 id="updating">Updating</h2>
-    <p>Open the new APK — Android will prompt <em>"Replace app?"</em> and preserve your data.</p>
+    <p>Open the new APK file. Android will ask <em>"Replace app?"</em> and keep your data as it is.</p>
 
     <h3 id="switching-from-the-play-store-version">Switching from the Play Store version</h3>
     <p>
-      The Play Store and GitHub builds use different signing keys, so Android will block a direct update.
-      Export your data first via <strong>Settings → Export</strong>, then uninstall the Play Store version,
-      install the GitHub APK, and re-import.
+      The Play Store version and the GitHub version are signed differently, so Android won't let
+      you update directly from one to the other. Export your data first via <strong>Settings, Export</strong>,
+      then uninstall the Play Store version, install the GitHub APK, and import your data back in.
     </p>
 
     <h2 id="source">Source</h2>
     <p>
-      <a href="https://github.com/shortcuts/locationjoystick">github.com/shortcuts/locationjoystick</a>
-      — MIT license, open source.
+      <a href="https://github.com/shortcuts/locationjoystick">github.com/shortcuts/locationjoystick</a>.
+      Free, open source, under the MIT license.
     </p>
     <p>
       See <a href="acknowledgements.html">Acknowledgements</a> for the full list of open-source
-      libraries and data sources this app is built on.
+      projects and data sources this app is built on.
     </p>
   </main>
 

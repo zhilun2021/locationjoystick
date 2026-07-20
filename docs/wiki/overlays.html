@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overlays — locationjoystick</title>
+  <title>Overlays - locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -14,37 +14,37 @@
   <main>
     <h2 id="floating-joystick">Floating joystick</h2>
     <p>
-      A circular directional pad that floats over any app. Drag to move your spoofed
-      location in real time while something else is in the foreground.
-      The joystick runs independently — it can be shown or hidden via
-      the floating widget without stopping spoofing.
+      The floating joystick is a circular control that stays on top of whatever app you're
+      using. Drag it to move your spoofed location in real time, even while a different app
+      is open on screen. It keeps running on its own, and you can show or hide it from the
+      floating widget without turning off spoofing.
     </p>
 
     <div class="feature-section" id="joystick-overlay">
       <img class="phone-shot" src="screenshots/14_joystick_overlay.png" alt="Floating joystick overlay">
       <ul class="section-bullets">
-        <li>Drag the thumb in any direction to move at the currently selected speed profile (Walk, Run, or Bike).</li>
-        <li>Release to stop moving; your position holds at the last point until you drag again.</li>
+        <li>Drag the center dial in any direction to move at your current speed setting (Walk, Run, or Bike).</li>
+        <li>Let go to stop moving. Your position stays at that last point until you drag again.</li>
         <li>Drag the outer ring to reposition the joystick anywhere on screen.</li>
-        <li><strong>Lock mode:</strong> hold the current direction after release so the device keeps moving in a straight line without continuous finger contact. Toggle lock from the floating widget's lock button or from the joystick itself. Tap the joystick thumb while locked to unlock.</li>
-        <li>The joystick respects whichever speed profile is active — switch profiles via the floating widget's speed cycle button without lifting the joystick.</li>
+        <li>Turning on lock mode keeps the joystick moving in the same direction after you let go, so the device keeps traveling in a straight line without you touching the screen. Turn lock on or off from the floating widget's lock button or from the joystick itself. While locked, tap the center dial to unlock it.</li>
+        <li>The joystick moves at whichever speed setting is currently active. Switch settings using the floating widget's speed cycle button without lifting your finger off the joystick.</li>
       </ul>
     </div>
 
     <h2 id="floating-widget">Floating widget</h2>
     <p>
-      A compact panel with quick-access controls. Tap the FAB to expand it, then use
-      whichever controls you've configured in Settings — without opening the app.
-      The widget remains on screen across app switches.
+      The floating widget is a small panel with quick-access controls. Tap the round button
+      to expand it, then use whichever controls you've set up in Settings, all without
+      opening the app itself. It stays on screen even when you switch between other apps.
     </p>
 
     <div class="feature-section" id="widget-overlay">
       <img class="phone-shot" src="screenshots/15_widget_overlay.png" alt="Floating widget overlay">
       <ul class="section-bullets">
-        <li>Collapse back to a single FAB when not needed — tap the FAB again to re-expand.</li>
-        <li>Drag the FAB to any edge of the screen to keep it out of the way.</li>
-        <li>Widget state (which controls are visible, and in what order) is configured in Settings → Menus → App Features. Changes apply the next time the widget is launched.</li>
-        <li>The widget connects to the background location service and reflects live spoofing state — a route replaying in the widget shows its live pause/stop controls.</li>
+        <li>Tap the button again to collapse the panel back down to a single button when you don't need it, and tap once more to expand it again.</li>
+        <li>Drag the button to any edge of the screen to keep it out of your way.</li>
+        <li>Which controls appear, and in what order, is set in Settings → Menus → App Features. Changes take effect the next time you open the widget.</li>
+        <li>The widget always reflects what's currently happening, so if a route is playing, its pause and stop controls show up live right inside the widget.</li>
       </ul>
     </div>
 
@@ -55,27 +55,27 @@
       <tbody>
         <tr>
           <td><strong>Map shortcut</strong></td>
-          <td>Opens a compact full-screen map overlay that floats above other apps. Supports walk-to, teleport, and roaming controls without switching back to the main app.</td>
+          <td>Opens a compact map that floats above other apps, filling the screen. Lets you walk to a point, teleport, or start roaming without switching back to the main app.</td>
         </tr>
         <tr>
           <td><strong>Show / hide joystick</strong></td>
-          <td>Toggles the floating joystick overlay on or off. The joystick service must already be started from the main app — this control only changes visibility, it does not start the service from scratch.</td>
+          <td>Turns the floating joystick on or off. You need to start the joystick from the main app first: this button only shows or hides it, it doesn't start it from scratch.</td>
         </tr>
         <tr>
           <td><strong>Lock joystick</strong></td>
-          <td>Holds the current joystick direction after finger release so the position keeps advancing. Useful for walking in a straight line hands-free. Tap again to unlock.</td>
+          <td>Holds the current joystick direction after you release your finger, so your position keeps advancing. Useful for walking in a straight line hands-free. Tap again to unlock.</td>
         </tr>
         <tr>
           <td><strong>Routes picker</strong></td>
-          <td>Lists all saved routes. Tap to start, loop, reverse, or return. While a route is active, expands inline to show pause and stop controls.</td>
+          <td>Lists your saved routes. Tap one to start it, loop it, reverse it, or have it return to the start. While a route is running, it expands to show pause and stop controls.</td>
         </tr>
         <tr>
           <td><strong>Favorites picker</strong></td>
-          <td>Lists saved favorites with one-tap teleport and walk shortcuts. Also lets you save the current spoofed position as a new favorite directly from the overlay.</td>
+          <td>Lists your saved favorites with one-tap teleport and walk shortcuts. You can also save your current spoofed position as a new favorite right from here.</td>
         </tr>
         <tr>
           <td><strong>Speed cycle</strong></td>
-          <td>Cycles through Slow Walk, Walk, Run, Bike, and Drive speed profiles with a single tap. The icon updates to reflect the active profile. Affects joystick, walk-to, and roaming immediately.</td>
+          <td>Cycles through the Slow Walk, Walk, Run, Bike, and Drive speed settings with a single tap. The icon changes to show which one is active, and the new speed applies right away to the joystick, walk-to, and roaming.</td>
         </tr>
       </tbody>
     </table>
@@ -83,9 +83,11 @@
 
     <h2 id="requirements">Requirements</h2>
     <p>
-      Both overlays require the <strong>Display over other apps</strong> permission.
-      The onboarding flow guides you through granting it.
-      On some custom Android skins (MIUI, ColorOS), the overlay permission may need to be re-granted after each reboot — check your device's autostart or battery settings if the overlay disappears.
+      Both overlays need the <strong>Display over other apps</strong> permission turned on.
+      The setup steps you see when you first open the app walk you through granting it.
+      On some phone brands, like Xiaomi or Oppo devices, this permission can reset itself
+      after a restart. If an overlay disappears, check your phone's autostart or battery
+      settings.
     </p>
   </main>
 

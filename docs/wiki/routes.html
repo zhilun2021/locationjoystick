@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Routes — locationjoystick</title>
+  <title>Routes, locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -15,28 +15,28 @@
   <main>
     <h2 id="routes">Routes</h2>
     <p>
-      Create a series of waypoints on the map and replay them at your chosen speed.
-      Routes can follow straight lines between waypoints or snap to real roads using OSRM routing.
-      Route data is stored entirely on your device — no cloud sync, no account required.
+      Place a series of stops on the map and play them back at whatever speed you choose.
+      Routes can follow straight lines between stops, or snap to real roads. All of your
+      route data stays on your device. There's no cloud sync and no account needed.
     </p>
 
     <div class="feature-section" id="routes-list">
       <img class="phone-shot" src="screenshots/03_routes.png" alt="Routes list screen">
       <ul class="section-bullets">
-        <li>Tap the add button to create a new route by placing waypoints on the map or importing a file.</li>
-        <li>Tap a saved route to start it; options include loop, reverse, and return-to-start.</li>
-        <li>Import routes from GPX files, GPS Joystick, or YAMLA via the overflow menu.</li>
+        <li>Tap the add button to create a new route by placing stops on the map or importing a file.</li>
+        <li>Tap a saved route to start it. You can loop it, reverse it, or have it return to the start.</li>
+        <li>Import routes from GPX files, GPS Joystick, or YAMLA through the overflow menu.</li>
       </ul>
     </div>
 
     <h2 id="how-to-add-a-route">How to add a route</h2>
-    <p>Tap the plus button in the top-right corner of the Routes screen to start creating a new route.</p>
+    <p>Tap the plus button in the top-right corner of the Routes screen to start a new route.</p>
 
     <div class="feature-section" id="routes-add-button">
       <img class="phone-shot" src="screenshots/16_routes_add_button.png" alt="Routes screen with add button visible">
       <ul class="section-bullets">
-        <li>The floating action button (FAB) in the top-right corner opens the add menu.</li>
-        <li>Choose "From map" to place waypoints manually, or "From file" to import an existing route.</li>
+        <li>The button in the top-right corner opens the add menu.</li>
+        <li>Choose "From map" to place stops by hand, or "From file" to import an existing route.</li>
       </ul>
     </div>
 
@@ -47,11 +47,11 @@
       <tbody>
         <tr>
           <td><strong>Straight</strong></td>
-          <td>The app moves between waypoints along straight line segments at the active speed. No internet connection is needed. This is the default type for imported routes.</td>
+          <td>You move between stops in straight lines at your current speed. No internet connection is needed. This is the default for imported routes.</td>
         </tr>
         <tr>
           <td><strong>Guided (road-following)</strong></td>
-          <td>Each segment between waypoints is sent to the OSRM routing API at <a href="https://router.project-osrm.org" target="_blank" rel="noopener">router.project-osrm.org</a>. OSRM returns a snapped polyline following real roads. The Walk and Run profiles use the foot routing profile; the Bike profile uses the cycling profile. If OSRM is unreachable, the segment falls back to a straight line. Route geometry is stored after the first resolve — subsequent replays do not re-request OSRM.</td>
+          <td>Each stretch between stops is sent to an online road routing service at <a href="https://router.project-osrm.org" target="_blank" rel="noopener">router.project-osrm.org</a>, which sends back a path that follows real roads. The Walk and Run speeds use walking directions; the Bike speed uses cycling directions. If the service can't be reached, that stretch falls back to a straight line. The road path is saved after it's fetched once, so later replays don't need to look it up again.</td>
         </tr>
       </tbody>
     </table>
@@ -64,59 +64,59 @@
       <tbody>
         <tr>
           <td><strong>Loop</strong></td>
-          <td>When the last waypoint is reached, the replay restarts from the first waypoint. Continues indefinitely until stopped manually.</td>
+          <td>Once you reach the last stop, playback starts over from the first. It keeps going until you stop it yourself.</td>
         </tr>
         <tr>
           <td><strong>Reverse</strong></td>
-          <td>Plays waypoints in reverse order (last → first). Can be combined with loop.</td>
+          <td>Plays the stops in reverse order, from last to first. You can combine this with loop.</td>
         </tr>
         <tr>
           <td><strong>Return to start</strong></td>
-          <td>After the final waypoint, the simulated device walks back to the first waypoint before stopping. Useful to avoid a large positional jump when ending a session.</td>
+          <td>After the last stop, you walk back to the first one before stopping. This avoids a sudden jump in position when the route ends.</td>
         </tr>
         <tr>
           <td><strong>Pause / Resume</strong></td>
-          <td>Pauses forward movement while keeping the background service running and the current position held. Available from the widget and the routes screen while a route is active.</td>
+          <td>Pauses movement while holding your current position in place. Available from the widget and the routes screen while a route is running.</td>
         </tr>
       </tbody>
     </table>
     </div>
 
     <h2 id="route-creator">Route creator</h2>
-    <p>Place waypoints by tapping the map. The route previews as a polyline as you add points.</p>
+    <p>Place stops by tapping the map. The route draws itself as a line as you add each point.</p>
 
     <div class="feature-section" id="route-creator">
       <img class="phone-shot" src="screenshots/09_route_creator.png" alt="Route creator screen">
       <ul class="section-bullets">
-        <li>Search for a location by name using the search button — powered by <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">nominatim.openstreetmap.org</a>.</li>
-        <li>Undo the last waypoint with the undo button.</li>
-        <li>Choose between straight-line and road-following (OSRM) before saving.</li>
-        <li>Record mode: tap record to capture your real device's GPS trace as a new route in real time.</li>
+        <li>Search for a location by name using the search button, backed by <a href="https://nominatim.openstreetmap.org" target="_blank" rel="noopener">nominatim.openstreetmap.org</a>.</li>
+        <li>Undo the last stop you placed with the undo button.</li>
+        <li>Choose between a straight line and road-following before saving.</li>
+        <li>Record mode: tap record to capture your phone's real movement as a new route as you walk.</li>
       </ul>
     </div>
 
     <h2 id="route-detail">Route detail</h2>
-    <p>Edit an existing route: rename it, reorder or delete individual waypoints, change the route type.</p>
+    <p>Edit an existing route: rename it, reorder or remove individual stops, or change how it moves between them.</p>
 
     <div class="feature-section" id="route-detail">
       <img class="phone-shot" src="screenshots/10_route_detail.png" alt="Route detail / edit screen">
       <ul class="section-bullets">
-        <li>Drag waypoints in the list to reorder them.</li>
-        <li>Tap a waypoint to highlight it on the embedded map.</li>
-        <li>Changing route type from straight to road-following re-fetches the road geometry the next time the route is started.</li>
-        <li>Delete the route permanently from the action bar.</li>
+        <li>Drag stops in the list to reorder them.</li>
+        <li>Tap a stop to highlight it on the map preview.</li>
+        <li>Switching a route from straight to road-following looks up the road path again the next time you start it.</li>
+        <li>Delete the route for good from the action bar.</li>
       </ul>
     </div>
 
     <h2 id="hot-routes">Hot routes</h2>
     <p>
-      Settings → Routes → <strong>Show hot routes</strong> adds a curated set of pre-built routes
-      for popular event locations around the world — large walking areas, parks, and landmarks
-      that are commonly useful for location spoofing. The toggle is off by default.
+      In Settings, under Routes, turning on <strong>Show hot routes</strong> adds a curated set of
+      ready-made routes for popular event locations around the world: large walking areas, parks,
+      and landmarks that come in handy for spoofing your location. This is off by default.
     </p>
     <ul class="section-bullets">
-      <li>Disabling this option removes only the routes added by this feature. Your own routes are never deleted.</li>
-      <li>The setting persists across app restarts and is included in export/import.</li>
+      <li>Turning it off removes only the routes this feature added. Your own routes are never touched.</li>
+      <li>The setting sticks across app restarts and is included when you export or import your data.</li>
     </ul>
 
     <h2 id="import-formats">Import formats</h2>
@@ -126,19 +126,19 @@
       <tbody>
         <tr>
           <td><strong>GPX</strong></td>
-          <td>Standard GPS Exchange Format. Both track recordings and planned routes are supported. Imported as straight-line routes. Elevation data in the file is ignored — locationjoystick manages altitude separately via the GPS Realism settings.</td>
+          <td>A common file format for GPS tracks and routes. Both recorded tracks and planned routes are supported, and both come in as straight-line routes. Any elevation data in the file is ignored, since locationjoystick handles altitude separately through the GPS realism settings.</td>
         </tr>
         <tr>
           <td><strong>GPS Joystick</strong></td>
-          <td>JSON export format from the GPS Joystick app. Routes and favorites are imported. Speeds are mapped to the nearest profile where possible.</td>
+          <td>The export file from the GPS Joystick app. Routes and favorites both come across, and speeds are matched to the closest available speed where possible.</td>
         </tr>
         <tr>
           <td><strong>YAMLA</strong></td>
-          <td>JSON export format from the YAMLA app. Favorites and speed settings are imported. Routes are imported as straight-line segments.</td>
+          <td>The export file from the YAMLA app. Favorites and speed settings come across; routes are imported as straight-line segments.</td>
         </tr>
         <tr>
-          <td><strong>locationjoystick JSON</strong></td>
-          <td>Native backup format. Preserves all fields including route type, waypoints, and metadata. Use Add to merge with existing data or Replace to overwrite.</td>
+          <td><strong>locationjoystick backup</strong></td>
+          <td>The app's own backup format. Keeps everything, including route type, stops, and other details. Choose Add to merge it with what you already have, or Replace to overwrite it.</td>
         </tr>
       </tbody>
     </table>

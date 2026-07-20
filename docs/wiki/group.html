@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Group Sync — locationjoystick</title>
+  <title>Group Sync, locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -14,9 +14,9 @@
   <main>
     <h2 id="group-sync">Group Sync</h2>
     <p>
-      Sync your spoofed location across multiple devices on the same Wi-Fi network.
-      One device acts as the leader and broadcasts its position; the others follow automatically.
-      No account, no internet connection, and no server required.
+      Share one location across multiple devices on the same Wi-Fi network. One device
+      acts as the leader and sends out its position, and the rest follow along automatically.
+      No account, no internet connection, and no outside server needed.
     </p>
 
     <div class="feature-section" id="group-main">
@@ -24,22 +24,22 @@
       <ul class="section-bullets">
         <li>One device creates the group and becomes the leader.</li>
         <li>Other devices join by scanning a QR code shown on the leader's screen.</li>
-        <li>Followers walk toward the leader's location automatically on the same Wi-Fi, using their own current speed setting.</li>
-        <li>Works entirely on-device — no account, no cloud, no internet needed.</li>
+        <li>Followers walk toward the leader's location automatically over the same Wi-Fi, moving at their own current speed.</li>
+        <li>Everything happens on the devices themselves, with no account, no cloud, and no internet needed.</li>
       </ul>
     </div>
 
     <h2 id="how-it-works">How it works</h2>
     <ol class="section-bullets">
-      <li>The leader opens <strong>Group Sync</strong> from the navigation drawer and taps <strong>Create group — I'm the leader</strong>.</li>
-      <li>A QR code appears on the leader's screen containing the local IP address, port, and group ID.</li>
-      <li>Each follower opens <strong>Group Sync</strong> on their device and scans the QR code with their camera.</li>
-      <li>The follower is joined automatically. Enable <strong>Follow leader</strong> to start mirroring the leader's location.</li>
+      <li>The leader opens <strong>Group Sync</strong> from the navigation drawer and taps <strong>Create group: I'm the leader</strong>.</li>
+      <li>A QR code appears on the leader's screen. It contains the leader's local network address and a group code.</li>
+      <li>Each follower opens <strong>Group Sync</strong> on their own device and scans that QR code with their camera.</li>
+      <li>The follower joins automatically. Turn on <strong>Follow leader</strong> to start mirroring the leader's location.</li>
     </ol>
 
     <h2 id="leader">Leader</h2>
     <p>
-      The leader device shares its current spoofed position with all connected followers once per second, over the local Wi-Fi network.
+      The leader device shares its current location with every connected follower once a second, over the local Wi-Fi network.
     </p>
 
     <div class="table-wrap">
@@ -48,15 +48,15 @@
       <tbody>
         <tr>
           <td><strong>QR code</strong></td>
-          <td>Displays the join invite. Followers scan this to connect. Tap the refresh icon to regenerate a new QR code (rotates the group ID).</td>
+          <td>Shows the join invite. Followers scan this to connect. Tap the refresh icon to generate a new code, which also changes the group's join code.</td>
         </tr>
         <tr>
           <td><strong>Sharing</strong> toggle</td>
-          <td>When on, the leader actively broadcasts its position to followers. Turn off to pause broadcasting without leaving the group.</td>
+          <td>When on, the leader actively sends its position to followers. Turn it off to pause sharing without leaving the group.</td>
         </tr>
         <tr>
           <td><strong>Leave group</strong></td>
-          <td>Stops the server and removes the device from the group. All followers lose the connection and stop receiving updates.</td>
+          <td>Removes the device from the group. All followers lose the connection and stop getting updates.</td>
         </tr>
       </tbody>
     </table>
@@ -64,11 +64,12 @@
 
     <h2 id="follower">Follower</h2>
     <p>
-      Each follower connects to the leader's server and receives position updates. Instead of jumping
-      straight to the leader's position, the follower's spoofed location walks toward it — at whatever
-      speed profile (Slow Walk, Walk, Run, Bike, or Drive) is currently active on that device. If the follower starts far
-      away, it may take a while to catch up, or it may never fully catch up if the leader keeps moving —
-      this is by design, so movement always looks like a real walk rather than an instant jump.
+      Each follower connects to the leader and receives its position updates. Instead of jumping
+      straight there, the follower's location walks toward the leader's, at whatever speed
+      (Slow Walk, Walk, Run, Bike, or Drive) is currently set on that device. If the follower
+      starts far away, it may take a while to catch up, and it may never fully catch up if the
+      leader keeps moving. That's intentional, so the movement always looks like a real walk
+      rather than a sudden jump.
     </p>
 
     <div class="table-wrap">
@@ -77,15 +78,15 @@
       <tbody>
         <tr>
           <td><strong>Follow leader</strong> toggle</td>
-          <td>When on, the device walks toward the leader's location in real time. Turn off to pause following while staying in the group.</td>
+          <td>When on, the device walks toward the leader's location as it updates. Turn it off to pause following while staying in the group.</td>
         </tr>
         <tr>
           <td><strong>Teleport to leader now</strong></td>
-          <td>Jumps straight to the leader's last known position immediately, instead of walking there. Shown while Follow leader is on.</td>
+          <td>Jumps straight to the leader's last known position right away, instead of walking there. Shown while Follow leader is on.</td>
         </tr>
         <tr>
           <td><strong>Leave group</strong></td>
-          <td>Disconnects from the leader and clears the saved group credentials.</td>
+          <td>Disconnects from the leader and clears the saved connection details.</td>
         </tr>
       </tbody>
     </table>
@@ -93,27 +94,28 @@
 
     <h2 id="persistence">Persistence</h2>
     <p>
-      Follower credentials (leader host, port, group ID) are saved to disk. If <strong>Follow leader</strong>
-      was enabled when the app was last closed, it resumes automatically on the next app launch — including after a device reboot.
+      A follower's connection details are saved on the device. If <strong>Follow leader</strong>
+      was turned on when the app last closed, following starts again automatically the next time
+      you open the app, even after a device restart.
     </p>
     <p>
-      Leader state is not persisted. The leader must tap <strong>Create group</strong> again after a reboot
-      and share a new QR code with followers.
+      A leader's state is not saved this way. After a restart, the leader has to tap
+      <strong>Create group</strong> again and share a fresh QR code with followers.
     </p>
 
     <h2 id="requirements">Requirements</h2>
     <ul class="section-bullets">
       <li>All devices must be on the <strong>same Wi-Fi network</strong>.</li>
-      <li>Mock location must be active on each device independently — the follower spoofs its own GPS using the received coordinates.</li>
-      <li>No special permissions beyond what the app already requires.</li>
+      <li>Mock location must be turned on separately on each device. A follower spoofs its own location using the position it receives.</li>
+      <li>No extra permissions are needed beyond what the app already asks for.</li>
     </ul>
 
     <h2 id="limitations">Limitations</h2>
     <ul class="section-bullets">
-      <li>Mobile data or VPN routing may prevent devices from reaching the leader's local IP address.</li>
-      <li>If the leader's Wi-Fi address changes (for example after a router restart), followers must rejoin by scanning a new QR code.</li>
-      <li>The leader can only have one active group at a time.</li>
-      <li>A follower joining far from the leader walks there at its own speed setting rather than jumping instantly — use <strong>Teleport to leader now</strong> for an immediate jump.</li>
+      <li>Mobile data or a VPN can prevent a device from reaching the leader's local address.</li>
+      <li>If the leader's Wi-Fi address changes, for example after the router restarts, followers need to rejoin by scanning a new QR code.</li>
+      <li>A leader can only run one active group at a time.</li>
+      <li>A follower joining far from the leader walks there at its own speed instead of jumping instantly. Use <strong>Teleport to leader now</strong> for an immediate jump.</li>
     </ul>
   </main>
 

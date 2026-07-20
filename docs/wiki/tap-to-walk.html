@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tap to Walk — locationjoystick</title>
+  <title>Tap to Walk - locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -12,17 +12,18 @@
 <div class="layout">
 
   <main>
-    <h2 id="tap-to-walk">Tap to Walk</h2>
+    <h2 id="tap-to-walk">Tap to walk</h2>
     <p>
-      Tap to Walk gives you two shortcuts for moving your spoofed location with a single tap,
-      without opening the app. Both are off by default. Turn them on in
+      Tap to walk gives you two shortcuts for moving your spoofed location with a single tap,
+      without opening the app. Both are turned off by default. Turn them on under
       <strong>Settings → Menus → Tap to Walk</strong>.
     </p>
 
     <h2 id="floating-map-quick-walk">Floating map quick walk</h2>
     <p>
-      When this is on, tapping anywhere on the floating map immediately starts walking to that
-      point. The confirmation sheet is skipped — the walk begins straight away.
+      When this is turned on, tapping anywhere on the floating map starts walking to that spot
+      right away. It skips the popup that normally asks which action to take, so the walk
+      begins immediately.
     </p>
     <p>
       Useful when you already know where you want to go and don't need to choose between
@@ -31,10 +32,9 @@
 
     <h2 id="screen-overlay">Screen tap-to-walk overlay</h2>
     <p>
-      This adds a crosshair button to the floating widget panel. Tap it once to activate a
-      transparent layer that sits over whatever app you're currently using. Your next tap on
-      the screen — anywhere — is treated as a walk destination. The overlay then disappears
-      automatically.
+      This adds a crosshair button to the floating widget panel. Tap it once, and a clear
+      layer appears over whatever app you're currently using. Your very next tap anywhere on
+      the screen becomes your walk destination, and the layer then disappears on its own.
     </p>
     <p>
       To cancel without walking anywhere, tap the close button in the bottom-right corner.
@@ -42,33 +42,33 @@
 
     <h3 id="scale-setting">Scale setting</h3>
     <p>
-      The overlay converts where you tapped on screen into a real-world GPS coordinate using
-      the <strong>Scale</strong> value (shown in meters per pixel). A higher number means each
-      pixel on screen represents more distance on the ground — useful when the game map is
-      zoomed out. A lower number is better for zoomed-in maps where precision matters.
+      The overlay turns the spot you tapped on screen into a real-world location using the
+      <strong>Scale</strong> value, shown in meters per pixel. A higher number means each pixel
+      on screen stands for more real-world distance, which helps when the game map is zoomed
+      out. A lower number works better for zoomed-in maps where precision matters.
     </p>
     <p>
-      If your taps are landing too far from where you intended, adjust the scale to match how
-      zoomed in the game is. Zooming the game map out generally gives more accurate results
-      because small positioning errors become less significant.
+      If your taps are landing too far from where you meant, adjust the scale to match how
+      zoomed in the game is. Zooming the game map out usually gives more accurate results,
+      since small positioning errors matter less at that scale.
     </p>
 
     <h3 id="warning">Important note</h3>
     <p>
       The overlay assumes the map you're tapping is oriented with north at the top. If the game
-      rotates the map to follow your character, taps may not land in the expected direction.
-      The <strong>Compass orientation</strong> feature below can correct for this automatically.
+      rotates the map to follow your character, taps may not land where you expect. The
+      <strong>Compass orientation</strong> feature below can correct for this automatically.
     </p>
     <p>
-      Some apps can detect when location is being mocked and may take action on the account.
-      Use this feature only in apps where you understand and accept that risk.
+      Some apps can detect when a location is being faked and may take action on your account.
+      Only use this feature in apps where you understand and accept that risk.
     </p>
 
     <h2 id="compass-orientation">Compass orientation</h2>
     <p>
       When this is on, locationjoystick takes a screenshot the moment you open the tap-to-walk
-      overlay and looks for the red north arrow in the compass. It uses the arrow's direction to
-      rotate the walk target so it lands in the right place even when the game map is turned.
+      overlay and looks for the red north arrow in the compass. It uses the arrow's direction
+      to rotate the walk target so it lands in the right place even when the game map is turned.
     </p>
 
     <h3 id="compass-setup">Setup</h3>
@@ -76,26 +76,26 @@
       <li>Go to <strong>Settings → Menus → Tap to Walk</strong>.</li>
       <li>Make sure <strong>Screen tap-to-walk overlay</strong> is turned on first.</li>
       <li>Under <strong>Compass orientation</strong>, tap <strong>Open Settings</strong> to open
-          Android's Accessibility Settings.</li>
-      <li>Find <strong>locationjoystick compass</strong> in the list and enable it.</li>
-      <li>Return to locationjoystick — the status will update to <em>Enabled</em>.</li>
+          Android's accessibility settings.</li>
+      <li>Find <strong>locationjoystick compass</strong> in the list and turn it on.</li>
+      <li>Return to locationjoystick. The status updates to <em>Enabled</em>.</li>
       <li>Turn on <strong>Detect compass orientation</strong>.</li>
     </ol>
 
     <h3 id="compass-region">Compass region</h3>
     <p>
-      By default the app looks for the compass in the top-right corner of the screen. If the game
-      you use puts the compass somewhere else, expand <strong>Compass region (advanced)</strong>
-      in Settings and adjust the horizontal position, vertical position, and radius sliders to
-      match the compass location.
+      By default the app looks for the compass in the top-right corner of the screen. If the
+      game you use puts its compass somewhere else, expand <strong>Compass region
+      (advanced)</strong> in Settings and adjust the horizontal position, vertical position, and
+      radius sliders to match where the compass sits.
     </p>
 
     <h3 id="compass-warning">Important note</h3>
     <p>
-      Accessibility services can be detected by some apps. If the game you use monitors for
-      accessibility services and restricts features when one is active, turn off
-      <strong>Detect compass orientation</strong> or disable the locationjoystick compass service
-      in Android Accessibility Settings.
+      Some apps can notice when this kind of background helper is active. If the game you use
+      checks for this and limits features when it finds one, turn off
+      <strong>Detect compass orientation</strong>, or disable the locationjoystick compass entry
+      in your phone's accessibility settings.
     </p>
   </main>
 

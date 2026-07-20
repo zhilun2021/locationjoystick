@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Share &amp; Deep Links — locationjoystick</title>
+  <title>Share &amp; Deep Links - locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -12,37 +12,38 @@
 <div class="layout">
 
   <main>
-    <h2 id="share-deep-links">Share &amp; Deep Links</h2>
+    <h2 id="share-deep-links">Share and deep links</h2>
     <p>
-      Share any coordinate or saved favorite as a link. Tapping the link on Android opens the app
-      directly, centers the map on the location, and asks what you want to do with it.
+      Share any coordinate or saved favorite as a link. Tapping the link on Android opens the
+      app directly, centers the map on the location, and asks what you want to do with it.
     </p>
 
     <h2 id="sharing-a-location">Sharing a location</h2>
     <p>Two places in the app generate shareable links:</p>
     <ul class="section-bullets">
-      <li><strong>Favorites</strong> — tap ⋮ on any saved favorite → <strong>Share</strong>.</li>
-      <li><strong>Map</strong> — long-press any point on the map → bottom sheet → <strong>Share this location</strong>.</li>
+      <li>From Favorites, tap the three-dot menu on any saved favorite, then tap <strong>Share</strong>.</li>
+      <li>From the map, press and hold any point, then tap <strong>Share this location</strong> in the menu that appears.</li>
     </ul>
     <p>
-      Both fire the system share sheet with a plain-text URL. You can send it via any messaging
-      app, copy it to clipboard, or generate a QR code with a third-party tool.
+      Both open your phone's normal share menu with a plain text link ready to go. Send it
+      through any messaging app, copy it to your clipboard, or turn it into a QR code with
+      another app if you like.
     </p>
 
     <h2 id="what-happens-when-the-link-is-opened">What happens when the link is opened</h2>
     <ol class="section-bullets">
-      <li>The app opens (or comes to the foreground if already running).</li>
-      <li>The map screen activates and pans to the linked coordinate.</li>
-      <li>A confirmation sheet appears with these options:
+      <li>The app opens, or comes to the front if it's already running.</li>
+      <li>The map screen appears and slides over to the linked location.</li>
+      <li>A popup appears asking what to do next:
         <ul>
-          <li><strong>Teleport here</strong> — instantly move your spoofed position.</li>
-          <li><strong>Walk here</strong> — walk to the coordinate at your current speed.</li>
-          <li><strong>Walk here via roads</strong> — follow road geometry to the coordinate.</li>
-          <li><strong>Do nothing</strong> — dismiss without changing position.</li>
+          <li><strong>Teleport here</strong> moves your spoofed position there instantly.</li>
+          <li><strong>Walk here</strong> walks toward the coordinate at your current speed.</li>
+          <li><strong>Walk here via roads</strong> follows real roads to get to the coordinate.</li>
+          <li><strong>Do nothing</strong> closes the popup without changing your position.</li>
         </ul>
       </li>
     </ol>
-    <p>Nothing happens automatically — you always confirm the action.</p>
+    <p>Nothing happens automatically. You always confirm what happens next.</p>
 
     <h2 id="url-format">URL format</h2>
     <p>The canonical link format is:</p>
@@ -63,31 +64,31 @@
 
     <h2 id="opening-links-from-other-apps">Opening links from other apps</h2>
     <p>
-      You don't need to use this app's own share button to get a location into it. If another app
-      offers a "share location" or "share place" option, you can usually pick this app from the
-      list and it will open the spot directly, with the same confirmation sheet described above.
+      You don't need this app's own share button to bring a location in. If another app offers
+      a share location or share place option, you can often choose this app from the list, and
+      it opens the spot directly with the same popup described above.
     </p>
     <p>
-      This covers maps links shared by a wide range of apps — including the Maps app's own
-      <strong>Share</strong> button, where the message contains a shortened link. The app follows
-      the link to find the real coordinates before opening it. If a shared link or location can't
-      be understood, a brief message at the bottom of the screen lets you know instead of doing
-      nothing.
+      This works for map links shared by many different apps, including the Maps app's own
+      <strong>Share</strong> button, which sends a shortened link. This app follows that link to
+      find the real coordinates before it opens. If a shared link or location can't be
+      understood, a short message appears at the bottom of the screen to let you know, rather
+      than doing nothing at all.
     </p>
 
     <h2 id="for-third-party-tools">For third-party tools</h2>
     <p>
-      If you build automation, scripts, or integrations that open coordinates in locationjoystick,
-      construct the URL directly — no API key or authentication required.
+      If you're building automation, scripts, or other tools that open coordinates in
+      locationjoystick, you can build the link yourself. No key or account sign-in is needed.
     </p>
     <ul class="section-bullets">
       <li>Both <code>lat</code> and <code>lon</code> are required. Missing either silently drops the link.</li>
       <li>Coordinates outside the valid range are rejected and the link is ignored.</li>
-      <li>Standard URL percent-encoding applies, though coordinates are pure ASCII.</li>
+      <li>Normal URL encoding rules apply, though coordinates only use plain characters anyway.</li>
     </ul>
-    <p>A custom URI scheme is also supported for app-to-app workflows:</p>
+    <p>A custom link format is also available for connecting directly between apps:</p>
     <pre><code>locationjoystick://open?lat=LAT&amp;lon=LON</code></pre>
-    <p>Both formats work the same way. Use the HTTPS link for anything you share with others.</p>
+    <p>Both link formats work the same way. Use the regular web link (https://) when sharing with other people.</p>
   </main>
 
 </div>

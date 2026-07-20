@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Troubleshooting — locationjoystick</title>
+  <title>Troubleshooting: locationjoystick</title>
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@4">
@@ -15,10 +15,10 @@
     <h2 id="troubleshooting">Troubleshooting</h2>
     <p>Common setup problems and how to fix them.</p>
 
-    <h2 id="allow-restricted-settings">Allow restricted settings (Android 12+ sideloaded APK)</h2>
+    <h2 id="allow-restricted-settings">Allow restricted settings (Android 12+ installed from a file)</h2>
     <p>
-      On Android 12 and later, apps installed directly from a file (such as the APK downloaded from GitHub) are
-      blocked from using certain settings — including the overlay permission — until you explicitly allow them.
+      On Android 12 and later, apps installed directly from a file (like the download from GitHub) are blocked
+      from using certain settings, including the overlay permission, until you allow them by hand.
       This step is <strong>not</strong> needed if you installed from the Play Store.
     </p>
     <p>To allow restricted settings:</p>
@@ -28,37 +28,37 @@
       <li>Scroll down and tap <strong>locationjoystick</strong>.</li>
       <li>Tap the <strong>⋮</strong> (three-dot menu) in the top-right corner of the app info screen.</li>
       <li>Tap <strong>Allow restricted settings</strong>.</li>
-      <li>Return to locationjoystick and complete the setup again.</li>
+      <li>Return to locationjoystick and go through setup again.</li>
     </ol>
     <p>
-      If you do not see the three-dot menu, your device or Android version may not require this step — skip it and
-      continue setup normally.
+      If you don't see the three-dot menu, your phone or Android version probably doesn't need this step.
+      Skip it and keep going with setup as normal.
     </p>
 
     <h2 id="app-missing-from-list">App missing from the "Select mock location app" list</h2>
     <p>
-      Open the app at least once before checking the list — a freshly installed app will not appear until it has been
-      launched. Then turn Developer Options off and back on, or restart your device, so the system refreshes the list.
+      Open the app at least once before checking the list. A freshly installed app won't show up until it's been
+      launched. After that, turn Developer Options off and back on, or restart your phone, so the list refreshes.
     </p>
     <p>
-      On some phones (MIUI, ColorOS, and other custom Android skins), the system hides newly installed apps from this
-      list until you grant the "Allow restricted settings" permission (see above) or until after a reboot. If the app
-      still does not appear, try reinstalling it, then reboot once more before checking again.
+      On some phones (MIUI, ColorOS, and other custom Android versions), newly installed apps stay hidden from
+      this list until you grant the "Allow restricted settings" permission above, or until after a restart.
+      If the app still won't show up, try reinstalling it, then restart once more before checking again.
     </p>
 
     <h2 id="mock-location-not-detected">Mock location not detected</h2>
-    <p>Some devices require rebooting after changing the Developer Options setting. Try rebooting, then tap Check again.</p>
+    <p>Some phones need a restart after you change the Developer Options setting. Try restarting, then tap Check again.</p>
 
-    <h2 id="overlay-permission-resets">Overlay permission resets on reboot</h2>
+    <h2 id="overlay-permission-resets">Overlay permission resets on restart</h2>
     <p>
-      A known issue on some custom Android skins (MIUI, ColorOS). Re-grant the permission after each reboot or check
-      your device's autostart settings.
+      This is a known issue on some custom Android versions (MIUI, ColorOS). Grant the permission again after
+      each restart, or check your phone's autostart settings.
     </p>
 
     <h2 id="another-app-holds-slot">Another app holds the mock location slot</h2>
     <p>
-      Only one app can be the active mock location provider. Make sure no other mock location app is selected in
-      Developer Options.
+      Only one app can act as the mock location provider at a time. Make sure no other mock location app is
+      selected in Developer Options.
     </p>
   </main>
 
