@@ -1,0 +1,22 @@
+package com.locationjoystick.core.location
+
+import android.os.PowerManager
+import android.util.Log
+
+private const val TAG = "MockLocationService"
+private const val WAKE_LOCK_TAG = "locationjoystick:spoofing"
+
+/** Acquires a [PowerManager.PARTIAL_WAKE_LOCK], working around Doze/Adaptive Battery
+ * throttling the update loop on some devices (e.g. Android 15 Pixel) when the screen locks.
+ * Returns null if acquisition fails — caller falls back to the foreground service alone. */
+internal fun acquireSpoofingWakeLock(powerManager: PowerManager): PowerManager.WakeLock? =
+    try {
+        powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply { acquire() }
+    } catch (e: Exception) {
+        Log.e(TAG, "Failed to acquire wakelock; falling back to foreground service alone", e)
+        null
+    }
+
+internal fun releaseSpoofingWakeLock(wakeLock: PowerManager.WakeLock?) {
+    wakeLock?.let { if (it.isHeld) it.release() }
+}

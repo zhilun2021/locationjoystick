@@ -607,19 +607,11 @@ class MockLocationService : Service() {
     }
 
     private fun acquireWakeLock() {
-        try {
-            wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "locationjoystick:spoofing").apply {
-                acquire()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire wakelock; falling back to foreground service alone", e)
-        }
+        wakeLock = acquireSpoofingWakeLock(powerManager)
     }
 
     private fun releaseWakeLock() {
-        wakeLock?.let {
-            if (it.isHeld) it.release()
-        }
+        releaseSpoofingWakeLock(wakeLock)
         wakeLock = null
     }
 
