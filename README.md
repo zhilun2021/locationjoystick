@@ -180,12 +180,10 @@ Each feature split into `:api` (public contract) + `:impl` (implementation).
 | `:core:testing` | Shared test utilities, fakes |
 | `:feature:favorites:api` / `:impl` | Favorites list, MapPicker, teleport |
 | `:feature:group:api` / `:impl` | Group Sync screen — leader/follower Wi-Fi location sync |
-| `:feature:joystick:api` / `:impl` | Floating joystick overlay service |
 | `:feature:map:api` / `:impl` | MapLibre screen, map interactions, roaming bottom sheet |
 | `:feature:onboarding:api` / `:impl` | Multi-step onboarding flow |
 | `:feature:routes:api` / `:impl` | Route list, creator, detail, replay |
 | `:feature:settings:api` / `:impl` | Speed profiles, widget config, export/import, QR transfer |
-| `:feature:widget:api` / `:impl` | Floating widget overlay service, map floating view |
 
 ---
 

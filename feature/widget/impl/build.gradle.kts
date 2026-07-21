@@ -10,7 +10,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":feature:widget:api"))
     implementation(project(":feature:joystick:impl"))
     implementation(project(":core:common"))
     implementation(project(":core:data"))

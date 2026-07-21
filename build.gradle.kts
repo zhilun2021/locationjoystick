@@ -25,7 +25,6 @@ dependencies {
     kover(project(":core:testing"))
     kover(project(":feature:favorites:api"))
     kover(project(":feature:favorites:impl"))
-    kover(project(":feature:joystick:api"))
     kover(project(":feature:joystick:impl"))
     kover(project(":feature:map:api"))
     kover(project(":feature:map:impl"))
@@ -35,6 +34,5 @@ dependencies {
     kover(project(":feature:settings:impl"))
     kover(project(":feature:onboarding:api"))
     kover(project(":feature:onboarding:impl"))
-    kover(project(":feature:widget:api"))
     kover(project(":feature:widget:impl"))
 }
