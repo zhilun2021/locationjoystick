@@ -17,8 +17,3 @@ fun isMockLocationEnabled(context: Context): Boolean {
 }
 
 fun isOverlayPermissionGranted(context: Context): Boolean = Settings.canDrawOverlays(context)
-
-fun isBatteryOptimizationIgnored(context: Context): Boolean {
-    val pm = context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
-    return pm.isIgnoringBatteryOptimizations(context.packageName)
-}
