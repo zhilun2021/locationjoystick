@@ -1,6 +1,7 @@
 package com.locationjoystick.core.data
 
 import com.locationjoystick.core.model.LatLng
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -24,6 +25,7 @@ class DeepLinkRepository
             _pendingCoords.tryEmit(LatLng(lat, lon))
         }
 
+        @OptIn(ExperimentalCoroutinesApi::class)
         fun consume() {
             _pendingCoords.resetReplayCache()
         }

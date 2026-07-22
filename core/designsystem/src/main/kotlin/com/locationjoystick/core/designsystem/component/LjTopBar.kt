@@ -55,7 +55,7 @@ fun LjTopBar(
             },
             actions = { actions() },
             colors =
-                TopAppBarDefaults.centerAlignedTopAppBarColors(
+                TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                     navigationIconContentColor = MaterialTheme.colorScheme.onSurface,

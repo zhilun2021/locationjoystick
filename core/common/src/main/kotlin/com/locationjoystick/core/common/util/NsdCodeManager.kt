@@ -23,7 +23,7 @@ private const val TAG = "NsdCodeManager"
 class NsdCodeManager
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) {
         private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
         private var registrationListener: NsdManager.RegistrationListener? = null

@@ -36,7 +36,7 @@ class RouteRepository
     @Inject
     constructor(
         private val routeDao: RouteDao,
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
         private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) {
         fun getRoutes(): Flow<List<Route>> =

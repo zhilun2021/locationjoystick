@@ -52,7 +52,7 @@ class SettingsViewModel
         private val exportSyncServer: ExportSyncServer,
         private val exportSyncClient: ExportSyncClient,
         private val nsdCodeManager: NsdCodeManager,
-        @ApplicationContext private val context: Context,
+        @param:ApplicationContext private val context: Context,
     ) : ViewModel() {
         companion object {
             private const val TAG = "SettingsViewModel"
