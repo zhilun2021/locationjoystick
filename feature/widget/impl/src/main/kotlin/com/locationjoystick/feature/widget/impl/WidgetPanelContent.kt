@@ -93,18 +93,25 @@ internal fun WidgetPanel(
                         .size(UiConstants.FAB_CONTAINER_SIZE)
                         .background(MaterialTheme.colorScheme.primary, CircleShape)
                         .pointerInput(Unit) {
-                            var isDragging = false
                             awaitPointerEventScope {
                                 while (true) {
                                     awaitFirstDown(requireUnconsumed = false)
-                                    isDragging = false
+                                    var isDragging = false
+                                    var accumulatedDistance = 0f
                                     do {
                                         val event = awaitPointerEvent()
                                         val drag = event.changes.firstOrNull() ?: break
                                         val delta = drag.position - drag.previousPosition
                                         if (delta != androidx.compose.ui.geometry.Offset.Zero) {
-                                            isDragging = true
-                                            onDrag(delta.x, delta.y)
+                                            if (!isDragging) {
+                                                accumulatedDistance += delta.getDistance()
+                                                if (accumulatedDistance > viewConfiguration.touchSlop) {
+                                                    isDragging = true
+                                                }
+                                            }
+                                            if (isDragging) {
+                                                onDrag(delta.x, delta.y)
+                                            }
                                             drag.consume()
                                         }
                                     } while (event.changes.any { it.pressed })
